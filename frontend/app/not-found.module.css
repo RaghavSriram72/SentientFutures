@@ -1,0 +1,72 @@
+.wrap {
+  background-color: var(--paper);
+  background-image: var(--grain), var(--wash);
+  border-bottom: 1px solid var(--rule);
+}
+
+.inner {
+  display: grid;
+  justify-items: center;
+  gap: 1.1rem;
+  padding-block: clamp(64px, 12vw, 160px);
+  text-align: center;
+}
+
+.mark {
+  width: clamp(88px, 14vw, 120px);
+  height: auto;
+  margin-bottom: 0.75rem;
+}
+
+.orbit,
+.orbitInner {
+  fill: none;
+  stroke: var(--grape);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 4;
+  opacity: 0.55;
+}
+
+.orbitInner {
+  opacity: 0.3;
+}
+
+.core {
+  fill: var(--grape);
+}
+
+/* The stray dot drifts gently; reduced motion turns this off globally */
+.stray {
+  fill: var(--stage-widely);
+  transform-origin: 60px 60px;
+  animation: drift 6s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-4px, 5px);
+  }
+}
+
+.inner .eyebrow {
+  color: var(--grape);
+}
+
+.title {
+  max-width: 16ch;
+}
+
+.inner .lede {
+  max-width: 48ch;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}

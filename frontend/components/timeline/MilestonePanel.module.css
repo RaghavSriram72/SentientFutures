@@ -1,0 +1,633 @@
+/* The milestone dossier: a paper card with grain, a paperclip and ruled sections. */
+
+.dossier {
+  position: relative;
+  container-type: inline-size;
+  padding: 26px 24px 30px;
+  background-color: var(--paper-2);
+  background-image: var(--grain);
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-paper);
+  color: var(--ink-body);
+}
+
+@media (min-width: 720px) {
+  .dossier {
+    padding: 30px 32px 36px;
+  }
+}
+
+.paperclip {
+  position: absolute;
+  top: -16px;
+  left: 22px;
+  width: 17px;
+  height: 44px;
+  fill: none;
+  stroke: var(--mauve);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  transform: rotate(-7deg);
+  filter: drop-shadow(1px 2px 0 var(--grape-tint-2));
+}
+
+/* ---------- Header ---------- */
+.header {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.idRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-left: 26px;
+}
+
+.idLine {
+  padding-top: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.close:hover {
+  background: var(--grape-tint-2);
+}
+
+.close svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.title {
+  margin-top: 0.4rem;
+  font-size: clamp(1.75rem, 1.45rem + 1vw, 2.25rem);
+  line-height: 1.06;
+}
+
+.title:focus {
+  outline: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.stageChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.25em 0.75em;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.stageDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.stage_possible {
+  color: var(--stage-possible-ink);
+}
+
+.stage_possible .stageDot {
+  background: var(--stage-possible);
+}
+
+.stage_widely {
+  color: var(--stage-widely-ink);
+}
+
+.stage_widely .stageDot {
+  background: var(--stage-widely);
+}
+
+.stage_helping {
+  color: var(--stage-helping-ink);
+}
+
+.stage_helping .stageDot {
+  background: var(--stage-helping);
+}
+
+/* The red rubber stamp, with a double border like an inked impression */
+.stamp {
+  display: inline-block;
+  padding: 0.3em 0.7em;
+  border: 1.5px solid var(--stamp);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 2px var(--paper-2),
+    inset 0 0 0 2.75px var(--stamp);
+  background: var(--stamp-tint);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--stamp);
+  transform: rotate(-2.5deg);
+}
+
+.stageNote {
+  margin-top: 0.5rem;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+/* ---------- Key facts strip ---------- */
+.facts {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--rule-strong);
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.facts > div {
+  padding: 0.7rem 0;
+}
+
+.facts > div + div {
+  border-top: 1px solid var(--rule);
+}
+
+.facts dt {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.facts dd {
+  margin-top: 0.15rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+@container (min-width: 460px) {
+  .facts {
+    grid-template-columns: 1.4fr 1fr 1.2fr;
+  }
+
+  .facts > div {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .facts > div:first-child {
+    padding-left: 0;
+  }
+
+  .facts > div + div {
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
+}
+
+/* ---------- Sections ---------- */
+.section {
+  margin-top: 1.4rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--rule);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.sectionNumber {
+  color: var(--grape);
+  font-weight: 500;
+}
+
+.sectionBody {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.muted {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.empty {
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.statusLine,
+.confidence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.achieved,
+.estimate {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.bigYear {
+  font-family: var(--font-mono);
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.bigYearLabel {
+  display: block;
+  margin-bottom: 0.1rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.setBy {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.warnNote {
+  font-size: var(--text-sm);
+  color: var(--stamp);
+}
+
+.noEstimate {
+  justify-self: start;
+  padding: 0.3em 0.85em;
+  border: 1px solid color-mix(in srgb, var(--prov-unclear) 40%, transparent);
+  border-radius: 999px;
+  background: var(--hatch), var(--paper-2);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--prov-unclear);
+}
+
+/* ---------- Forecast ledger ---------- */
+.countLabel {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.ledger thead th {
+  padding: 0 0.6rem 0.45rem 0;
+  border-bottom: 1px solid var(--rule-strong);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--ink-muted);
+}
+
+.ledger tbody th,
+.ledger td {
+  padding: 0.7rem 0.6rem 0.7rem 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+  text-align: left;
+}
+
+.ledger tbody th {
+  font-weight: 600;
+  color: var(--ink);
+  width: 24%;
+}
+
+.window {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.forecastClaim {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.quote {
+  display: block;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.citation {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-muted);
+}
+
+.expiredRow th,
+.expiredRow td,
+.expiredRow .window,
+.expiredRow .quote {
+  color: var(--ink-faint);
+}
+
+.expiredTag {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0.1em 0.5em;
+  border: 1px dashed var(--ink-faint);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Narrow panels: each forecast becomes a small ruled card with its own labels */
+@container (max-width: 500px) {
+  .ledger thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .ledger tr,
+  .ledger tbody th,
+  .ledger td {
+    display: block;
+    width: auto;
+  }
+
+  .ledger tr {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .ledger tbody th,
+  .ledger td {
+    padding: 0.15rem 0;
+    border-bottom: 0;
+  }
+
+  .ledger td::before {
+    content: attr(data-label);
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .ledger td + td {
+    margin-top: 0.35rem;
+  }
+}
+
+/* ---------- Disagreement ---------- */
+.disagreement {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  font-size: var(--text-sm);
+}
+
+.disagreementFlagged {
+  border-color: color-mix(in srgb, var(--stamp) 35%, transparent);
+  background: linear-gradient(var(--stamp-tint), var(--stamp-tint)), var(--paper);
+}
+
+.disagreementHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+}
+
+.disagreementTitle {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.disagreementBody {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.reasons {
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 1.1rem;
+}
+
+.reasons li::marker {
+  color: var(--stamp);
+}
+
+.disagreementNote {
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--rule);
+}
+
+.ruleLink {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Would move it ---------- */
+.moveColumns {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@container (min-width: 460px) {
+  .moveColumns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.moveTitle {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--grape);
+}
+
+.subTitle {
+  margin-top: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* ---------- Dependencies ---------- */
+.dependencies {
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.dependency {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  font-size: var(--text-sm);
+  text-align: left;
+  color: var(--ink);
+}
+
+button.dependency {
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+button.dependency:hover {
+  background: var(--wash-soft);
+  border-color: var(--rule-strong);
+}
+
+.dependencyCode {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--grape);
+}
+
+.dependencyName {
+  flex: 1 1 12rem;
+  font-weight: 500;
+}
+
+.dependencyMissing {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+/* ---------- Sources ---------- */
+.sources {
+  list-style: none;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.sourceItem {
+  display: grid;
+  gap: 0.1rem;
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--rule);
+}
+
+.sourceTitle {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.sourceMeta {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-muted);
+}

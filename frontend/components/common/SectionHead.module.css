@@ -1,0 +1,14 @@
+.head {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
+}
+
+.title {
+  max-width: 22ch;
+}
+
+.intro {
+  max-width: 62ch;
+  color: var(--ink-muted);
+}

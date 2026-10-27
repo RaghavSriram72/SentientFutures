@@ -1,0 +1,92 @@
+# Runs on every push and pull request. A typo in content/ fails here with a
+# readable message (the validator prints the exact path), before it can reach
+# the site.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Schema and content
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: shared/pyproject.toml
+
+      - name: Install the shared schema
+        run: pip install -e "shared[dev]"
+
+      - name: Check shared/schema/enums.json matches enums.py
+        run: python -m sf_shared.export_schema --check
+
+      - name: Validate content
+        run: python -m sf_shared.validate content/
+
+      - name: Run the schema tests
+        run: pytest shared
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      # Site copy never uses em dashes. content/ is checked by the validator;
+      # this covers text written into the pages and the shared enum labels.
+      # Matches the character itself, the HTML entity and the JS escape.
+      - name: No em dashes in site copy
+        working-directory: .
+        env:
+          LC_ALL: C.UTF-8
+        run: |
+          pattern='\x{2014}|&mdash;|\\u2014'
+          found=0
+          grep -rnP --include='*.tsx' --include='*.ts' "$pattern" frontend/app frontend/components frontend/lib && found=1
+          grep -nP "$pattern" shared/schema/enums.json && found=1
+          if [ "$found" = 1 ]; then
+            echo "::error::Found an em dash in site copy (see the lines above). Use a period, comma, colon or parentheses instead."
+            exit 1
+          fi
+          echo "No em dashes found"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Both of these are gitignored, so a fresh checkout needs them before
+      # lint and typecheck: the enum labels copied from shared/, and the
+      # Next.js route types (PageProps, LayoutProps, next-env.d.ts).
+      - name: Copy the shared enums into the frontend
+        run: npm run sync
+
+      - name: Generate Next.js types
+        run: npx next typegen
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build the static site the way Pages does
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /SentientFutures

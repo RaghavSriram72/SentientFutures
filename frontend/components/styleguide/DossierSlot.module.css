@@ -1,0 +1,60 @@
+/* A placeholder drawn like a page with printer's crop marks at the corners */
+.slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.4rem;
+  min-height: 280px;
+  padding: 2rem;
+  border-radius: var(--radius-panel);
+  background-color: var(--paper-3);
+  background-image:
+    linear-gradient(var(--ink-faint), var(--ink-faint)),
+    linear-gradient(var(--ink-faint), var(--ink-faint)),
+    linear-gradient(var(--ink-faint), var(--ink-faint)),
+    linear-gradient(var(--ink-faint), var(--ink-faint)),
+    linear-gradient(var(--ink-faint), var(--ink-faint)),
+    linear-gradient(var(--ink-faint), var(--ink-faint)),
+    linear-gradient(var(--ink-faint), var(--ink-faint)),
+    linear-gradient(var(--ink-faint), var(--ink-faint));
+  background-repeat: no-repeat;
+  background-size:
+    18px 1px,
+    1px 18px,
+    18px 1px,
+    1px 18px,
+    18px 1px,
+    1px 18px,
+    18px 1px,
+    1px 18px;
+  background-position:
+    14px 14px,
+    14px 14px,
+    calc(100% - 14px) 14px,
+    calc(100% - 14px) 14px,
+    14px calc(100% - 14px),
+    14px calc(100% - 14px),
+    calc(100% - 14px) calc(100% - 14px),
+    calc(100% - 14px) calc(100% - 14px);
+  border: 1px solid var(--rule);
+  text-align: center;
+}
+
+.text {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--ink);
+}
+
+.hint {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+/* The live dossier, kept to a readable panel width */
+.live {
+  max-width: 600px;
+}

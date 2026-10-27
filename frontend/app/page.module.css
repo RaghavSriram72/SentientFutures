@@ -1,0 +1,248 @@
+/* ---------- Hero ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--wash);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+/* A faint dashed orbit behind the headline, echoing the brand mark */
+.hero::before {
+  content: "";
+  position: absolute;
+  right: -12vw;
+  top: -18vw;
+  width: 62vw;
+  height: 62vw;
+  max-width: 900px;
+  max-height: 900px;
+  border: 1.5px dashed var(--rule);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  right: 14vw;
+  top: 9vw;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--stage-widely);
+  box-shadow: 0 0 0 6px var(--paper);
+  pointer-events: none;
+}
+
+.heroInner {
+  position: relative;
+  padding-block: clamp(64px, 11vw, 148px) clamp(48px, 7vw, 96px);
+}
+
+.heroTitle {
+  margin-top: 1.25rem;
+  max-width: 14ch;
+  font-size: clamp(2.5rem, 1.4rem + 5vw, 5.25rem);
+  line-height: 1;
+}
+
+.heroLede {
+  margin-top: 1.75rem;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2.25rem;
+}
+
+.heroStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 3rem;
+  margin-top: clamp(40px, 6vw, 72px);
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  max-width: 640px;
+}
+
+.heroStats dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.heroStats dd {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+/* ---------- Section heads ---------- */
+.sectionHead {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 720px;
+  margin-bottom: clamp(28px, 4vw, 48px);
+}
+
+.sectionHeadRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: clamp(28px, 4vw, 48px);
+}
+
+.sectionHeadRow .sectionHead {
+  margin-bottom: 0;
+}
+
+/* ---------- Stages ---------- */
+.stages {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  list-style: none;
+}
+
+.stageCard {
+  position: relative;
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding: 2rem 1.5rem 1.75rem;
+  overflow: hidden;
+}
+
+.stageBar {
+  position: absolute;
+  left: 1.5rem;
+  top: 0;
+  width: 56px;
+  height: 6px;
+  border-radius: 0 0 999px 999px;
+}
+
+.stage_possible {
+  background: var(--stage-possible);
+}
+
+.stage_widely_available {
+  background: var(--stage-widely);
+}
+
+.stage_actually_helping {
+  background: var(--stage-helping);
+}
+
+.stageNumber {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+}
+
+.stageCard p {
+  color: var(--ink-muted);
+}
+
+/* ---------- Timeline preview ---------- */
+.timelineSection {
+  background: var(--paper-3);
+  border-block: 1px solid var(--rule-soft);
+}
+
+.previewFrame {
+  padding: clamp(12px, 2vw, 24px);
+  overflow: hidden;
+}
+
+/* ---------- Technologies ---------- */
+.techGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  list-style: none;
+}
+
+.techCard {
+  display: grid;
+  gap: 0.75rem;
+  height: 100%;
+  padding: 1.75rem 1.5rem;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform var(--dur-med) var(--ease-out),
+    box-shadow var(--dur-med) var(--ease-out);
+}
+
+.techCard:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+}
+
+.techCard p {
+  color: var(--ink-muted);
+}
+
+.techMeta {
+  align-self: end;
+  margin-top: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--grape);
+}
+
+/* ---------- Kinds of content ---------- */
+.kindsSection {
+  background: var(--wash);
+  border-block: 1px solid var(--rule-soft);
+}
+
+/* ---------- Steps ---------- */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+  list-style: none;
+  counter-reset: step;
+}
+
+.step {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.stepNumber {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--grape);
+}
+
+.step p {
+  color: var(--ink-muted);
+}
+
+@media (max-width: 860px) {
+  .stages,
+  .techGrid,
+  .steps {
+    grid-template-columns: 1fr;
+  }
+
+  .hero::after {
+    display: none;
+  }
+}

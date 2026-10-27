@@ -1,0 +1,459 @@
+[
+  {
+    "id": "wbe",
+    "name": "Whole brain emulation",
+    "short_name": "WBE",
+    "headline": "What if the first digital minds *were ours*?",
+    "intro": {
+      "text": "Whole brain emulation means scanning a human brain in enough detail to run it as software. The hope is that a mind copied from a person would keep that person's values, which is arguably the hardest part of alignment to build from scratch. By most accounts it is also the furthest off of the three.",
+      "provenance": "ai",
+      "reviewed_by": null
+    },
+    "claims_to_solve": [
+      {
+        "text": "Alignment. If the first very capable digital minds are copies of human minds, they start out with human values instead of values someone had to train into an unfamiliar system.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "The Intelligence Curse. If people can work and take part in public life as emulations, human minds could stay economically and politically relevant even when most valuable work happens on computers.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "mechanism": [
+      {
+        "text": "Scan a brain at very fine resolution, build a model of its neurons and connections, and run that model on a computer. If the model is faithful enough, it should think and behave like the original person, values included.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Because an emulation is software, it can be run faster than real time and copied. Proponents argue this lets trusted human judgment keep pace with machine speed, whether that means doing safety research quickly or competing for work.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "strongest_case": [
+      {
+        "text": "It sidesteps the problem of writing down what people value. Nobody has to specify human values, because an emulation of a person already has them, flaws included.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Human minds are the one kind of general intelligence we have long experience predicting, trusting and holding to account. Laws, courts and workplaces were built for minds like these.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "If emulation arrived early enough, fast copies of careful researchers could do years of safety work in weeks, without handing that judgment to systems nobody fully understands.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "strongest_objections": [
+      {
+        "text": "Timing. Most estimates put human emulation decades away, and scanning, modeling and compute are all unsolved. If other kinds of powerful AI arrive first, the plan may come too late to matter.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Human values are not the same as safe values. A person who can be copied and sped up gains power that ordinary checks were never designed to limit, and people with power don't always use it well.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Fidelity is hard to check. A slightly wrong emulation could drift in judgment or values in ways that are hard to spot, and there may be no test that tells a faithful copy from a convincing one.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "scorecard": [
+      {
+        "dimension": "Alignment case",
+        "problem": "alignment",
+        "scale": "case",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "The argument from inherited values is clearly stated: a copy of a person would start with that person's values. This draft hasn't reviewed the evidence on whether an emulation would keep those values once it is copied, sped up or edited.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Intelligence Curse case",
+        "problem": "intelligence_curse",
+        "scale": "case",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "Some argue emulation keeps human minds economically relevant. Others expect the value of any one copy to fall toward the cost of running it. This draft hasn't weighed the two views against the evidence.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Welfare risk",
+        "problem": null,
+        "scale": "risk",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "The scanning methods usually discussed would destroy the brain being scanned, and the scan would be the most private data a person could hand over. People who have to compete for work with fast, copyable emulations could also lose skills and bargaining power. This draft hasn't weighed how likely or severe these harms are, and the risk thresholds aren't defined yet. The emulations' own welfare is a separate question, covered below.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Governance risk",
+        "problem": null,
+        "scale": "risk",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "Minds that can be copied could put a great deal of power in the hands of whoever owns the hardware, and nobody has settled who would own or control a person's scan. This draft hasn't reviewed the governance proposals that exist, and the risk thresholds aren't defined yet.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Safeguard adequacy",
+        "problem": null,
+        "scale": "case",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "This draft hasn't found safeguards proposed for scanning people, or for running and copying emulations, and hasn't finished looking. Rules for human research subjects weren't written with any of this in mind.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      }
+    ],
+    "artificial_minds_questions": [
+      {
+        "text": "Would an emulation be conscious? And if it is, is it the same person as the original, or a new person who shares their memories?",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Emulations could be copied, paused, edited, run at different speeds or deleted. What protections would they need, given that no existing welfare rules anticipate any of this?",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Who consents on behalf of the early, imperfect emulations made while the technique is being tested, and what do we owe them?",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "sample": true
+  },
+  {
+    "id": "bci",
+    "name": "Brain computer interfaces",
+    "short_name": "BCI",
+    "headline": "Could plugging in help people *keep up*?",
+    "intro": {
+      "text": "Brain computer interfaces connect the nervous system to a computer. Today, implanted devices let a small number of people with paralysis move a cursor or produce text. The bigger claim is that far faster interfaces could keep people in charge of increasingly capable AI, and keep their work worth paying for.",
+      "provenance": "ai",
+      "reviewed_by": null
+    },
+    "claims_to_solve": [
+      {
+        "text": "Alignment. Some proponents argue that if people are tightly linked to AI systems, those systems act as extensions of human intent instead of separate agents with goals of their own.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "The Intelligence Curse. A person working through a fast interface might do more than either a person or an AI alone, so human work would stay valuable as AI improves.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "mechanism": [
+      {
+        "text": "Implanted or wearable devices record brain activity and decode it into commands, text or speech. More advanced devices also write information back by stimulating neurons.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "The argument goes that if bandwidth rose far enough, people could follow and steer AI reasoning as it happens, keeping a person in each important decision instead of reviewing outputs after the fact.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "strongest_case": [
+      {
+        "text": "It is the most concrete of the three. Implants already restore some movement and communication in clinical trials, so the basic technology exists and is improving.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "It keeps a person in the loop by design. The system acts on someone's intentions instead of on goals it learned on its own.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Medical demand pays for the progress. Restoring movement and speech is worth doing whether or not the alignment argument holds, so the field doesn't depend on anyone believing it.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "strongest_objections": [
+      {
+        "text": "Bandwidth may not be the bottleneck. The hard part of overseeing AI is understanding what it is doing, and a faster channel into a human brain doesn't obviously make that easier.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "A two-way link runs both ways. A device that can write to the brain could be used to monitor, manipulate or pressure the person wearing it, whether by a company, a government or the AI itself.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Access is likely to be unequal. If enhancement is expensive or risky, it could widen the gap between people who have it and people who don't, deepening the Intelligence Curse instead of easing it.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "scorecard": [
+      {
+        "dimension": "Alignment case",
+        "problem": "alignment",
+        "scale": "case",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "Most versions of this argument don't explain how a faster link would make an AI system safer. This draft hasn't finished checking whether any proposal spells out that mechanism.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Intelligence Curse case",
+        "problem": "intelligence_curse",
+        "scale": "case",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "Augmented people staying economically relevant is plausible, but it depends on cost, safety and who gets access. This draft hasn't reviewed the evidence on any of these.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Welfare risk",
+        "problem": null,
+        "scale": "risk",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "Brain data can reveal things people never chose to share, and a device that writes to the brain could be used to nudge mood or decisions. Employers could use headsets to monitor workers, and users may come to depend on a device its maker can stop supporting. This draft hasn't weighed how likely or severe these harms are, and the risk thresholds aren't defined yet.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Governance risk",
+        "problem": null,
+        "scale": "risk",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "Brain data is personal in a new way, and rules on who may collect, own and use it exist in only a few places. This draft hasn't finished reviewing them, and the risk thresholds aren't defined yet.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Safeguard adequacy",
+        "problem": null,
+        "scale": "case",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "Medical device rules cover implants used in clinics, but consumer and workplace headsets may fall outside them. This draft hasn't reviewed whether existing privacy and device rules are enough.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      }
+    ],
+    "artificial_minds_questions": [
+      {
+        "text": "If a device writes to the brain, where does the person end and the system begin? A change in mood or a decision might be hard to attribute to either one.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Should people be able to remove an interface without losing abilities, or a sense of self, that they have come to rely on?",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Who owns the data a brain produces, and the device itself, if the company that made it fails?",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "sample": true
+  },
+  {
+    "id": "neuromorphic",
+    "name": "Neuromorphic AI",
+    "short_name": "Neuromorphic AI",
+    "headline": "Would AI built like a brain *think like us*?",
+    "intro": {
+      "text": "Neuromorphic or brain-inspired AI borrows from how brains work, from spiking neurons to the circuits behind empathy, without copying any one brain. The hope is that AI built more like us would learn values more like ours. The worry is that it would mostly make AI more capable, sooner.",
+      "provenance": "ai",
+      "reviewed_by": null
+    },
+    "claims_to_solve": [
+      {
+        "text": "Alignment. AI that learns the way brains do might form concepts and values closer to ours, and might be easier for people to understand and predict.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "mechanism": [
+      {
+        "text": "Neuromorphic systems copy features of brains, such as spiking neurons, learning rules that work locally, or brain-like wiring. Some run on ordinary computers and some on chips built to work like neurons.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "One version of the safety argument goes further: work out how specific brain systems give rise to social instincts like empathy and fairness, then build those into AI on purpose.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "strongest_case": [
+      {
+        "text": "Human brains are the only systems we know of that develop general intelligence and human values together. Understanding how they do it could be more dependable than hoping values emerge from training data.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "It doesn't need a full brain scan. Borrowing a few key mechanisms is far more achievable than emulating a whole brain, so it could matter on a realistic timeline.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Shared structure could make AI easier to inspect, since neuroscience already has decades of tools and theories for studying brain-like systems.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "strongest_objections": [
+      {
+        "text": "Brain-like is not the same as human-like. A system with brain-like parts but different training, a different body and different incentives could end up with very different values, while looking more trustworthy than it is.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "It may speed up capabilities more than safety. The insights that make AI more brain-like could also make it more capable and efficient, before anyone knows how to align it.",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "Neuroscience doesn't yet know how brains produce values. The circuits the safety case depends on are less well understood than, say, vision or movement.",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "scorecard": [
+      {
+        "dimension": "Alignment case",
+        "problem": "alignment",
+        "scale": "case",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "The idea is well motivated: brains are the only systems known to develop general intelligence and human values together. This draft hasn't reviewed the evidence on whether brain-like design leads to more human-like values in practice.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Intelligence Curse case",
+        "problem": "intelligence_curse",
+        "scale": "case",
+        "rating": "not_claimed",
+        "confidence": "low",
+        "unclear_reason": null,
+        "basis": {
+          "text": "Neuromorphic AI is pitched as a route to alignment and to cheaper, more efficient computing. This draft found no proposal arguing it would help with the Intelligence Curse.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Welfare risk",
+        "problem": null,
+        "scale": "risk",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "AI built on human social instincts might be better at reading and persuading people, and cheaper, more efficient AI could speed up the replacement of human work. This draft hasn't looked for evidence on either, and the risk thresholds aren't defined yet. Whether these systems could suffer is a separate question, covered below.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Governance risk",
+        "problem": null,
+        "scale": "risk",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "Brain-inspired AI seems to get little specific attention in AI policy so far. Methods that make AI cheaper or more capable could also arrive well before methods that make it safer, which makes dual use a concern. This draft hasn't reviewed what governance work exists, and the risk thresholds aren't defined yet.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Safeguard adequacy",
+        "problem": null,
+        "scale": "case",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "This draft hasn't found safeguards proposed specifically for brain-inspired AI, and hasn't checked whether general AI safety rules would cover it.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      }
+    ],
+    "artificial_minds_questions": [
+      {
+        "text": "Could a brain-like AI be conscious or able to suffer, and would brain-like hardware make that more likely than brain-like software?",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "If we deliberately build in social emotions like empathy, do we also build in the capacity to be hurt?",
+        "provenance": "ai",
+        "reviewed_by": null
+      },
+      {
+        "text": "How could anyone tell from the outside whether such a system has welfare that matters, given that it might report feelings whether or not it has them?",
+        "provenance": "ai",
+        "reviewed_by": null
+      }
+    ],
+    "sample": true
+  }
+]

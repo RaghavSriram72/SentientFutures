@@ -1,0 +1,106 @@
+/*
+  Design tokens. Every color, font, radius, shadow and easing on the site comes
+  from here, so components never hard-code hex values.
+  Palette inspired by warm paper stationery: ivory paper, one deep grape accent,
+  near-black green ink, and earthy stage colors.
+*/
+:root {
+  color-scheme: light;
+
+  /* Paper */
+  --paper: #ffffea;
+  --paper-2: #fffef1;
+  --paper-3: #f8f3e4;
+  --paper-edge: #ece4cf;
+  --wash: linear-gradient(128deg, #f1e6ee 0%, #ffffea 100%);
+  --wash-soft: #f3eef8;
+
+  /* Ink */
+  --ink: #03120e;
+  --ink-body: #1e1e1e;
+  --ink-muted: #4f4655;
+  --ink-faint: #6e6573;
+
+  /* Accent */
+  --grape: #533a71;
+  --grape-deep: #3f2c57;
+  --grape-tint: #533a7114;
+  --grape-tint-2: #533a7126;
+  --mauve: #654f6f;
+  --lavender: #c9a0dc;
+  --lavender-soft: #c9a0dc40;
+
+  /* Rules and borders */
+  --rule: #533a712e;
+  --rule-soft: #533a711a;
+  --rule-strong: #533a718c;
+  /* Form control outlines: 3:1 or better on paper, as WCAG asks of input boundaries */
+  --rule-input: #533a71a6;
+
+  /* Stages: fill for bars, ink for text labels. The inks must pass AA on paper
+     and on --grape-tint-2, since the chart's selected track puts them there. */
+  --stage-possible: #c9a0dc;
+  --stage-possible-ink: #6b3f86;
+  --stage-widely: #c48a2e;
+  --stage-widely-ink: #7a5619;
+  --stage-helping: #5e8c6a;
+  --stage-helping-ink: #2f6b43;
+
+  /* Signals */
+  --stamp: #b3261e;
+  --stamp-tint: #b3261e14;
+  --sage: #5e8c6a;
+
+  /* Provenance marks */
+  --prov-source: #533a71;
+  --prov-team: #654f6f;
+  --prov-ai: #533a71;
+  --prov-unclear: #8e641f;
+  --hatch: repeating-linear-gradient(
+    135deg,
+    #c48a2e1f 0 6px,
+    transparent 6px 12px
+  );
+
+  /* Type */
+  --font-display: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+  --text-2xl: clamp(1.875rem, 1.4rem + 1.8vw, 2.75rem);
+  --text-3xl: clamp(2.125rem, 1.3rem + 3.2vw, 4.125rem);
+
+  /* Radii */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-card: 1.25rem;
+  --radius-panel: 1.5rem;
+  --radius-hero: 2rem;
+
+  /* Shadows are grape-tinted, never grey */
+  --shadow-card: 0 14px 28px -18px #533a7180, 0 1px 0 #ffffff inset;
+  --shadow-lift: 0 22px 40px -18px #533a71a6, 0 1px 0 #ffffff inset;
+  --shadow-paper: 0 1px 0 #ffffff inset, 0 2px 0 -1px #533a7114, 0 24px 40px -24px #533a7166;
+  --shadow-button: 0 14px 28px -14px #533a7199, inset 0 1px 0 #ffffff2e;
+
+  /* Paper grain, as an inline SVG so it needs no asset path */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.32 0 0 0 0 0.23 0 0 0 0 0.44 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-fast: 160ms;
+  --dur-med: 320ms;
+
+  /* Layout */
+  --max-width: 1200px;
+  --text-width: 680px;
+  --gutter: clamp(16px, 4vw, 40px);
+  --header-height: 64px;
+}

@@ -1,0 +1,47 @@
+.body {
+  display: grid;
+  gap: 1.5rem;
+  padding-block: clamp(32px, 5vw, 56px) clamp(56px, 8vw, 112px);
+}
+
+.key {
+  display: grid;
+  gap: 0.9rem 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+@media (min-width: 900px) {
+  .key {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
+.keyMarks {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.keyNote {
+  max-width: 52ch;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.draftWord {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--mauve);
+}
+
+.sampleNote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+

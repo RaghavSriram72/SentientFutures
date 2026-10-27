@@ -1,0 +1,79 @@
+.stages {
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 760px) {
+  .stages {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  padding: 1.6rem 1.35rem 1.4rem;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-card);
+  background-color: var(--paper-2);
+  background-image: var(--grain);
+  box-shadow: var(--shadow-paper);
+  overflow: hidden;
+}
+
+/* The stage color as a bar across the top of the card */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 6px;
+}
+
+.stage_possible::before {
+  background: var(--stage-possible);
+}
+
+.stage_widely_available::before {
+  background: var(--stage-widely);
+}
+
+.stage_actually_helping::before {
+  background: var(--stage-helping);
+}
+
+.number {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.name {
+  font-size: 1.875rem;
+}
+
+.stage_possible .name {
+  color: var(--stage-possible-ink);
+}
+
+.stage_widely_available .name {
+  color: var(--stage-widely-ink);
+}
+
+.stage_actually_helping .name {
+  color: var(--stage-helping-ink);
+}
+
+.desc {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.detail {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}

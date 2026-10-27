@@ -1,0 +1,87 @@
+.block {
+  display: grid;
+  gap: 1rem 2.5rem;
+  padding-block: 1.75rem;
+  border-top: 1px solid var(--rule);
+  scroll-margin-top: calc(var(--header-height) + 3rem);
+}
+
+@media (min-width: 760px) {
+  .block {
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  }
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: start;
+  gap: 0.6rem 0.75rem;
+}
+
+.title {
+  font-size: 1.625rem;
+}
+
+.note {
+  flex-basis: 100%;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+.values {
+  display: grid;
+}
+
+.row {
+  display: grid;
+  gap: 0.2rem 1.5rem;
+  padding-block: 0.7rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.row:first-child {
+  padding-top: 0.2rem;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+@media (min-width: 560px) {
+  .row {
+    grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+    align-items: baseline;
+  }
+}
+
+.term {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-faint);
+}
+
+.desc {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--ink-body);
+}
+
+/* Draft categories sit on a faint dotted rule so they read as provisional */
+.isDraft {
+  border-top-style: dotted;
+  border-top-color: var(--mauve);
+}

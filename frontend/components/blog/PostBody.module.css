@@ -1,0 +1,129 @@
+/* Long-read typography for blog posts, on the 680px reading column */
+.body {
+  max-width: var(--text-width);
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--ink-body);
+}
+
+.body > * + * {
+  margin-top: 1.35em;
+}
+
+.body h2 {
+  margin-top: 2.4em;
+  font-size: clamp(1.75rem, 1.45rem + 1vw, 2.25rem);
+  line-height: 1.1;
+}
+
+.body h3 {
+  margin-top: 2em;
+  font-size: 1.5rem;
+}
+
+.body h2 + *,
+.body h3 + * {
+  margin-top: 0.75em;
+}
+
+.body h4 {
+  margin-top: 1.75em;
+}
+
+.body strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.body ul,
+.body ol {
+  padding-left: 1.4em;
+}
+
+.body li + li {
+  margin-top: 0.45em;
+}
+
+.body li::marker {
+  color: var(--grape);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+/* Pull quote: display serif with a grape rule that hangs into the margin */
+.body blockquote {
+  margin-block: 2em;
+  padding: 0.1em 0 0.1em 1.25rem;
+  border-left: 2px solid var(--grape);
+  font-family: var(--font-display);
+  font-size: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.body blockquote p + p {
+  margin-top: 0.6em;
+}
+
+@media (min-width: 900px) {
+  .body blockquote {
+    margin-left: calc(-1.25rem - 2px);
+  }
+}
+
+.body code {
+  padding: 0.1em 0.35em;
+  border-radius: 0.35em;
+  background: var(--paper-3);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.body pre {
+  overflow-x: auto;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-md);
+  background: var(--paper-3);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.body pre code {
+  padding: 0;
+  background: none;
+}
+
+.body img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-paper);
+}
+
+/* A section break drawn as three spaced dots */
+.body hr {
+  margin-block: 2.75em;
+  height: auto;
+  overflow: visible;
+  border: 0;
+  text-align: center;
+}
+
+.body hr::after {
+  content: "\00B7\2003\00B7\2003\00B7";
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--grape);
+}
+
+/* Optional drop cap on the opening paragraph */
+.dropCap > p:first-child::first-letter {
+  float: left;
+  margin: 0.1em 0.1em 0 0;
+  font-family: var(--font-display);
+  font-size: 4.1em;
+  line-height: 0.8;
+  color: var(--grape);
+}

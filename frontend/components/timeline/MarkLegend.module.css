@@ -1,0 +1,58 @@
+.glyph {
+  flex: none;
+  width: 44px;
+  height: 16px;
+  overflow: visible;
+}
+
+.nowLine {
+  stroke: var(--grape);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.stampGlyph {
+  flex: none;
+  display: inline-block;
+  padding: 0.12em 0.45em;
+  border: 1.25px solid var(--stamp);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 0 1.5px var(--paper-2),
+    inset 0 0 0 2.25px var(--stamp);
+  background: var(--stamp-tint);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--stamp);
+  transform: rotate(-3deg);
+}
+
+.hatchGlyph {
+  flex: none;
+  display: inline-block;
+  width: 40px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--prov-unclear) 45%, transparent);
+  background: var(--hatch), var(--paper-2);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  list-style: none;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-sm);
+  color: var(--ink-body);
+}

@@ -1,0 +1,81 @@
+# Builds the static site and publishes it to GitHub Pages.
+#
+# One-time setup: in the repo on GitHub, Settings > Pages > Source must be
+# "GitHub Actions". With "Deploy from a branch" this workflow can't deploy.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Nightly rebuild, so the timeline's "Now" line (fixed at build time) stays
+    # current. Later it also picks up newly published data from the API.
+    - cron: "17 6 * * *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time. A deploy that has started is never cancelled halfway;
+# newer runs wait their turn.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the shared schema
+        run: pip install -e shared
+
+      # Same check as CI. A broken content/ never gets built, and Pages keeps
+      # serving the last good deploy.
+      - name: Validate content
+        run: python -m sf_shared.validate content/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      # Plain configure-pages on purpose. Don't set static_site_generator: next,
+      # because it rewrites basePath in next.config and breaks every URL.
+      - uses: actions/configure-pages@v5
+
+      # The base path is the repo name, because a project site lives at
+      # https://<user>.github.io/SentientFutures/. Set it to "" after the
+      # custom domain switch.
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /SentientFutures
+          DATA_DIR: ${{ github.workspace }}/content
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

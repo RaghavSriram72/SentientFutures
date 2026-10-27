@@ -1,0 +1,75 @@
+.card {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: 0.9rem;
+  padding: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--grape);
+}
+
+.head :global(.eyebrow) {
+  color: var(--grape);
+}
+
+.lock {
+  width: 15px;
+  height: 15px;
+}
+
+.title {
+  font-size: var(--text-2xl);
+}
+
+.text {
+  max-width: 40ch;
+  color: var(--ink-muted);
+}
+
+.google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.85rem 1.25rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.google:disabled {
+  cursor: not-allowed;
+  color: var(--ink-faint);
+  background: var(--paper-3);
+}
+
+.mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 1.2px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.note {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}

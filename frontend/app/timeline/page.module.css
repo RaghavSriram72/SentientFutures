@@ -1,0 +1,126 @@
+/* ---------- Stage steps under the lede ---------- */
+.stageSteps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.stageStep {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.4rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* A small chevron between steps, drawn with borders so there's no stray glyph */
+.stageStep + .stageStep {
+  margin-left: 1rem;
+}
+
+.stageStep + .stageStep::before {
+  content: "";
+  position: absolute;
+  left: -1rem;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-top: 1.5px solid var(--rule-strong);
+  border-right: 1.5px solid var(--rule-strong);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.stepNumber {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--paper-3);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.stepDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.step_possible .stepDot {
+  background: var(--stage-possible);
+}
+
+.step_widely_available .stepDot {
+  background: var(--stage-widely);
+}
+
+.step_actually_helping .stepDot {
+  background: var(--stage-helping);
+}
+
+/* ---------- Explorer ---------- */
+.explorerSection {
+  padding-top: clamp(28px, 4vw, 48px);
+}
+
+/* ---------- How to read this ---------- */
+.howTo {
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.notes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .notes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1040px) {
+  .notes {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.note {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  padding: 1.25rem 1.25rem 1.4rem;
+}
+
+.noteGlyph {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.noteTitle {
+  font-size: 1.3125rem;
+  line-height: 1.15;
+}
+
+.noteText {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--ink-muted);
+}

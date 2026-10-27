@@ -1,0 +1,455 @@
+{
+  "rubric_version": "0.1-draft",
+  "enums": {
+    "Technology": {
+      "draft": false,
+      "values": [
+        {
+          "value": "wbe",
+          "label": "Whole brain emulation",
+          "description": "Scanning a brain and running it as software."
+        },
+        {
+          "value": "bci",
+          "label": "Brain computer interfaces",
+          "description": "Devices that read from or write to the nervous system."
+        },
+        {
+          "value": "neuromorphic",
+          "label": "Neuromorphic AI",
+          "description": "AI that borrows its architecture or learning rules from brains."
+        },
+        {
+          "value": "hybrid",
+          "label": "Hybrid",
+          "description": "Proposals that combine more than one of the above."
+        }
+      ]
+    },
+    "Problem": {
+      "draft": false,
+      "values": [
+        {
+          "value": "alignment",
+          "label": "Alignment",
+          "description": "Getting advanced AI to reliably pursue what people actually want."
+        },
+        {
+          "value": "intelligence_curse",
+          "label": "Intelligence Curse",
+          "description": "AI eroding the economic and political value of human participation."
+        },
+        {
+          "value": "both",
+          "label": "Both",
+          "description": "Claims to address alignment and the Intelligence Curse."
+        }
+      ]
+    },
+    "Stage": {
+      "draft": false,
+      "values": [
+        {
+          "value": "possible",
+          "label": "Possible",
+          "description": "Someone has shown it can be done at all."
+        },
+        {
+          "value": "widely_available",
+          "label": "Widely available",
+          "description": "Cheap, reliable and accessible enough to matter at scale."
+        },
+        {
+          "value": "actually_helping",
+          "label": "Actually helping",
+          "description": "Measurably helping with alignment or human agency."
+        }
+      ]
+    },
+    "MilestoneCategory": {
+      "draft": false,
+      "values": [
+        {
+          "value": "reliability_robustness",
+          "label": "Reliability and robustness",
+          "description": "Works consistently outside the lab."
+        },
+        {
+          "value": "technical_capability",
+          "label": "Technical capability",
+          "description": "The core thing can be done."
+        },
+        {
+          "value": "safety_welfare_assurance",
+          "label": "Safety and welfare assurance",
+          "description": "We can tell it's safe, including for any minds involved."
+        },
+        {
+          "value": "scalable_production",
+          "label": "Scalable manufacture, compute or data",
+          "description": "Can be produced or run at the scale needed."
+        },
+        {
+          "value": "economic_viability",
+          "label": "Economic viability",
+          "description": "Affordable enough that people will pay for it."
+        },
+        {
+          "value": "legal_regulatory",
+          "label": "Legal and regulatory permission",
+          "description": "Allowed by the relevant law and regulators."
+        },
+        {
+          "value": "institutional_legitimacy",
+          "label": "Institutional capacity and public legitimacy",
+          "description": "Institutions can run it and the public accepts it."
+        },
+        {
+          "value": "equitable_access",
+          "label": "Equitable or broad access",
+          "description": "Available beyond a small privileged group."
+        }
+      ]
+    },
+    "MilestoneStatus": {
+      "draft": false,
+      "values": [
+        {
+          "value": "not_demonstrated",
+          "label": "Not demonstrated",
+          "description": "No one has shown this yet."
+        },
+        {
+          "value": "prototype",
+          "label": "Prototype",
+          "description": "Shown once, in limited conditions."
+        },
+        {
+          "value": "replicated",
+          "label": "Replicated",
+          "description": "Shown more than once, by more than one group."
+        },
+        {
+          "value": "mature",
+          "label": "Mature",
+          "description": "Routine and dependable."
+        }
+      ]
+    },
+    "Confidence": {
+      "draft": false,
+      "values": [
+        {
+          "value": "high",
+          "label": "High",
+          "description": "Backed by several relevant, reasonably robust sources, and the main contrary evidence has been weighed."
+        },
+        {
+          "value": "medium",
+          "label": "Medium",
+          "description": "Some relevant support, but meaningful limits remain."
+        },
+        {
+          "value": "low",
+          "label": "Low",
+          "description": "Rests mainly on indirect evidence, early results or contested assumptions."
+        }
+      ]
+    },
+    "CaseRating": {
+      "draft": false,
+      "values": [
+        {
+          "value": "strong",
+          "label": "Strong",
+          "description": "A clear mechanism, relevant supporting evidence, and the main alternatives and failure modes substantially addressed."
+        },
+        {
+          "value": "moderate",
+          "label": "Moderate",
+          "description": "A plausible mechanism with some relevant support, but important assumptions or evidence gaps remain."
+        },
+        {
+          "value": "weak",
+          "label": "Weak",
+          "description": "The mechanism poorly targets the outcome, relies on especially demanding assumptions, or faces substantial contrary evidence."
+        },
+        {
+          "value": "unclear",
+          "label": "Unclear",
+          "description": "We can't make a responsible call either way from the evidence or the proposal as written. See the reason."
+        },
+        {
+          "value": "not_claimed",
+          "label": "Not claimed",
+          "description": "The proposal doesn't claim this outcome. Not the same as Weak or Unclear."
+        }
+      ]
+    },
+    "RiskRating": {
+      "draft": true,
+      "values": [
+        {
+          "value": "high",
+          "label": "High",
+          "description": "The top of the scale. Ratings weigh severity, exposure, reversibility and the safeguards in place, and the thresholds are still being defined."
+        },
+        {
+          "value": "medium",
+          "label": "Medium",
+          "description": "The middle of the scale, on the same factors. Thresholds are still being defined."
+        },
+        {
+          "value": "low",
+          "label": "Low",
+          "description": "The bottom of the scale, backed by evidence. Never given just because nobody has studied a risk."
+        },
+        {
+          "value": "unclear",
+          "label": "Unclear",
+          "description": "We can't make a responsible call yet. See the reason."
+        }
+      ]
+    },
+    "UnclearReason": {
+      "draft": false,
+      "values": [
+        {
+          "value": "no_relevant_evidence",
+          "label": "No relevant evidence found",
+          "description": "We looked and found nothing that bears on it."
+        },
+        {
+          "value": "conflicting_evidence",
+          "label": "Conflicting evidence",
+          "description": "Credible sources point in different directions."
+        },
+        {
+          "value": "underspecified_proposal",
+          "label": "Underspecified proposal",
+          "description": "The proposal isn't specific enough to assess."
+        },
+        {
+          "value": "search_incomplete",
+          "label": "Search incomplete",
+          "description": "We haven't finished looking."
+        },
+        {
+          "value": "other",
+          "label": "Other",
+          "description": "See the note."
+        }
+      ]
+    },
+    "EvidenceType": {
+      "draft": false,
+      "values": [
+        {
+          "value": "argument",
+          "label": "Argument",
+          "description": "Reasoning or analysis, no new data."
+        },
+        {
+          "value": "simulation",
+          "label": "Simulation",
+          "description": "Results from a model or simulation."
+        },
+        {
+          "value": "experiment",
+          "label": "Experiment",
+          "description": "Results from a controlled study."
+        },
+        {
+          "value": "deployment",
+          "label": "Deployment",
+          "description": "Evidence from real-world use."
+        },
+        {
+          "value": "review",
+          "label": "Review",
+          "description": "A synthesis of other work."
+        }
+      ]
+    },
+    "Directness": {
+      "draft": false,
+      "values": [
+        {
+          "value": "direct",
+          "label": "Direct",
+          "description": "About this exact scenario."
+        },
+        {
+          "value": "adjacent",
+          "label": "Adjacent",
+          "description": "About a closely related scenario."
+        },
+        {
+          "value": "remote",
+          "label": "Remote",
+          "description": "Only loosely related."
+        }
+      ]
+    },
+    "Independence": {
+      "draft": false,
+      "values": [
+        {
+          "value": "independent",
+          "label": "Independent",
+          "description": "No stake in the outcome."
+        },
+        {
+          "value": "non_biased",
+          "label": "Non-biased",
+          "description": "Some connection, but no obvious stake."
+        },
+        {
+          "value": "affiliated",
+          "label": "Affiliated",
+          "description": "The author or funder has a stake in the outcome."
+        }
+      ]
+    },
+    "SourceType": {
+      "draft": false,
+      "values": [
+        {
+          "value": "peer_reviewed",
+          "label": "Peer reviewed",
+          "description": "Published after peer review."
+        },
+        {
+          "value": "preprint",
+          "label": "Preprint",
+          "description": "Public, not yet peer reviewed."
+        },
+        {
+          "value": "blog",
+          "label": "Blog",
+          "description": "A blog post or newsletter."
+        },
+        {
+          "value": "report",
+          "label": "Report",
+          "description": "A report from an organization."
+        },
+        {
+          "value": "forum_post",
+          "label": "Forum post",
+          "description": "A post on a forum like LessWrong or the Alignment Forum."
+        }
+      ]
+    },
+    "SourceKind": {
+      "draft": false,
+      "values": [
+        {
+          "value": "argument",
+          "label": "Argument",
+          "description": "Proposes or criticizes neuroengineering as a response to alignment or the Intelligence Curse."
+        },
+        {
+          "value": "milestone_evidence",
+          "label": "Milestone evidence",
+          "description": "Technical progress that bears on a milestone."
+        }
+      ]
+    },
+    "Relevance": {
+      "draft": true,
+      "values": [
+        {
+          "value": "core",
+          "label": "Core",
+          "description": "Bears directly on a claim or milestone on this site."
+        },
+        {
+          "value": "supporting",
+          "label": "Supporting",
+          "description": "Backs up a core source or adds useful context."
+        },
+        {
+          "value": "peripheral",
+          "label": "Peripheral",
+          "description": "Related background, rarely cited."
+        },
+        {
+          "value": "not_relevant",
+          "label": "Not relevant",
+          "description": "Doesn't bear on this project."
+        }
+      ]
+    },
+    "Credibility": {
+      "draft": true,
+      "values": [
+        {
+          "value": "strong",
+          "label": "Strong",
+          "description": "Transparent methods, claims match the evidence, reviewed or replicated."
+        },
+        {
+          "value": "adequate",
+          "label": "Adequate",
+          "description": "Reasonable methods with some gaps or overreach."
+        },
+        {
+          "value": "weak",
+          "label": "Weak",
+          "description": "Opaque methods or claims well beyond the evidence."
+        },
+        {
+          "value": "unclear",
+          "label": "Unclear",
+          "description": "We can't judge yet. See the reason."
+        }
+      ]
+    },
+    "TimeHorizon": {
+      "draft": true,
+      "values": [
+        {
+          "value": "near",
+          "label": "Near term",
+          "description": "Definition to be agreed."
+        },
+        {
+          "value": "medium",
+          "label": "Medium term",
+          "description": "Definition to be agreed."
+        },
+        {
+          "value": "long",
+          "label": "Long term",
+          "description": "Definition to be agreed."
+        }
+      ]
+    },
+    "Provenance": {
+      "draft": false,
+      "values": [
+        {
+          "value": "source",
+          "label": "From a source",
+          "description": "Taken straight from a cited source, with the exact quote."
+        },
+        {
+          "value": "team",
+          "label": "Our read",
+          "description": "The team's own interpretation."
+        },
+        {
+          "value": "ai",
+          "label": "AI-suggested",
+          "description": "Suggested by an AI model. The tag names the person who checked it, or says it hasn't been checked yet."
+        },
+        {
+          "value": "unclear",
+          "label": "Unclear",
+          "description": "Genuinely uncertain, with the reason stated."
+        }
+      ]
+    }
+  }
+}

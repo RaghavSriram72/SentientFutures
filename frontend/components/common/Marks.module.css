@@ -1,0 +1,26 @@
+/* Sample records read as ochre placeholders, distinct from the grape UI */
+.sample:global(.chip) {
+  color: var(--stage-widely-ink);
+  border-color: color-mix(in srgb, var(--stage-widely) 55%, transparent);
+  background: color-mix(in srgb, var(--stage-widely) 10%, var(--paper-2));
+}
+
+.draftMark {
+  margin-left: 0.4em;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--mauve);
+  vertical-align: 0.1em;
+  cursor: help;
+}
+
+.draftBadge:global(.chip) {
+  color: var(--mauve);
+  border-style: dotted;
+  border-color: var(--mauve);
+  background: transparent;
+}

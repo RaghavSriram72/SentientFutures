@@ -1,0 +1,27 @@
+/* A double-ruled rubber stamp, set slightly askew */
+.stamp {
+  display: inline-block;
+  padding: 0.3em 0.75em 0.25em;
+  border: 2px solid var(--stamp);
+  border-radius: 0.35rem;
+  outline: 1px solid var(--stamp);
+  outline-offset: 2px;
+  background: var(--stamp-tint);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--stamp);
+  transform: rotate(-3deg);
+}
+
+.small {
+  padding: 0.15em 0.55em 0.1em;
+  border-width: 1.5px;
+  outline-offset: 1.5px;
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+}

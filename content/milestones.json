@@ -1,0 +1,542 @@
+[
+  {
+    "id": "wbe-sample-mouse-connectome",
+    "name": "A whole mouse brain is mapped at synapse level",
+    "technology": "wbe",
+    "stage": "possible",
+    "category": "technical_capability",
+    "status": "prototype",
+    "status_basis": {
+      "text": "Sample. Partial maps exist, but no complete synapse-level map of a whole mouse brain.",
+      "provenance": "source",
+      "source_ids": ["sample-roadmap-report"],
+      "quote": "Sample quote: only fragments of the mouse brain have been mapped at this resolution so far.",
+      "quote_location": "p. 12"
+    },
+    "achieved_in": null,
+    "achieved_in_basis": null,
+    "confidence": "medium",
+    "summary": {
+      "text": "Sample. A complete wiring diagram of a mouse brain is the first big test of whether brains can be mapped well enough to emulate.",
+      "provenance": "team"
+    },
+    "success_criterion": {
+      "text": "Sample. Every neuron and synapse in one adult mouse brain is traced and the map is public.",
+      "provenance": "team"
+    },
+    "main_bottleneck": {
+      "text": "Sample. Imaging and proofreading speed. Automated tracing still needs a lot of human correction.",
+      "provenance": "source",
+      "source_ids": ["sample-roadmap-report"],
+      "quote": "Sample quote: proofreading, not imaging, is now the slowest step.",
+      "quote_location": "p. 30"
+    },
+    "depends_on": [],
+    "source_ids": ["sample-roadmap-report", "sample-expert-survey"],
+    "estimate": {
+      "earliest": 2030,
+      "latest": 2038,
+      "basis": {
+        "text": "Sample. Our range sits between the two forecasts below, widened because proofreading speed is hard to predict.",
+        "provenance": "team"
+      },
+      "set_by": "Sample team member",
+      "set_on": "2026-10-26"
+    },
+    "forecasts": [
+      {
+        "id": "f1",
+        "source_id": "sample-roadmap-report",
+        "forecaster": "Example Author",
+        "claim": "Whole mouse connectome between 2031 and 2035",
+        "quote": "Sample quote: we expect a complete mouse connectome sometime between 2031 and 2035.",
+        "quote_location": "p. 41",
+        "made_in": 2021,
+        "earliest": 2031,
+        "latest": 2035,
+        "never": false
+      },
+      {
+        "id": "f2",
+        "source_id": "sample-expert-survey",
+        "forecaster": "Median respondent, Example Survey 2024",
+        "claim": "Likely between 2033 and 2040",
+        "quote": "Sample quote: the median respondent placed it between 2033 and 2040.",
+        "quote_location": "Table 2",
+        "made_in": 2024,
+        "earliest": 2033,
+        "latest": 2040,
+        "never": false
+      }
+    ],
+    "disagreement_override": null,
+    "disagreement_note": null,
+    "would_move_earlier": [
+      {
+        "text": "Sample. Automated proofreading that cuts human correction time tenfold.",
+        "provenance": "team"
+      }
+    ],
+    "would_move_later": [
+      {
+        "text": "Sample. Evidence that synapse-level maps miss information emulation would need, such as molecular state.",
+        "provenance": "team"
+      }
+    ],
+    "artificial_minds_questions": [],
+    "sample": true
+  },
+  {
+    "id": "wbe-sample-human-emulation",
+    "name": "A human brain emulation runs in real time",
+    "technology": "wbe",
+    "stage": "possible",
+    "category": "technical_capability",
+    "status": "not_demonstrated",
+    "status_basis": {
+      "text": "Sample. Nothing close to this has been shown.",
+      "provenance": "team"
+    },
+    "achieved_in": null,
+    "achieved_in_basis": null,
+    "confidence": null,
+    "summary": {
+      "text": "Sample. The point where an emulated human mind could think and act at human speed. Every WBE proposal for alignment or the Intelligence Curse depends on this.",
+      "provenance": "team"
+    },
+    "success_criterion": {
+      "text": "Sample. An emulation passes behavioral tests that its original passed, running at least as fast as a person.",
+      "provenance": "team"
+    },
+    "main_bottleneck": {
+      "text": "Sample. We don't know yet whether the bottleneck is scanning, modeling or compute.",
+      "provenance": "unclear",
+      "unclear_reason": "conflicting_evidence"
+    },
+    "depends_on": ["wbe-sample-mouse-connectome"],
+    "source_ids": ["sample-roadmap-report", "sample-expert-survey", "sample-skeptic-essay"],
+    "estimate": null,
+    "forecasts": [
+      {
+        "id": "f1",
+        "source_id": "sample-roadmap-report",
+        "forecaster": "Example Author",
+        "claim": "Feasible between 2045 and 2060",
+        "quote": "Sample quote: if current trends hold, real-time emulation becomes feasible between 2045 and 2060.",
+        "quote_location": "p. 77",
+        "made_in": 2021,
+        "earliest": 2045,
+        "latest": 2060,
+        "never": false
+      },
+      {
+        "id": "f2",
+        "source_id": "sample-expert-survey",
+        "forecaster": "Median respondent, Example Survey 2024",
+        "claim": "Between 2070 and 2090",
+        "quote": "Sample quote: respondents who answered placed it between 2070 and 2090.",
+        "quote_location": "Table 5",
+        "made_in": 2024,
+        "earliest": 2070,
+        "latest": 2090,
+        "never": false
+      },
+      {
+        "id": "f3",
+        "source_id": "sample-skeptic-essay",
+        "forecaster": "Example Skeptic",
+        "claim": "Never practical",
+        "quote": "Sample quote: I don't think a practical human emulation will ever be built.",
+        "quote_location": null,
+        "made_in": 2023,
+        "earliest": null,
+        "latest": null,
+        "never": true
+      }
+    ],
+    "disagreement_override": null,
+    "disagreement_note": {
+      "text": "Sample. Credible sources disagree by decades, and one says it will never happen. We show all three rather than picking a date.",
+      "provenance": "team"
+    },
+    "would_move_earlier": [
+      {
+        "text": "Sample. A whole mouse emulation that reproduces mouse behavior.",
+        "provenance": "team"
+      }
+    ],
+    "would_move_later": [
+      {
+        "text": "Sample. Evidence that emulation needs detail below the synapse level.",
+        "provenance": "team"
+      },
+      {
+        "text": "Sample. Compute costs flattening out.",
+        "provenance": "team"
+      }
+    ],
+    "artificial_minds_questions": [
+      {
+        "text": "Sample. Would an emulation be conscious, and would it be the same person as its original?",
+        "provenance": "team"
+      },
+      {
+        "text": "Sample. Who protects the welfare of emulations that are copied, paused or run at high speed?",
+        "provenance": "team"
+      }
+    ],
+    "sample": true
+  },
+  {
+    "id": "bci-sample-medical-approval",
+    "name": "A high-bandwidth implant is approved for medical use",
+    "technology": "bci",
+    "stage": "widely_available",
+    "category": "legal_regulatory",
+    "status": "prototype",
+    "status_basis": {
+      "text": "Sample. Implants are in small trials but none is approved for general medical use.",
+      "provenance": "source",
+      "source_ids": ["sample-bci-trial"],
+      "quote": "Sample quote: all participants remain enrolled in an investigational trial.",
+      "quote_location": "Methods"
+    },
+    "achieved_in": null,
+    "achieved_in_basis": null,
+    "confidence": null,
+    "summary": {
+      "text": "Sample. Approval is the step from a handful of trial participants to anyone a doctor prescribes it for.",
+      "provenance": "team"
+    },
+    "success_criterion": {
+      "text": "Sample. A regulator in a major market approves an implant with at least 1,000 channels for routine clinical use.",
+      "provenance": "team"
+    },
+    "main_bottleneck": {
+      "text": "Sample. Long-term safety data. Regulators want years of evidence that implants stay safe and keep working.",
+      "provenance": "team"
+    },
+    "depends_on": [],
+    "source_ids": ["sample-bci-trial", "sample-expert-survey"],
+    "estimate": null,
+    "forecasts": [
+      {
+        "id": "f1",
+        "source_id": "sample-bci-trial",
+        "forecaster": "Example Clinician",
+        "claim": "Approval between 2029 and 2032",
+        "quote": "Sample quote: we anticipate approval between 2029 and 2032.",
+        "quote_location": "Discussion",
+        "made_in": 2025,
+        "earliest": 2029,
+        "latest": 2032,
+        "never": false
+      },
+      {
+        "id": "f2",
+        "source_id": "sample-expert-survey",
+        "forecaster": "Median respondent, Example Survey 2024",
+        "claim": "Around 2030 or 2031",
+        "quote": "Sample quote: most respondents expected approval in 2030 or 2031.",
+        "quote_location": "Figure 3",
+        "made_in": 2024,
+        "earliest": 2030,
+        "latest": 2031,
+        "never": false
+      }
+    ],
+    "disagreement_override": null,
+    "disagreement_note": null,
+    "would_move_earlier": [
+      {
+        "text": "Sample. A fast-track designation from a major regulator.",
+        "provenance": "team"
+      }
+    ],
+    "would_move_later": [
+      {
+        "text": "Sample. A serious safety incident in an ongoing trial.",
+        "provenance": "team"
+      }
+    ],
+    "artificial_minds_questions": [],
+    "sample": true
+  },
+  {
+    "id": "bci-sample-consumer-text",
+    "name": "A non-invasive headset decodes text at typing speed",
+    "technology": "bci",
+    "stage": "possible",
+    "category": "technical_capability",
+    "status": "not_demonstrated",
+    "status_basis": {
+      "text": "Sample. Non-invasive decoding works for short, constrained phrases only.",
+      "provenance": "team"
+    },
+    "achieved_in": null,
+    "achieved_in_basis": null,
+    "confidence": null,
+    "summary": {
+      "text": "Sample. If you could type with thought without surgery, high-bandwidth interfaces would reach far more people.",
+      "provenance": "team"
+    },
+    "success_criterion": {
+      "text": "Sample. 40 words per minute of free text with no implant, in a peer-reviewed study.",
+      "provenance": "team"
+    },
+    "main_bottleneck": {
+      "text": "Sample. Signal quality through the skull.",
+      "provenance": "team"
+    },
+    "depends_on": [],
+    "source_ids": ["sample-expert-survey", "sample-decoding-study"],
+    "estimate": null,
+    "forecasts": [
+      {
+        "id": "f1",
+        "source_id": "sample-decoding-study",
+        "forecaster": "Example Engineer",
+        "claim": "Between 2028 and 2030",
+        "quote": "Sample quote: non-invasive free-text decoding at typing speed looks achievable by 2028 to 2030.",
+        "quote_location": "Outlook",
+        "made_in": 2025,
+        "earliest": 2028,
+        "latest": 2030,
+        "never": false
+      },
+      {
+        "id": "f2",
+        "source_id": "sample-expert-survey",
+        "forecaster": "Median respondent, Example Survey 2024",
+        "claim": "Between 2042 and 2045",
+        "quote": "Sample quote: the median answer for free-text decoding in everyday use, outside the lab, was 2042 to 2045.",
+        "quote_location": "Table 4",
+        "made_in": 2024,
+        "earliest": 2042,
+        "latest": 2045,
+        "never": false
+      }
+    ],
+    "disagreement_override": {
+      "flagged": false,
+      "basis": {
+        "text": "Sample. These two forecasts are about different things. The survey asked about decoding in everyday use outside the lab, a much harder target than our criterion of a peer-reviewed study, so we don't count it as disagreement.",
+        "provenance": "team"
+      }
+    },
+    "disagreement_note": null,
+    "would_move_earlier": [
+      {
+        "text": "Sample. A big jump in non-invasive signal quality, such as from new sensor types.",
+        "provenance": "team"
+      }
+    ],
+    "would_move_later": [
+      {
+        "text": "Sample. Results showing that decoding accuracy doesn't hold up outside the lab.",
+        "provenance": "team"
+      }
+    ],
+    "artificial_minds_questions": [],
+    "sample": true
+  },
+  {
+    "id": "bci-sample-agency",
+    "name": "BCIs measurably help people keep economic agency",
+    "technology": "bci",
+    "stage": "actually_helping",
+    "category": "equitable_access",
+    "status": "not_demonstrated",
+    "status_basis": {
+      "text": "Sample. No study has tried to measure this.",
+      "provenance": "unclear",
+      "unclear_reason": "no_relevant_evidence"
+    },
+    "achieved_in": null,
+    "achieved_in_basis": null,
+    "confidence": null,
+    "summary": {
+      "text": "Sample. The claim that BCIs could keep human labor valuable as AI improves. This is the step that would actually matter for the Intelligence Curse.",
+      "provenance": "team"
+    },
+    "success_criterion": {
+      "text": "Sample. Not yet defined. The proposals we've found don't say what success would look like.",
+      "provenance": "unclear",
+      "unclear_reason": "underspecified_proposal"
+    },
+    "main_bottleneck": {
+      "text": "Sample. Unclear. It may not be technical at all.",
+      "provenance": "unclear",
+      "unclear_reason": "search_incomplete"
+    },
+    "depends_on": ["bci-sample-medical-approval", "bci-sample-consumer-text"],
+    "source_ids": [],
+    "estimate": null,
+    "forecasts": [],
+    "disagreement_override": null,
+    "disagreement_note": null,
+    "would_move_earlier": [
+      {
+        "text": "Sample. A proposal that spells out how BCI users would stay competitive, and what to measure.",
+        "provenance": "team"
+      }
+    ],
+    "would_move_later": [
+      {
+        "text": "Sample. We haven't found anything specific yet.",
+        "provenance": "unclear",
+        "unclear_reason": "search_incomplete"
+      }
+    ],
+    "artificial_minds_questions": [],
+    "sample": true
+  },
+  {
+    "id": "neuro-sample-energy",
+    "name": "A neuromorphic chip matches GPUs on energy per task",
+    "technology": "neuromorphic",
+    "stage": "possible",
+    "category": "technical_capability",
+    "status": "replicated",
+    "status_basis": {
+      "text": "Sample. Shown by more than one group on narrow benchmarks.",
+      "provenance": "source",
+      "source_ids": ["sample-neuromorphic-benchmark"],
+      "quote": "Sample quote: two independent groups reproduced the energy result on the same benchmark.",
+      "quote_location": "Section 4"
+    },
+    "achieved_in": 2024,
+    "achieved_in_basis": {
+      "text": "Sample. First shown on a standard benchmark in 2024.",
+      "provenance": "source",
+      "source_ids": ["sample-neuromorphic-benchmark"],
+      "quote": "Sample quote: in 2024 the chip first matched GPU energy per inference on the benchmark.",
+      "quote_location": "Abstract"
+    },
+    "confidence": null,
+    "summary": {
+      "text": "Sample. Brain-inspired hardware is already efficient on some tasks. Whether that helps alignment is a separate question.",
+      "provenance": "team"
+    },
+    "success_criterion": {
+      "text": "Sample. Equal or lower energy per inference than a contemporary GPU on a standard benchmark.",
+      "provenance": "team"
+    },
+    "main_bottleneck": {
+      "text": "Sample. Software and training tools, not the chips.",
+      "provenance": "team"
+    },
+    "depends_on": [],
+    "source_ids": ["sample-neuromorphic-benchmark"],
+    "estimate": null,
+    "forecasts": [],
+    "disagreement_override": null,
+    "disagreement_note": null,
+    "would_move_earlier": [
+      {
+        "text": "Sample. Already happened. Listed so the timeline shows what's done.",
+        "provenance": "team"
+      }
+    ],
+    "would_move_later": [
+      {
+        "text": "Sample. A failed replication on broader benchmarks.",
+        "provenance": "team"
+      }
+    ],
+    "artificial_minds_questions": [],
+    "sample": true
+  },
+  {
+    "id": "neuro-sample-alignment-benefit",
+    "name": "Brain-like training shows a measurable alignment benefit",
+    "technology": "neuromorphic",
+    "stage": "actually_helping",
+    "category": "safety_welfare_assurance",
+    "status": "not_demonstrated",
+    "status_basis": {
+      "text": "Sample. The case is argued but not tested.",
+      "provenance": "source",
+      "source_ids": ["sample-alignment-argument"],
+      "quote": "Sample quote: none of this has been tested empirically yet.",
+      "quote_location": null
+    },
+    "achieved_in": null,
+    "achieved_in_basis": null,
+    "confidence": "low",
+    "summary": {
+      "text": "Sample. The step where brain-inspired AI actually turns out easier to align than other AI, not just more efficient.",
+      "provenance": "team"
+    },
+    "success_criterion": {
+      "text": "Sample. A brain-inspired system beats a matched conventional system on a standard alignment evaluation, replicated by an independent group.",
+      "provenance": "team"
+    },
+    "main_bottleneck": {
+      "text": "Sample. Nobody agrees on which alignment evaluation would count.",
+      "provenance": "team"
+    },
+    "depends_on": ["neuro-sample-energy"],
+    "source_ids": ["sample-alignment-argument", "sample-expert-survey"],
+    "estimate": {
+      "earliest": 2035,
+      "latest": null,
+      "basis": {
+        "text": "Sample. We start at 2035, later than the early-2030s forecast, because that forecast assumes an agreed alignment benchmark will exist and none does yet. No end date until there's a first result.",
+        "provenance": "team"
+      },
+      "set_by": "Sample team member",
+      "set_on": "2026-10-26"
+    },
+    "forecasts": [
+      {
+        "id": "f1",
+        "source_id": "sample-alignment-argument",
+        "forecaster": "Example Researcher",
+        "claim": "First results between 2030 and 2033",
+        "quote": "Sample quote: I'd expect a first clear result between 2030 and 2033.",
+        "quote_location": null,
+        "made_in": 2024,
+        "earliest": 2030,
+        "latest": 2033,
+        "never": false
+      },
+      {
+        "id": "f2",
+        "source_id": "sample-expert-survey",
+        "forecaster": "Median respondent, Example Survey 2024",
+        "claim": "Between 2050 and 2060",
+        "quote": "Sample quote: the median answer was 2050 to 2060.",
+        "quote_location": "Table 7",
+        "made_in": 2024,
+        "earliest": 2050,
+        "latest": 2060,
+        "never": false
+      }
+    ],
+    "disagreement_override": null,
+    "disagreement_note": {
+      "text": "Sample. One researcher expects first results in the early 2030s. The survey median is about twenty years later. Our range is a judgment call, so the badge stays up.",
+      "provenance": "team"
+    },
+    "would_move_earlier": [
+      {
+        "text": "Sample. An agreed alignment benchmark that brain-inspired systems can be tested on.",
+        "provenance": "team"
+      }
+    ],
+    "would_move_later": [
+      {
+        "text": "Sample. Evidence that brain-like learning makes values harder to inspect, not easier.",
+        "provenance": "team"
+      }
+    ],
+    "artificial_minds_questions": [
+      {
+        "text": "Sample. If the system learns the way brains do, could it also have experiences that matter morally?",
+        "provenance": "team"
+      }
+    ],
+    "sample": true
+  }
+]
