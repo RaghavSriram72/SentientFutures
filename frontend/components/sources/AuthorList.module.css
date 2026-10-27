@@ -1,0 +1,21 @@
+.unknown {
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+/* Reads as part of the byline: same type, underlined like a link */
+.toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--grape);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  text-decoration-color: var(--grape);
+}

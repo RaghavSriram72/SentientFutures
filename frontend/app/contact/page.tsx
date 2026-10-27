@@ -7,21 +7,21 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Corrections, sources we missed and disagreements with our reads. Email the team.",
+  description: "Email the team with corrections, sources we missed, or places where you read the evidence differently.",
 };
 
 const WELCOME = [
   {
     title: "Corrections",
-    text: "A wrong date, a misread quote, a broken link. Tell us the page and what's off.",
+    text: "Tell us the page and what's wrong with it, whether that's a date, a quote we misread or a broken link.",
   },
   {
     title: "Sources we missed",
-    text: "A paper, post or report that bears on a milestone or an argument here. A link is plenty.",
+    text: "If a paper, post or report is relevant to one of the milestones or arguments here, a link to it is plenty.",
   },
   {
-    title: "Disagreements with our reads",
-    text: "Anything marked “Our read” is our interpretation. If you read the evidence differently, we want to hear why.",
+    title: "Disagreements",
+    text: "Lines marked “Our read” are the team's interpretation of the evidence. If you read it differently, tell us why.",
   },
 ];
 
@@ -35,7 +35,7 @@ export default function ContactPage() {
             Tell us where we&rsquo;re <em>wrong</em>
           </>
         }
-        lede="We'd rather hear it now. If something on this site is off, missing or overstated, write to us."
+        lede="If something on the site is off, missing or overstated, we'd like to hear about it while the site is still a draft."
       />
 
       <div className="container section">
@@ -46,8 +46,8 @@ export default function ContactPage() {
               {CONTACT_EMAIL}
             </a>
             <p className={styles.mailNote}>
-              There&rsquo;s no form. Email is the simplest way to reach all of us, and a link or an exact quote helps us
-              check things quickly.
+              Email is the only way to reach us, and it goes to the whole team. Including a link or an exact quote
+              helps us check things faster.
             </p>
             <a className="btn btn-primary" href={`mailto:${CONTACT_EMAIL}`}>
               Write to us <span aria-hidden="true">&rarr;</span>
@@ -56,7 +56,7 @@ export default function ContactPage() {
 
           <div className={styles.welcome}>
             <h2 className={styles.welcomeHeading}>
-              What we&rsquo;d love <em>to hear</em>
+              What to <em>send</em> us
             </h2>
             <ol className={styles.welcomeList}>
               {WELCOME.map((item, index) => (

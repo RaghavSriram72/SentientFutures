@@ -52,7 +52,7 @@ const MOCK_ROWS: ReviewRow[] = [
       quoteFound: false,
     },
     final: enumLabel("SourceKind", "argument"),
-    reviewerNote: "The quote isn't in the abstract. The experiment is a toy example; the paper's point is the argument.",
+    reviewerNote: "The quote isn't in the abstract. The experiment is only a toy example, and the paper is mainly making an argument.",
   },
   {
     field: "Technology",
@@ -95,7 +95,7 @@ export function ReviewQueueMock() {
         <div className={styles.headerText}>
           <p className="eyebrow">Review queue preview · candidate 1 of 1</p>
           <h2 id="review-mock-heading" className={styles.heading}>
-            The AI&rsquo;s read, <em>next to ours</em>
+            What the AI said and what the <em>reviewer</em> decided
           </h2>
         </div>
         <span className={styles.mockStamp}>Mock data</span>

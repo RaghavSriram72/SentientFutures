@@ -206,6 +206,22 @@ def check_unique_ids(records: list[Record], errors: list[str]) -> None:
             first_label_for_id[record_id] = record.label
 
 
+def check_unique_register_ids(records: list[Record], errors: list[str]) -> None:
+    """Two sources can't share an evidence register id like "S02"."""
+    first_label_for_register_id: dict[str, str] = {}
+    for record in records:
+        if not isinstance(record.model, Source) or record.model.register_id is None:
+            continue
+        register_id = record.model.register_id
+        if register_id in first_label_for_register_id:
+            errors.append(
+                f'{record.label}.register_id: "{register_id}" is already used by '
+                f"{first_label_for_register_id[register_id]}"
+            )
+        else:
+            first_label_for_register_id[register_id] = record.label
+
+
 def check_claim_sources(record: Record, known_source_ids: set[str], errors: list[str]) -> None:
     if record.model is None:
         return
@@ -558,6 +574,7 @@ def validate_content(content_dir: Path) -> Report:
 
     check_unique_ids(report.milestones, report.errors)
     check_unique_ids(report.sources, report.errors)
+    check_unique_register_ids(report.sources, report.errors)
     check_unique_ids(report.technologies, report.errors)
 
     # If sources.json couldn't be read, every reference would look broken, and

@@ -11,6 +11,9 @@ import { CatalogCard } from "./CatalogCard";
 import styles from "./SourceDatabase.module.css";
 
 const ALL = "all";
+// Select values for the empty cases, which have no enum value of their own.
+const GENERAL_BACKGROUND = "general";
+const NEITHER = "neither";
 
 // "brain  interface" -> ["brain", "interface"]
 function splitQuery(query: string): string[] {
@@ -23,12 +26,21 @@ function splitQuery(query: string): string[] {
   return words;
 }
 
-// Every word has to appear somewhere in the title, authors or our summary.
+// Every word has to appear somewhere in the register id, title, authors,
+// venue or the team's summary.
 function matchesWords(source: Source, words: string[]): boolean {
   if (words.length === 0) {
     return true;
   }
-  const haystack = `${source.title} ${source.authors.join(" ")} ${source.summary.text}`.toLowerCase();
+  const haystack = [
+    source.register_id ?? "",
+    source.title,
+    source.authors.join(" "),
+    source.venue ?? "",
+    source.summary.text,
+  ]
+    .join(" ")
+    .toLowerCase();
   for (const word of words) {
     if (!haystack.includes(word)) {
       return false;
@@ -37,7 +49,12 @@ function matchesWords(source: Source, words: string[]): boolean {
   return true;
 }
 
-function hasTechnology(source: Source, technology: string): boolean {
+// technology is a select value: an enum value, or GENERAL_BACKGROUND for
+// sources with no technology tagged.
+function matchesTechnology(source: Source, technology: string): boolean {
+  if (technology === GENERAL_BACKGROUND) {
+    return source.technology.length === 0;
+  }
   for (const value of source.technology) {
     if (value === technology) {
       return true;
@@ -46,42 +63,53 @@ function hasTechnology(source: Source, technology: string): boolean {
   return false;
 }
 
-function countWithTechnology(sources: Source[], technology: string): number {
+function matchesDirection(source: Source, direction: string): boolean {
+  for (const value of source.claim_directions ?? []) {
+    if (value === direction) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// problem is a select value: an enum value, or NEITHER for a null problem.
+function matchesProblem(source: Source, problem: string): boolean {
+  if (problem === NEITHER) {
+    return source.problem === null;
+  }
+  return source.problem === problem;
+}
+
+function countMatching(sources: Source[], matches: (source: Source) => boolean): number {
   let count = 0;
   for (const source of sources) {
-    if (hasTechnology(source, technology)) {
+    if (matches(source)) {
       count += 1;
     }
   }
   return count;
 }
 
-function countWithKind(sources: Source[], kind: string): number {
-  let count = 0;
-  for (const source of sources) {
-    if (source.kind === kind) {
-      count += 1;
-    }
-  }
-  return count;
-}
-
-// The searchable source list. Gets every approved source as a prop and filters
-// in the browser; there are few enough that no index is needed.
+// The searchable source list. Gets every source to show as a prop, already in
+// order, and filters in the browser; there are few enough that no index is needed.
 export function SourceDatabase({ sources }: { sources: Source[] }) {
   const [query, setQuery] = useState("");
   const [technology, setTechnology] = useState(ALL);
-  const [kind, setKind] = useState(ALL);
+  const [direction, setDirection] = useState(ALL);
+  const [problem, setProblem] = useState(ALL);
   // So a summary that cites other sources keeps its citation links.
   const sourceRefs = sourceRefsById(sources);
 
   const words = splitQuery(query);
   const visible: Source[] = [];
   for (const source of sources) {
-    if (technology !== ALL && !hasTechnology(source, technology)) {
+    if (technology !== ALL && !matchesTechnology(source, technology)) {
       continue;
     }
-    if (kind !== ALL && source.kind !== kind) {
+    if (direction !== ALL && !matchesDirection(source, direction)) {
+      continue;
+    }
+    if (problem !== ALL && !matchesProblem(source, problem)) {
       continue;
     }
     if (!matchesWords(source, words)) {
@@ -90,12 +118,13 @@ export function SourceDatabase({ sources }: { sources: Source[] }) {
     visible.push(source);
   }
 
-  const isFiltered = words.length > 0 || technology !== ALL || kind !== ALL;
+  const isFiltered = words.length > 0 || technology !== ALL || direction !== ALL || problem !== ALL;
 
   function clearFilters() {
     setQuery("");
     setTechnology(ALL);
-    setKind(ALL);
+    setDirection(ALL);
+    setProblem(ALL);
   }
 
   return (
@@ -111,7 +140,7 @@ export function SourceDatabase({ sources }: { sources: Source[] }) {
               id="source-search"
               type="search"
               className={styles.input}
-              placeholder="Title, author or summary"
+              placeholder="Title, author, ID or summary"
               autoComplete="off"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -133,7 +162,31 @@ export function SourceDatabase({ sources }: { sources: Source[] }) {
               <option value={ALL}>All technologies</option>
               {enumValues("Technology").map((info) => (
                 <option key={info.value} value={info.value}>
-                  {info.label} ({countWithTechnology(sources, info.value)})
+                  {info.label} ({countMatching(sources, (source) => matchesTechnology(source, info.value))})
+                </option>
+              ))}
+              <option value={GENERAL_BACKGROUND}>
+                General background ({countMatching(sources, (source) => matchesTechnology(source, GENERAL_BACKGROUND))})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div className={styles.control}>
+          <label htmlFor="source-direction" className={styles.label}>
+            Claim direction
+          </label>
+          <div className={styles.selectWrap}>
+            <select
+              id="source-direction"
+              className={styles.select}
+              value={direction}
+              onChange={(event) => setDirection(event.target.value)}
+            >
+              <option value={ALL}>All directions</option>
+              {enumValues("ClaimDirection").map((info) => (
+                <option key={info.value} value={info.value}>
+                  {info.label} ({countMatching(sources, (source) => matchesDirection(source, info.value))})
                 </option>
               ))}
             </select>
@@ -141,22 +194,25 @@ export function SourceDatabase({ sources }: { sources: Source[] }) {
         </div>
 
         <div className={styles.control}>
-          <label htmlFor="source-kind" className={styles.label}>
-            Kind
+          <label htmlFor="source-problem" className={styles.label}>
+            Problem
           </label>
           <div className={styles.selectWrap}>
             <select
-              id="source-kind"
+              id="source-problem"
               className={styles.select}
-              value={kind}
-              onChange={(event) => setKind(event.target.value)}
+              value={problem}
+              onChange={(event) => setProblem(event.target.value)}
             >
-              <option value={ALL}>All kinds</option>
-              {enumValues("SourceKind").map((info) => (
+              <option value={ALL}>All problems</option>
+              {enumValues("Problem").map((info) => (
                 <option key={info.value} value={info.value}>
-                  {info.label} ({countWithKind(sources, info.value)})
+                  {info.label} ({countMatching(sources, (source) => matchesProblem(source, info.value))})
                 </option>
               ))}
+              <option value={NEITHER}>
+                Neither ({countMatching(sources, (source) => matchesProblem(source, NEITHER))})
+              </option>
             </select>
           </div>
         </div>
@@ -193,11 +249,11 @@ export function SourceDatabase({ sources }: { sources: Source[] }) {
               Nothing matches <em>that</em> yet.
             </p>
             <p className={styles.emptyText}>
-              Try fewer words, or widen the technology or kind. If you know a source we should have,{" "}
+              Try fewer words or reset the filters. If you know a source we should have,{" "}
               <Link href="/contact/">tell us about it</Link>.
             </p>
             <button type="button" className="btn btn-secondary" onClick={clearFilters}>
-              Show every source
+              Show all sources
             </button>
           </div>
         )}

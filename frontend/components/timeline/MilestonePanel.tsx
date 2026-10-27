@@ -168,7 +168,7 @@ export function MilestonePanel({
         <ClaimText claim={milestone.summary} sources={sources} variant="compact" />
       </Section>
 
-      <Section number={2} title="What success looks like">
+      <Section number={2} title="What counts as success">
         <ClaimText claim={milestone.success_criterion} sources={sources} variant="compact" />
       </Section>
 
@@ -206,7 +206,7 @@ export function MilestonePanel({
         <ClaimText claim={milestone.main_bottleneck} sources={sources} variant="compact" />
       </Section>
 
-      <Section number={8} title="What would move it">
+      <Section number={8} title="What would change the timing">
         <div className={styles.moveColumns}>
           <div>
             <h4 className={styles.moveTitle}>
@@ -241,11 +241,11 @@ export function MilestonePanel({
         <SourceList ids={linkedSourceIds(milestone)} sources={sources} />
       </Section>
 
-      <Section number={11} title="Artificial minds questions">
+      <Section number={11} title="Questions about artificial minds">
         {milestone.artificial_minds_questions.length > 0 ? (
           <ClaimList claims={milestone.artificial_minds_questions} sources={sources} variant="compact" />
         ) : (
-          <p className={styles.empty}>None recorded for this milestone yet.</p>
+          <p className={styles.empty}>None recorded yet.</p>
         )}
       </Section>
     </article>
@@ -287,14 +287,14 @@ function EstimateBlock({ item, sources }: { item: TimelineItem; sources: Record<
         <p className={styles.bigYear}>
           <span className={styles.bigYearLabel}>Our range</span> {rangeText(estimate.earliest, estimate.latest)}
         </p>
-        {estimate.latest === null && <p className={styles.muted}>No end date. The bar runs off the right edge on purpose.</p>}
+        {estimate.latest === null && <p className={styles.muted}>The bar runs off the right edge because there&apos;s no end date.</p>}
         <ClaimText claim={estimate.basis} sources={sources} variant="compact" />
         <p className={styles.setBy}>
           Set by {estimate.set_by} on {formatIsoDate(estimate.set_on)}
         </p>
         {confidence}
         {view.disagreement.flagged && (
-          <p className={styles.warnNote}>Our range doesn&apos;t settle the disagreement below. Every forecast stays visible.</p>
+          <p className={styles.warnNote}>The forecasts below still disagree, and the chart shows every one of them next to this range.</p>
         )}
       </div>
     );
@@ -302,7 +302,7 @@ function EstimateBlock({ item, sources }: { item: TimelineItem; sources: Record<
 
   let note = "";
   if (view.barMode === "achieved") {
-    note = "It has already happened, so there's nothing left to estimate.";
+    note = "There's nothing to estimate because it has already happened.";
   } else if (view.barMode === "span" && view.bar) {
     // An open side means at least one forecast is open-ended there (see forecastSpan).
     let span = `The forecasts span ${rangeText(view.bar.start, view.bar.end)}`;
@@ -311,21 +311,21 @@ function EstimateBlock({ item, sources }: { item: TimelineItem; sources: Record<
     } else if (view.bar.end === null) {
       span = `The forecasts run from ${view.bar.start}, and at least one has no end year`;
     }
-    note = `No team estimate yet. ${span}. Our rule doesn't flag them as a disagreement, so we shade that span as a faint band.`;
+    note = `${span}. Since our rule doesn't flag them as disagreeing, the chart shades those years as a faint band.`;
   } else if (view.barMode === "whiskers" && view.forecastCount === 1) {
-    note = "No team estimate. There's only one forecast, so we show it on its own.";
+    note = "With only one forecast, the chart shows it on its own.";
   } else if (view.barMode === "whiskers" && view.disagreement.flagged) {
-    note = "No team estimate, and the forecasts disagree too much to summarize. We show each one on its own instead of drawing a band.";
+    note = "The forecasts disagree too much to summarize with one band. The chart shows each of them separately.";
   } else if (view.barMode === "whiskers" && view.disagreement.ruleFlagged) {
     // The team overrode the flag, but forecasts the rule flags never get a band (see estimates.ts).
-    note = "No team estimate. Our rule finds these forecasts too far apart to share one band. The team doesn't count that as a disagreement (see below), but a band would still blur them into one range, so we show each one on its own.";
+    note = "Our rule won't put forecasts this far apart in one band, because a band would hide the gap. The chart draws each one separately, even though the team doesn't count the gap as a disagreement (see below).";
   } else if (view.barMode === "whiskers" && everyForecastSaysNever(view.forecasts)) {
-    note = "No team estimate. Every forecast says it will never happen, so there are no years to shade.";
+    note = "Every forecast says it will never happen, which leaves no years to shade.";
   } else if (view.barMode === "whiskers") {
     // forecastSpan found no band: between them, the forecasts are open-ended on both sides.
-    note = "No team estimate. Between them, these forecasts are open-ended on both sides, so a band would cover the whole chart. We show each one on its own instead.";
+    note = "Taken together, these forecasts are open-ended at both ends, and a band over them would cover the whole chart. Each one is drawn separately instead.";
   } else {
-    note = "No estimate yet. We haven't found a forecast for this, and we haven't set our own range.";
+    note = "We haven't found any forecasts for it either.";
   }
 
   return (
@@ -340,7 +340,7 @@ function EstimateBlock({ item, sources }: { item: TimelineItem; sources: Record<
 function ForecastLedger({ item, sources }: { item: TimelineItem; sources: Record<string, SourceRef> }) {
   const { view } = item;
   if (view.forecastCount === 0) {
-    return <p className={styles.empty}>No forecasts recorded yet.</p>;
+    return <p className={styles.empty}>None recorded yet.</p>;
   }
   const forecasts = sortForecastsByWindow(view.forecasts);
   return (
@@ -352,7 +352,7 @@ function ForecastLedger({ item, sources }: { item: TimelineItem; sources: Record
       {/* The explicit roles keep table semantics in narrow panels, where the
           CSS turns each row into a card and browsers drop the implicit ones. */}
       <table className={styles.ledger} role="table">
-        <caption className="visually-hidden">Every forecast for this milestone, one per row</caption>
+        <caption className="visually-hidden">Forecasts for this milestone, one per row</caption>
         <thead role="rowgroup">
           <tr role="row">
             <th scope="col" role="columnheader">
@@ -426,8 +426,8 @@ function DisagreementBlock({ item, sources }: { item: TimelineItem; sources: Rec
     body = (
       <>
         <p>
-          At least two forecasts are more than {DISAGREEMENT_GAP_YEARS} years apart, or one says it will never happen
-          while another gives a year. Who disagrees:
+          At least two forecasts are more than {DISAGREEMENT_GAP_YEARS} years apart, or one says never while another
+          gives a year. Who disagrees:
         </p>
         {reasonList}
       </>
@@ -437,33 +437,33 @@ function DisagreementBlock({ item, sources }: { item: TimelineItem; sources: Rec
     body = (
       <>
         {d.overrideBasis && <ClaimText claim={d.overrideBasis} sources={sources} variant="compact" />}
-        <p>{d.ruleFlagged ? "Our rule alone would flag it too:" : "Our rule alone would not have flagged this."}</p>
+        <p>{d.ruleFlagged ? "Our rule would have flagged it as well:" : "Our rule wouldn't have flagged it."}</p>
         {reasonList}
       </>
     );
   } else if (!d.flagged && d.decidedBy === "team") {
-    heading = "Not flagged: team override";
+    heading = "Not flagged (team decision)";
     body = (
       <>
         {d.overrideBasis && <ClaimText claim={d.overrideBasis} sources={sources} variant="compact" />}
         {d.ruleFlagged ? (
           <>
-            <p>Our rule alone would have flagged this:</p>
+            <p>Our rule would have flagged it:</p>
             {reasonList}
           </>
         ) : (
-          <p>Our rule alone wouldn&apos;t have flagged it either.</p>
+          <p>Our rule wouldn&apos;t have flagged it either.</p>
         )}
       </>
     );
   } else if (view.forecastCount >= 2) {
     heading = "No disagreement flagged";
     // Say only what the rule actually checked: it skips pairs from one forecaster in one source.
-    let text = `We compared the forecasts from different forecasters or sources. No two are more than ${DISAGREEMENT_GAP_YEARS} years apart, and none says never while another gives a year.`;
+    let text = `We compared each pair of forecasts from different forecasters or sources. No two are more than ${DISAGREEMENT_GAP_YEARS} years apart, and none says never while another gives a year.`;
     if (everyForecastSaysNever(view.forecasts)) {
-      text = "Every forecast says it will never happen, so there's nothing to disagree about.";
+      text = "Every forecast says it will never happen, so the rule has nothing to flag.";
     } else if (allFromOneForecaster(view.forecasts)) {
-      text = "All of these forecasts come from one forecaster in one source. Our rule doesn't compare a forecaster with themselves.";
+      text = "These forecasts all come from one forecaster in one source, and the rule doesn't compare a forecaster with themselves.";
     }
     body = <p>{text}</p>;
   } else {
@@ -471,8 +471,8 @@ function DisagreementBlock({ item, sources }: { item: TimelineItem; sources: Rec
     body = (
       <p>
         {view.forecastCount === 1
-          ? "There's only one forecast, so there's nothing to compare it with."
-          : "There are no forecasts yet."}
+          ? "There's only one forecast, and the rule needs at least two."
+          : "The rule needs at least two forecasts."}
       </p>
     );
   }
@@ -506,7 +506,7 @@ function DependencyList({
   onSelectMilestone?: (id: string) => void;
 }) {
   if (ids.length === 0) {
-    return <p className={styles.empty}>Nothing. This milestone doesn&apos;t wait on another one.</p>;
+    return <p className={styles.empty}>No dependencies recorded yet.</p>;
   }
   return (
     <ul className={styles.dependencies}>

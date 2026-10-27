@@ -5,9 +5,9 @@ import styles from "./StageCards.module.css";
 
 // A sentence on top of each stage's description, for the about and methodology pages.
 const STAGE_DETAIL: Record<Stage, string> = {
-  possible: "A lab demo counts. It says nothing yet about cost, safety or who gets access.",
-  widely_available: "Most hurdles here aren't scientific. Cost, safety, regulation and supply all have to work for people beyond a few labs and trials.",
-  actually_helping: "The bar that matters. Something can be widely available and still not help at all.",
+  possible: "A lab demo is enough to count. It tells you nothing yet about cost, safety or who can get it.",
+  widely_available: "Most of the hurdles at this stage are practical ones: cost, safety, regulation and supply have to work out for people outside a handful of labs and trials.",
+  actually_helping: "The proposals are aiming for this stage, and wide use alone doesn't get a technology there.",
 };
 
 // The three stages as paper cards, each with its stage color across the top.

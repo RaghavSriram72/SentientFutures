@@ -17,7 +17,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/wbe/", label: "Brain emulation" },
   { href: "/bci/", label: "Brain interfaces" },
   { href: "/neuromorphic/", label: "Neuromorphic AI" },
-  { href: "/sources/", label: "Sources" },
+  { href: "/sources/", label: "Source database" },
   { href: "/blog/", label: "Blog" },
 ];
 

@@ -3,70 +3,15 @@
     "id": "wbe",
     "name": "Whole brain emulation",
     "short_name": "WBE",
-    "headline": "What if the first digital minds *were ours*?",
+    "headline": "Could an *emulated* human brain improve alignment or preserve human agency?",
     "intro": {
-      "text": "Whole brain emulation means scanning a human brain in enough detail to run it as software. The hope is that a mind copied from a person would keep that person's values, which is arguably the hardest part of alignment to build from scratch. By most accounts it is also the furthest off of the three.",
-      "provenance": "ai",
-      "reviewed_by": null
+      "text": "Whole brain emulation would create digital minds derived from human brains. We assess the claim that those minds would improve alignment or preserve human agency. How exactly they would do that is still unresolved, and so are WBE's feasibility and its welfare implications.",
+      "provenance": "team"
     },
-    "claims_to_solve": [
-      {
-        "text": "Alignment. If the first very capable digital minds are copies of human minds, they start out with human values instead of values someone had to train into an unfamiliar system.",
-        "provenance": "ai",
-        "reviewed_by": null
-      },
-      {
-        "text": "The Intelligence Curse. If people can work and take part in public life as emulations, human minds could stay economically and politically relevant even when most valuable work happens on computers.",
-        "provenance": "ai",
-        "reviewed_by": null
-      }
-    ],
-    "mechanism": [
-      {
-        "text": "Scan a brain at very fine resolution, build a model of its neurons and connections, and run that model on a computer. If the model is faithful enough, it should think and behave like the original person, values included.",
-        "provenance": "ai",
-        "reviewed_by": null
-      },
-      {
-        "text": "Because an emulation is software, it can be run faster than real time and copied. Proponents argue this lets trusted human judgment keep pace with machine speed, whether that means doing safety research quickly or competing for work.",
-        "provenance": "ai",
-        "reviewed_by": null
-      }
-    ],
-    "strongest_case": [
-      {
-        "text": "It sidesteps the problem of writing down what people value. Nobody has to specify human values, because an emulation of a person already has them, flaws included.",
-        "provenance": "ai",
-        "reviewed_by": null
-      },
-      {
-        "text": "Human minds are the one kind of general intelligence we have long experience predicting, trusting and holding to account. Laws, courts and workplaces were built for minds like these.",
-        "provenance": "ai",
-        "reviewed_by": null
-      },
-      {
-        "text": "If emulation arrived early enough, fast copies of careful researchers could do years of safety work in weeks, without handing that judgment to systems nobody fully understands.",
-        "provenance": "ai",
-        "reviewed_by": null
-      }
-    ],
-    "strongest_objections": [
-      {
-        "text": "Timing. Most estimates put human emulation decades away, and scanning, modeling and compute are all unsolved. If other kinds of powerful AI arrive first, the plan may come too late to matter.",
-        "provenance": "ai",
-        "reviewed_by": null
-      },
-      {
-        "text": "Human values are not the same as safe values. A person who can be copied and sped up gains power that ordinary checks were never designed to limit, and people with power don't always use it well.",
-        "provenance": "ai",
-        "reviewed_by": null
-      },
-      {
-        "text": "Fidelity is hard to check. A slightly wrong emulation could drift in judgment or values in ways that are hard to spot, and there may be no test that tells a faithful copy from a convincing one.",
-        "provenance": "ai",
-        "reviewed_by": null
-      }
-    ],
+    "claims_to_solve": [],
+    "mechanism": [],
+    "strongest_case": [],
+    "strongest_objections": [],
     "scorecard": [
       {
         "dimension": "Alignment case",
@@ -74,11 +19,11 @@
         "scale": "case",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": "underspecified_proposal",
         "basis": {
-          "text": "The argument from inherited values is clearly stated: a copy of a person would start with that person's values. This draft hasn't reviewed the evidence on whether an emulation would keep those values once it is copied, sped up or edited.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "S02 and S13 both name WBE as a possible pathway for alignment, but neither shows how an emulation would solve a specific alignment problem. The evidence we have isn't enough to tell whether WBE is a promising research direction or an intervention that matters for safety.",
+          "provenance": "team",
+          "source_ids": ["s02", "s13"]
         }
       },
       {
@@ -87,24 +32,38 @@
         "scale": "case",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": "underspecified_proposal",
         "basis": {
-          "text": "Some argue emulation keeps human minds economically relevant. Others expect the value of any one copy to fall toward the cost of running it. This draft hasn't weighed the two views against the evidence.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "S15 describes the risk that powerful actors lose their incentive to invest in people. None of our sources says how WBE would help, or shows that it would counteract that risk. Who would own the scans, the emulations, the compute and the labor they produce is unresolved.",
+          "provenance": "team",
+          "source_ids": ["s15"]
         }
       },
       {
-        "dimension": "Welfare risk",
+        "dimension": "Human welfare risk",
         "problem": null,
         "scale": "risk",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": "no_relevant_evidence",
+        "potential_severity": "high",
         "basis": {
-          "text": "The scanning methods usually discussed would destroy the brain being scanned, and the scan would be the most private data a person could hand over. People who have to compete for work with fast, copyable emulations could also lose skills and bargaining power. This draft hasn't weighed how likely or severe these harms are, and the risk thresholds aren't defined yet. The emulations' own welfare is a separate question, covered below.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "Scanned people, users, workers, the wider public and future generations could all be exposed to harm. The severity could be high, but it hasn't been assessed, and the WBE-specific welfare evidence we have is too thin to separate likely harms from speculative ones.",
+          "provenance": "team"
+        }
+      },
+      {
+        "dimension": "Artificial-mind welfare and rights risk",
+        "problem": null,
+        "scale": "risk",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "no_relevant_evidence",
+        "potential_severity": "high",
+        "basis": {
+          "text": "The proposal could create digital minds whose welfare is at stake. Harm to them could be severe and hard to reverse if emulations can be copied or modified, or can persist indefinitely. No source we have assesses their suffering, consent, copying, confinement, acceleration, deletion or labor conditions, and S02 names moral bottlenecks without setting out a framework for moral status.",
+          "provenance": "team",
+          "source_ids": ["s02"]
         }
       },
       {
@@ -113,11 +72,12 @@
         "scale": "risk",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": "underspecified_proposal",
+        "potential_severity": "high",
         "basis": {
-          "text": "Minds that can be copied could put a great deal of power in the hands of whoever owns the hardware, and nobody has settled who would own or control a person's scan. This draft hasn't reviewed the governance proposals that exist, and the risk thresholds aren't defined yet.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "No governance arrangements have been specified, and the sources we have describe no way to detect or remedy harms. S02 identifies moral and regulatory bottlenecks, and S15 points to the risk of concentrated power. The governance risk could be high, but judging how severe it is would take more WBE-specific evidence on governance than we have.",
+          "provenance": "team",
+          "source_ids": ["s02", "s15"]
         }
       },
       {
@@ -126,51 +86,289 @@
         "scale": "case",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": "underspecified_proposal",
         "basis": {
-          "text": "This draft hasn't found safeguards proposed for scanning people, or for running and copying emulations, and hasn't finished looking. Rules for human research subjects weren't written with any of this in mind.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "The theory of change depends on safeguards against exploitation, abuses of copying, welfare harms and concentration of power. Nothing we've found sets out governance arrangements or a way to detect or remedy harms, and S02 has no standard for protecting emulated minds.",
+          "provenance": "team",
+          "source_ids": ["s02"]
         }
       }
     ],
-    "artificial_minds_questions": [
+    "artificial_minds_questions": [],
+    "scope": {
+      "intervention": {
+        "text": "A high-fidelity digital emulation of a human brain, which might be used as a human-derived AI system or as an overseer.",
+        "provenance": "team"
+      },
+      "deployment_scenario": {
+        "text": "Research, then deployment if it turns out to be feasible: emulated minds working as trusted AI systems, as overseers or as contributors to alignment research.",
+        "provenance": "team"
+      },
+      "affected_groups": {
+        "text": "Emulated individuals, if any are created; the people whose brains may be scanned; developers and operators; users of AI systems; and society more widely.",
+        "provenance": "team"
+      },
+      "time_horizon": {
+        "text": "Long term. The current evidence doesn't support any defensible near-term date for deployment.",
+        "provenance": "team"
+      },
+      "comparator": {
+        "text": "Conventional AI alignment methods, including interpretability, evaluations, oversight, control and value learning.",
+        "provenance": "team"
+      },
+      "problem": "both"
+    },
+    "theory_of_change": [
       {
-        "text": "Would an emulation be conscious? And if it is, is it the same person as the original, or a new person who shares their memories?",
-        "provenance": "ai",
-        "reviewed_by": null
+        "text": "Brain scanning, functional modeling and simulation become accurate enough.",
+        "provenance": "team"
       },
       {
-        "text": "Emulations could be copied, paused, edited, run at different speeds or deleted. What protections would they need, given that no existing welfare rules anticipate any of this?",
-        "provenance": "ai",
-        "reviewed_by": null
+        "text": "A human brain is emulated, with legitimate consent and governance arrangements in place.",
+        "provenance": "team"
       },
       {
-        "text": "Who consents on behalf of the early, imperfect emulations made while the technique is being tested, and what do we owe them?",
-        "provenance": "ai",
-        "reviewed_by": null
+        "text": "The emulation is deployed as an AI system, an overseer, a researcher or a contributor.",
+        "provenance": "team"
+      },
+      {
+        "text": "Its human-derived cognition improves value specification, oversight or institutional decision-making.",
+        "provenance": "team"
+      },
+      {
+        "text": "Safeguards prevent exploitation, abuses of copying, welfare harms and concentration of power.",
+        "provenance": "team"
       }
     ],
-    "sample": true
+    "alternatives": [
+      {
+        "text": "Conventional alignment research may solve the relevant problems sooner.",
+        "provenance": "team"
+      },
+      {
+        "text": "WBE may end up advancing AI capabilities more than safety.",
+        "provenance": "team"
+      },
+      {
+        "text": "Regulatory, moral and technical bottlenecks may keep it from being deployed in time. S02 points to the regulatory and moral bottlenecks explicitly.",
+        "provenance": "team",
+        "source_ids": ["s02"]
+      },
+      {
+        "text": "S13 presents brain emulation as one of several underdeveloped NeuroAI pathways, and makes no case that it's an established safety solution.",
+        "provenance": "team",
+        "source_ids": ["s13"]
+      }
+    ],
+    "evidence_register": [
+      {
+        "claim": "WBE could contribute to alignment.",
+        "supporting_ids": ["S02", "S13"],
+        "contrary_ids": [],
+        "evidence_type": "Argument / review",
+        "directness": "remote",
+        "limitation": "No one has shown that an emulation would be safer, aligned or deployable.",
+        "independence": "Mixed",
+        "provenance": "team"
+      },
+      {
+        "claim": "Regulatory and moral bottlenecks could delay WBE.",
+        "supporting_ids": ["S02"],
+        "contrary_ids": [],
+        "evidence_type": "Argument",
+        "directness": "adjacent",
+        "limitation": "A workshop-level claim, with no policy analysis or empirical test behind it.",
+        "independence": "Unclear",
+        "provenance": "team"
+      },
+      {
+        "claim": "Neuroscience-inspired methods may support safety.",
+        "supporting_ids": ["S13"],
+        "contrary_ids": [],
+        "evidence_type": "Research roadmap",
+        "directness": "remote",
+        "limitation": "It doesn't show that WBE in particular improves alignment.",
+        "independence": "Independent",
+        "provenance": "team"
+      },
+      {
+        "claim": "WBE could preserve or distribute human agency.",
+        "supporting_ids": [],
+        "contrary_ids": ["S15"],
+        "evidence_type": "Argument",
+        "directness": "remote",
+        "limitation": "No evidence links WBE to broad ownership, bargaining power or institutional change.",
+        "independence": "Not applicable",
+        "provenance": "team"
+      }
+    ],
+    "alignment_assessment": {
+      "mechanism": {
+        "text": "Potentially value specification, oversight or interpretability.",
+        "provenance": "team"
+      },
+      "questions": [
+        {
+          "question": "Does the mechanism address that problem, or move it somewhere else?",
+          "answer": {
+            "text": "Unclear. An emulation could inherit human values, but it could also inherit human biases, conflicts, limitations and governance failures.",
+            "provenance": "team"
+          }
+        },
+        {
+          "question": "Could a more capable AI undermine or get around the benefit?",
+          "answer": {
+            "text": "Unclear. Nothing we've read tests whether an overseer based on an emulation would stay effective against a more capable AI.",
+            "provenance": "team"
+          }
+        },
+        {
+          "question": "Does it create another agent or decision-maker that would itself need to be aligned or governed?",
+          "answer": {
+            "text": "Yes, potentially. An emulated mind would itself need moral treatment and governance, and possibly alignment safeguards too.",
+            "provenance": "team"
+          }
+        },
+        {
+          "question": "What's the benefit relative to the comparator?",
+          "answer": {
+            "text": "Unclear. There's no direct comparison with conventional alignment methods to go on.",
+            "provenance": "team"
+          }
+        }
+      ],
+      "rating": "unclear",
+      "confidence": "low",
+      "unclear_reason": "underspecified_proposal",
+      "reason": {
+        "text": "S02 and S13 both name WBE as a possible pathway for alignment, but neither shows how an emulation would solve a specific alignment problem. S02 also identifies regulatory and moral bottlenecks. The evidence we have isn't enough to tell whether WBE is a promising research direction or an intervention that matters for safety.",
+        "provenance": "team",
+        "source_ids": ["s02", "s13"]
+      },
+      "decisive_question": {
+        "text": "Which specific alignment failure would a WBE-based system solve better than alignment methods that don't use WBE, and what evidence would show that?",
+        "provenance": "team"
+      }
+    },
+    "intelligence_curse_assessment": {
+      "mechanism": {
+        "text": "Potentially wider ownership of productive AI capacity or of human-derived labor. Our current sources don't specify the mechanism.",
+        "provenance": "team"
+      },
+      "questions": [
+        {
+          "question": "Who gains lasting agency or bargaining power?",
+          "answer": {
+            "text": "Unclear. It could be emulated individuals, biological people, developers or the owners of compute.",
+            "provenance": "team"
+          }
+        },
+        {
+          "question": "Who owns and controls the infrastructure, the data and the returns?",
+          "answer": {
+            "text": "Unclear. Ownership of the scans, the emulations, the compute and the labor they produce is unresolved.",
+            "provenance": "team"
+          }
+        },
+        {
+          "question": "Does it complement human contributions, delay replacement or deepen dependence?",
+          "answer": {
+            "text": "Unclear. WBE could expand human-derived capacity, or it could create a new class of digital labor that's open to exploitation.",
+            "provenance": "team"
+          }
+        },
+        {
+          "question": "What's the benefit relative to the comparator?",
+          "answer": {
+            "text": "Unclear.",
+            "provenance": "team"
+          }
+        }
+      ],
+      "rating": "unclear",
+      "confidence": "low",
+      "unclear_reason": "underspecified_proposal",
+      "reason": {
+        "text": "S15 describes the risk that powerful actors lose their incentive to invest in people, but nothing we've read shows that WBE would counteract that. S02 raises moral and regulatory bottlenecks without setting out how ownership or distribution would work.",
+        "provenance": "team",
+        "source_ids": ["s15", "s02"]
+      },
+      "decisive_question": {
+        "text": "What arrangements for ownership, consent, labor and access to compute would let WBE increase broad human agency without creating a new class of dependent digital workers?",
+        "provenance": "team"
+      }
+    },
+    "artificial_minds_assessment": {
+      "consciousness": {
+        "text": "Unclear. We haven't found a source that assesses whether an emulation would be conscious or sentient.",
+        "provenance": "team"
+      },
+      "moral_status": {
+        "text": "Unclear. S02 identifies moral bottlenecks but doesn't set out a framework for moral status or a standard for protecting emulated minds.",
+        "provenance": "team",
+        "source_ids": ["s02"]
+      },
+      "identity": {
+        "text": "Unclear. How an emulated mind relates to the original person isn't addressed in the sources we have.",
+        "provenance": "team"
+      },
+      "welfare": {
+        "text": "Unclear. The proposal could create digital minds whose welfare is at stake, but no source assesses suffering, consent, copying, confinement, acceleration, deletion or labor conditions.",
+        "provenance": "team"
+      }
+    },
+    "welfare_governance": {
+      "exposed": {
+        "text": "Emulated minds, if any are created; people whose brains are scanned; users; workers; the wider public; and future generations.",
+        "provenance": "team"
+      },
+      "harms": {
+        "text": "Consent violations, harms to identity and continuity, copying or exploitation, suffering of digital minds, concentration of power, value lock-in and unsafe deployment.",
+        "provenance": "team"
+      },
+      "severity": {
+        "text": "We haven't assessed it yet. It could be high, and hard to reverse if emulations can be copied or modified, or can persist indefinitely.",
+        "provenance": "team"
+      },
+      "detectability": {
+        "text": "Unclear. Our sources don't specify any way to detect harms or remedy them.",
+        "provenance": "team"
+      },
+      "control": {
+        "text": "Unclear. No governance arrangements have been specified.",
+        "provenance": "team"
+      },
+      "confidence": "low",
+      "rationale": {
+        "text": "S02 identifies moral and regulatory bottlenecks, and S15 describes the risks of concentrated power and of less investment in people. But we don't have enough WBE-specific welfare or governance evidence to tell likely harms from speculative ones.",
+        "provenance": "team",
+        "source_ids": ["s02", "s15"]
+      }
+    },
+    "evidence_gap": {
+      "text": "Our current sources don't include enough technical, empirical, welfare or governance literature to assess WBE as an intervention for alignment or the Intelligence Curse.",
+      "provenance": "team"
+    },
+    "sample": false
   },
   {
     "id": "bci",
     "name": "Brain computer interfaces",
     "short_name": "BCI",
-    "headline": "Could plugging in help people *keep up*?",
+    "headline": "Could brain computer interfaces help people *keep up* with AI?",
     "intro": {
-      "text": "Brain computer interfaces connect the nervous system to a computer. Today, implanted devices let a small number of people with paralysis move a cursor or produce text. The bigger claim is that far faster interfaces could keep people in charge of increasingly capable AI, and keep their work worth paying for.",
+      "text": "Brain computer interfaces connect the nervous system to a computer. Implanted devices already let a small number of people with paralysis move a cursor or produce text. The bigger claim is that much faster interfaces could keep people in charge of increasingly capable AI and keep their work worth paying for.",
       "provenance": "ai",
       "reviewed_by": null
     },
     "claims_to_solve": [
       {
-        "text": "Alignment. Some proponents argue that if people are tightly linked to AI systems, those systems act as extensions of human intent instead of separate agents with goals of their own.",
+        "text": "Alignment. One argument is that if people are tightly linked to AI systems, the systems will act as extensions of human intent and won't become separate agents with goals of their own.",
         "provenance": "ai",
         "reviewed_by": null
       },
       {
-        "text": "The Intelligence Curse. A person working through a fast interface might do more than either a person or an AI alone, so human work would stay valuable as AI improves.",
+        "text": "The Intelligence Curse. A person working through a fast interface might do more than either a person or an AI alone, so human work would still be worth paying for as AI improves.",
         "provenance": "ai",
         "reviewed_by": null
       }
@@ -182,41 +380,41 @@
         "reviewed_by": null
       },
       {
-        "text": "The argument goes that if bandwidth rose far enough, people could follow and steer AI reasoning as it happens, keeping a person in each important decision instead of reviewing outputs after the fact.",
+        "text": "The argument goes that with enough bandwidth, people could follow and steer an AI's reasoning as it happens and have a say in each important decision.",
         "provenance": "ai",
         "reviewed_by": null
       }
     ],
     "strongest_case": [
       {
-        "text": "It is the most concrete of the three. Implants already restore some movement and communication in clinical trials, so the basic technology exists and is improving.",
+        "text": "Of the three technologies on this site, BCIs are the most concrete. Implants already restore some movement and communication in clinical trials, so the basic technology exists and is getting better.",
         "provenance": "ai",
         "reviewed_by": null
       },
       {
-        "text": "It keeps a person in the loop by design. The system acts on someone's intentions instead of on goals it learned on its own.",
+        "text": "A person stays in the loop by design, because the system acts on someone's intentions.",
         "provenance": "ai",
         "reviewed_by": null
       },
       {
-        "text": "Medical demand pays for the progress. Restoring movement and speech is worth doing whether or not the alignment argument holds, so the field doesn't depend on anyone believing it.",
+        "text": "Medical demand pays for progress, since restoring movement and speech is worth doing whether or not the alignment argument holds.",
         "provenance": "ai",
         "reviewed_by": null
       }
     ],
     "strongest_objections": [
       {
-        "text": "Bandwidth may not be the bottleneck. The hard part of overseeing AI is understanding what it is doing, and a faster channel into a human brain doesn't obviously make that easier.",
+        "text": "Bandwidth may not be the bottleneck. The hard part of overseeing AI is understanding what it's doing, and a faster channel into a human brain doesn't obviously make that easier.",
         "provenance": "ai",
         "reviewed_by": null
       },
       {
-        "text": "A two-way link runs both ways. A device that can write to the brain could be used to monitor, manipulate or pressure the person wearing it, whether by a company, a government or the AI itself.",
+        "text": "A company, a government or the AI itself could use a device that writes to the brain to monitor the person wearing it, or to manipulate or pressure them.",
         "provenance": "ai",
         "reviewed_by": null
       },
       {
-        "text": "Access is likely to be unequal. If enhancement is expensive or risky, it could widen the gap between people who have it and people who don't, deepening the Intelligence Curse instead of easing it.",
+        "text": "Access is likely to be unequal. If enhancement is expensive or risky, it could widen the gap between people who have it and people who don't, which would make the Intelligence Curse worse.",
         "provenance": "ai",
         "reviewed_by": null
       }
@@ -230,7 +428,7 @@
         "confidence": "low",
         "unclear_reason": "search_incomplete",
         "basis": {
-          "text": "Most versions of this argument don't explain how a faster link would make an AI system safer. This draft hasn't finished checking whether any proposal spells out that mechanism.",
+          "text": "Most versions of this argument don't explain how a faster link would make an AI system safer, and the search for a proposal that does isn't finished.",
           "provenance": "ai",
           "reviewed_by": null
         }
@@ -243,20 +441,33 @@
         "confidence": "low",
         "unclear_reason": "search_incomplete",
         "basis": {
-          "text": "Augmented people staying economically relevant is plausible, but it depends on cost, safety and who gets access. This draft hasn't reviewed the evidence on any of these.",
+          "text": "It's plausible that augmented people would stay economically relevant, but that depends on cost, safety and who gets access.",
           "provenance": "ai",
           "reviewed_by": null
         }
       },
       {
-        "dimension": "Welfare risk",
+        "dimension": "Human welfare risk",
         "problem": null,
         "scale": "risk",
         "rating": "unclear",
         "confidence": "low",
         "unclear_reason": "search_incomplete",
         "basis": {
-          "text": "Brain data can reveal things people never chose to share, and a device that writes to the brain could be used to nudge mood or decisions. Employers could use headsets to monitor workers, and users may come to depend on a device its maker can stop supporting. This draft hasn't weighed how likely or severe these harms are, and the risk thresholds aren't defined yet.",
+          "text": "Brain data can reveal things people never chose to share, and a device that writes to the brain could be used to nudge mood or decisions. Employers could use headsets to monitor workers, and users may come to depend on a device its maker can stop supporting. How likely or severe these harms are hasn't been weighed.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Artificial-mind welfare and rights risk",
+        "problem": null,
+        "scale": "risk",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "The risk to artificial minds hasn't been assessed. The open questions we've found for BCIs are about the person using the device, such as where the person ends and the system begins.",
           "provenance": "ai",
           "reviewed_by": null
         }
@@ -269,7 +480,7 @@
         "confidence": "low",
         "unclear_reason": "search_incomplete",
         "basis": {
-          "text": "Brain data is personal in a new way, and rules on who may collect, own and use it exist in only a few places. This draft hasn't finished reviewing them, and the risk thresholds aren't defined yet.",
+          "text": "Only a few places have rules on who may collect, own and use brain data.",
           "provenance": "ai",
           "reviewed_by": null
         }
@@ -282,7 +493,7 @@
         "confidence": "low",
         "unclear_reason": "search_incomplete",
         "basis": {
-          "text": "Medical device rules cover implants used in clinics, but consumer and workplace headsets may fall outside them. This draft hasn't reviewed whether existing privacy and device rules are enough.",
+          "text": "Medical device rules cover implants used in clinics, but consumer and workplace headsets may fall outside them. We haven't checked whether existing privacy and device rules are enough.",
           "provenance": "ai",
           "reviewed_by": null
         }
@@ -295,7 +506,7 @@
         "reviewed_by": null
       },
       {
-        "text": "Should people be able to remove an interface without losing abilities, or a sense of self, that they have come to rely on?",
+        "text": "Should people be able to remove an interface without losing abilities, or a sense of self, that they've come to rely on?",
         "provenance": "ai",
         "reviewed_by": null
       },
@@ -313,7 +524,7 @@
     "short_name": "Neuromorphic AI",
     "headline": "Would AI built like a brain *think like us*?",
     "intro": {
-      "text": "Neuromorphic or brain-inspired AI borrows from how brains work, from spiking neurons to the circuits behind empathy, without copying any one brain. The hope is that AI built more like us would learn values more like ours. The worry is that it would mostly make AI more capable, sooner.",
+      "text": "Neuromorphic, or brain-inspired, AI borrows parts of how brains work, such as spiking neurons or the circuits behind empathy, without copying any particular brain. The hope is that AI built this way would learn values closer to ours, though it might mostly just make AI more capable sooner.",
       "provenance": "ai",
       "reviewed_by": null
     },
@@ -326,7 +537,7 @@
     ],
     "mechanism": [
       {
-        "text": "Neuromorphic systems copy features of brains, such as spiking neurons, learning rules that work locally, or brain-like wiring. Some run on ordinary computers and some on chips built to work like neurons.",
+        "text": "Neuromorphic systems copy features of brains, such as spiking neurons, learning rules that work locally, or brain-like wiring. Some run on ordinary computers, others on chips designed to work like neurons.",
         "provenance": "ai",
         "reviewed_by": null
       },
@@ -343,7 +554,7 @@
         "reviewed_by": null
       },
       {
-        "text": "It doesn't need a full brain scan. Borrowing a few key mechanisms is far more achievable than emulating a whole brain, so it could matter on a realistic timeline.",
+        "text": "Borrowing a few mechanisms is much easier than scanning and emulating a whole brain, so this approach could matter on a realistic timeline.",
         "provenance": "ai",
         "reviewed_by": null
       },
@@ -355,12 +566,12 @@
     ],
     "strongest_objections": [
       {
-        "text": "Brain-like is not the same as human-like. A system with brain-like parts but different training, a different body and different incentives could end up with very different values, while looking more trustworthy than it is.",
+        "text": "A system with brain-like parts could still end up with values very different from ours if its training, body and incentives differ, and it might look more trustworthy than it is.",
         "provenance": "ai",
         "reviewed_by": null
       },
       {
-        "text": "It may speed up capabilities more than safety. The insights that make AI more brain-like could also make it more capable and efficient, before anyone knows how to align it.",
+        "text": "The insights that make AI more brain-like could also make it more capable and efficient before anyone knows how to align it, so this work may speed up capabilities more than safety.",
         "provenance": "ai",
         "reviewed_by": null
       },
@@ -379,7 +590,7 @@
         "confidence": "low",
         "unclear_reason": "search_incomplete",
         "basis": {
-          "text": "The idea is well motivated: brains are the only systems known to develop general intelligence and human values together. This draft hasn't reviewed the evidence on whether brain-like design leads to more human-like values in practice.",
+          "text": "The motivation is clear, since brains are the only known systems that develop general intelligence and human values together, but we haven't yet looked at the evidence on whether brain-like design leads to more human-like values in practice.",
           "provenance": "ai",
           "reviewed_by": null
         }
@@ -392,20 +603,33 @@
         "confidence": "low",
         "unclear_reason": null,
         "basis": {
-          "text": "Neuromorphic AI is pitched as a route to alignment and to cheaper, more efficient computing. This draft found no proposal arguing it would help with the Intelligence Curse.",
+          "text": "Neuromorphic AI is pitched as a route to alignment and to cheaper, more efficient computing. No proposal found so far says it would help with the Intelligence Curse.",
           "provenance": "ai",
           "reviewed_by": null
         }
       },
       {
-        "dimension": "Welfare risk",
+        "dimension": "Human welfare risk",
         "problem": null,
         "scale": "risk",
         "rating": "unclear",
         "confidence": "low",
         "unclear_reason": "search_incomplete",
         "basis": {
-          "text": "AI built on human social instincts might be better at reading and persuading people, and cheaper, more efficient AI could speed up the replacement of human work. This draft hasn't looked for evidence on either, and the risk thresholds aren't defined yet. Whether these systems could suffer is a separate question, covered below.",
+          "text": "Two possible harms, neither yet checked against evidence: AI built on human social instincts might be better at reading and persuading people, and cheaper, more efficient AI could speed up the replacement of human work.",
+          "provenance": "ai",
+          "reviewed_by": null
+        }
+      },
+      {
+        "dimension": "Artificial-mind welfare and rights risk",
+        "problem": null,
+        "scale": "risk",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": {
+          "text": "It's an open question whether a brain-like AI could be conscious or able to suffer, and whether building in emotions like empathy on purpose would also build in the capacity to be hurt. The search for evidence on either hasn't started.",
           "provenance": "ai",
           "reviewed_by": null
         }
@@ -418,7 +642,7 @@
         "confidence": "low",
         "unclear_reason": "search_incomplete",
         "basis": {
-          "text": "Brain-inspired AI seems to get little specific attention in AI policy so far. Methods that make AI cheaper or more capable could also arrive well before methods that make it safer, which makes dual use a concern. This draft hasn't reviewed what governance work exists, and the risk thresholds aren't defined yet.",
+          "text": "We haven't reviewed the governance work that exists, but so far brain-inspired AI seems to get little specific attention in AI policy. Dual use is also a concern: methods that make AI cheaper or more capable could arrive well before methods that make it safer.",
           "provenance": "ai",
           "reviewed_by": null
         }
@@ -431,7 +655,7 @@
         "confidence": "low",
         "unclear_reason": "search_incomplete",
         "basis": {
-          "text": "This draft hasn't found safeguards proposed specifically for brain-inspired AI, and hasn't checked whether general AI safety rules would cover it.",
+          "text": "The search so far found no safeguards proposed specifically for brain-inspired AI, and it hasn't covered whether general AI safety rules would apply.",
           "provenance": "ai",
           "reviewed_by": null
         }

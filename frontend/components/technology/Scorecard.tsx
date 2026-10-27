@@ -10,6 +10,7 @@ import styles from "./Scorecard.module.css";
 
 type Scale = ScorecardRow["scale"];
 type Rating = CaseRating | RiskRating;
+type Severity = NonNullable<ScorecardRow["potential_severity"]>;
 
 interface ScorecardProps {
   rows: ScorecardRow[];
@@ -25,7 +26,7 @@ export function Scorecard({ rows, technologyName, shortName, sources }: Scorecar
   return (
     <div className={`paper ${styles.card}`}>
       <div className={styles.cardHead}>
-        <span>Report card · {shortName}</span>
+        <span>Scorecard · {shortName}</span>
         <span>Rubric v{RUBRIC_VERSION}</span>
       </div>
 
@@ -56,9 +57,18 @@ export function Scorecard({ rows, technologyName, shortName, sources }: Scorecar
         </tbody>
       </table>
 
-      <GradingKey />
+      <GradingKey showSeverity={hasSeverityFlag(rows)} />
     </div>
   );
+}
+
+export function hasSeverityFlag(rows: ScorecardRow[]): boolean {
+  for (const row of rows) {
+    if (row.scale === "risk" && row.rating === "unclear" && row.potential_severity) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function ScorecardTableRow({ row, sources }: { row: ScorecardRow; sources: Record<string, SourceRef> }) {
@@ -69,7 +79,12 @@ function ScorecardTableRow({ row, sources }: { row: ScorecardRow; sources: Recor
         <span className={styles.scale}>{scaleLabel(row)}</span>
       </th>
       <td className={`${styles.cell} ${styles.ratingCell}`} data-label="Rating" role="cell">
-        <RatingChip scale={row.scale} rating={row.rating} unclearReason={row.unclear_reason} />
+        <RatingChip
+          scale={row.scale}
+          rating={row.rating}
+          unclearReason={row.unclear_reason}
+          potentialSeverity={row.scale === "risk" ? row.potential_severity : null}
+        />
       </td>
       <td className={`${styles.cell} ${styles.confidenceCell}`} data-label="Confidence" role="cell">
         <ConfidenceMeter confidence={row.confidence} />
@@ -128,11 +143,13 @@ interface RatingChipProps {
   scale: Scale;
   rating: Rating;
   unclearReason?: UnclearReason | null;
+  // Risk rows only. Shown beside an Unclear chip as a warning, never as a rating.
+  potentialSeverity?: Severity | null;
 }
 
 // A rating as a monospace chip. The label is always written out, so the
 // pips, hatching and outline are extra cues, never the only one.
-export function RatingChip({ scale, rating, unclearReason }: RatingChipProps) {
+export function RatingChip({ scale, rating, unclearReason, potentialSeverity }: RatingChipProps) {
   const label = scale === "case" ? enumLabel("CaseRating", rating) : enumLabel("RiskRating", rating);
 
   if (rating === "not_claimed") {
@@ -145,11 +162,15 @@ export function RatingChip({ scale, rating, unclearReason }: RatingChipProps) {
   }
 
   if (rating === "unclear") {
+    const severity = scale === "risk" ? potentialSeverity : null;
     return (
       <span className={styles.unclear}>
-        <span className={`${styles.chip} ${styles.chipUnclear}`}>
-          <ProvenanceGlyph kind="unclear" />
-          {label}
+        <span className={styles.unclearLine}>
+          <span className={`${styles.chip} ${styles.chipUnclear}`}>
+            <ProvenanceGlyph kind="unclear" />
+            {label}
+          </span>
+          {severity && <SeverityFlag severity={severity} afterChip />}
         </span>
         {unclearReason && <span className={styles.reason}>{enumLabel("UnclearReason", unclearReason)}</span>}
       </span>
@@ -162,6 +183,39 @@ export function RatingChip({ scale, rating, unclearReason }: RatingChipProps) {
       <LevelPips level={level} />
       {label}
     </span>
+  );
+}
+
+// "Potentially high severity" next to an Unclear risk. It is plain text with
+// an outline triangle, so it can't be mistaken for a High chip. After a chip,
+// screen readers hear "Unclear, potentially high severity".
+function SeverityFlag({ severity, afterChip = false }: { severity: Severity; afterChip?: boolean }) {
+  return (
+    <span className={`${styles.severity} ${severityClass(severity)}`}>
+      {afterChip && <span className="visually-hidden">, </span>}
+      <WarningGlyph />
+      Potentially {enumLabel("RiskRating", severity).toLowerCase()} severity
+    </span>
+  );
+}
+
+function severityClass(severity: Severity): string {
+  if (severity === "high") {
+    return styles.severityHigh;
+  }
+  if (severity === "medium") {
+    return styles.severityMedium;
+  }
+  return styles.severityLow;
+}
+
+function WarningGlyph() {
+  return (
+    <svg className={styles.glyph} viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M6 1.4 11 10.3H1Z" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <line x1="6" y1="4.6" x2="6" y2="7.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="6" cy="8.85" r="0.65" fill="currentColor" />
+    </svg>
   );
 }
 
@@ -200,7 +254,7 @@ function confidenceLevel(confidence: Confidence): number {
 }
 
 // Three rising bars, like a signal meter, next to the written label.
-function ConfidenceMeter({ confidence }: { confidence: Confidence }) {
+export function ConfidenceMeter({ confidence }: { confidence: Confidence }) {
   const level = confidenceLevel(confidence);
   const bars: ReactNode[] = [];
   for (let index = 1; index <= 3; index++) {
@@ -219,7 +273,8 @@ function ConfidenceMeter({ confidence }: { confidence: Confidence }) {
 
 // Every value on both scales, so readers can see that Not claimed, Weak and
 // Unclear are three different things. Values come from the shared enums.
-function GradingKey() {
+// The severity warning gets its own line only when a row on the page uses it.
+function GradingKey({ showSeverity }: { showSeverity: boolean }) {
   return (
     <div className={styles.key}>
       <p className={styles.keyTitle}>Grading key</p>
@@ -235,6 +290,15 @@ function GradingKey() {
           <RatingChip key={info.value} scale="risk" rating={info.value as RiskRating} />
         ))}
       </div>
+      {showSeverity && (
+        <div className={styles.keyRow}>
+          <span className={styles.keyLabel}>Warning</span>
+          <SeverityFlag severity="high" />
+          <span className={styles.keyNote}>
+            How bad an Unclear risk could be. The rating itself stays Unclear.
+          </span>
+        </div>
+      )}
     </div>
   );
 }

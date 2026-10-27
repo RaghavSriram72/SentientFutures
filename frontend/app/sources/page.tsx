@@ -1,49 +1,80 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { SampleChip } from "@/components/common/Marks";
 import { PageHeader } from "@/components/common/PageHeader";
 import { ProvenanceLegend } from "@/components/provenance/Legends";
+import { DirectionGlyph } from "@/components/sources/ClaimDirectionChip";
 import { SourceDatabase } from "@/components/sources/SourceDatabase";
 import { getSources } from "@/lib/data";
 import { RUBRIC_VERSION } from "@/lib/enums";
+import { realSources, sortByRegisterId } from "@/lib/sources";
 import type { Source } from "@/lib/types";
 
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "Sources",
+  title: "Source database",
   description:
-    "Every source the team has read and approved, with our summary and how we rated it on evidence type, independence, relevance and credibility.",
+    "The sources in the team's scouting database, each with the team's summary and tags for technology, problem and which way it argues.",
 };
 
-// Newest first, then by title, so the order is stable between builds.
-function sortSources(sources: Source[]): Source[] {
-  const sorted = [...sources];
-  sorted.sort((a, b) => {
-    if (a.year !== b.year) {
-      return b.year - a.year;
-    }
-    return a.title.localeCompare(b.title);
-  });
-  return sorted;
-}
-
-function countSamples(sources: Source[]): number {
+function countScouted(sources: Source[]): number {
   let count = 0;
   for (const source of sources) {
-    if (source.sample) {
+    if (source.register_id) {
       count += 1;
     }
   }
   return count;
 }
 
+// A source counts as unrated until at least one rubric field has a value.
+function countUnrated(sources: Source[]): number {
+  let count = 0;
+  for (const source of sources) {
+    const ratings = [source.evidence_type, source.directness, source.independence, source.relevance, source.credibility];
+    let hasRating = false;
+    for (const rating of ratings) {
+      if (rating !== null && rating !== undefined) {
+        hasRating = true;
+      }
+    }
+    if (!hasRating) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+// The note under the key. Its counts come from the data, so it stays true as
+// the team rates sources.
+function scoutingNote(total: number, scouted: number, unrated: number): string {
+  const parts: string[] = [];
+  if (scouted === total) {
+    parts.push(
+      "These come from the team's scouting database, where each source is tagged by technology, problem and which way it argues.",
+    );
+  } else if (scouted > 0) {
+    parts.push(
+      `${scouted} of these come from the team's scouting database, where each source is tagged by technology, problem and which way it argues.`,
+    );
+  }
+  const rubric = "evidence type, directness, independence, relevance and credibility";
+  if (unrated === total) {
+    parts.push(`None has been rated on the rubric yet: ${rubric}.`);
+  } else if (unrated > 0) {
+    parts.push(`${unrated} haven't been rated on the rubric yet: ${rubric}.`);
+  }
+  return parts.join(" ");
+}
+
 export default function SourcesPage() {
   // The data folder only ever holds approved sources: the API export filters
-  // out everything else, and content/sources.json is hand-checked.
-  const sources = sortSources(getSources());
-  const sampleCount = countSamples(sources);
+  // out everything else, and content/sources.json is hand-checked. The
+  // fictional samples stay in the file for the sample milestones that cite
+  // them, but they aren't listed here.
+  const sources = sortByRegisterId(realSources(getSources()));
+  const note = scoutingNote(sources.length, countScouted(sources), countUnrated(sources));
 
   return (
     <>
@@ -51,13 +82,13 @@ export default function SourcesPage() {
         eyebrow="Source database"
         title={
           <>
-            Everything we&rsquo;re <em>leaning on</em>
+            What we&rsquo;ve <em>read</em> so far
           </>
         }
-        lede="Every source the team has read and approved, with our summary and how we rated it. Ratings are categories, not scores, and each one is defined on the methodology page."
+        lede="Each card has the team's summary of the source and its tags. The tags use the named categories defined on the methodology page."
       >
         <span className="chip">
-          {sources.length} approved {sources.length === 1 ? "source" : "sources"}
+          {sources.length} {sources.length === 1 ? "source" : "sources"}
         </span>
         <span className="chip">Rubric v{RUBRIC_VERSION}</span>
       </PageHeader>
@@ -70,19 +101,14 @@ export default function SourcesPage() {
           </div>
           <p className={styles.keyNote}>
             Categories marked <span className={styles.draftWord}>draft</span> are still being decided. A dashed chip
-            means an AI suggested that value and a person checked it.{" "}
-            <Link href="/methodology/#credibility">How we rate sources</Link>
+            means an AI suggested that value and a person checked it. Under Claim direction,{" "}
+            <DirectionGlyph tone="for" label="a plus sign" /> means the source argues the approach could help, and{" "}
+            <DirectionGlyph tone="against" label="a minus sign" /> means it argues the approach won&rsquo;t help or
+            could make things worse. <Link href="/methodology/#credibility">How we rate sources</Link>
           </p>
         </aside>
 
-        {sampleCount > 0 && (
-          <p className={styles.sampleNote}>
-            <SampleChip />
-            {sampleCount === sources.length
-              ? "These are fictional placeholders for the prototype. Real sources arrive as the team reviews them."
-              : `${sampleCount} of these are fictional placeholders for the prototype.`}
-          </p>
-        )}
+        {note !== "" && <p className={styles.scoutNote}>{note}</p>}
 
         <SourceDatabase sources={sources} />
       </div>

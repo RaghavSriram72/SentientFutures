@@ -6,43 +6,442 @@ import { ProvenanceLegend } from "@/components/provenance/Legends";
 import { buildTimeline, type TimelineItem } from "@/components/timeline/timelineModel";
 import { getMilestones, getSiteData, getSources } from "@/lib/data";
 import { isDraftEnum } from "@/lib/enums";
-import { sourceRefsById, type SourceRef } from "@/lib/sources";
+import { sourceRefsById, sourceRefsByRegisterId, type SourceRef } from "@/lib/sources";
 import type { Claim, ScorecardRow, TechnologyPage } from "@/lib/types";
 
 import { EmphasisText } from "./EmphasisText";
+import { EvidenceRegister } from "./EvidenceRegister";
 import { MilestonePath } from "./MilestonePath";
-import { Scorecard } from "./Scorecard";
+import { hasSeverityFlag, Scorecard } from "./Scorecard";
+import {
+  AssessmentView,
+  CausalChain,
+  ChainBreaks,
+  EvidenceGap,
+  MindsGrid,
+  ScopeSheet,
+  WelfareSheet,
+} from "./ScorecardSections";
 import { nextTechnology, requireTechnology, technologyNumber, type TechnologyId } from "./technologyData";
 import styles from "./TechnologyPageView.module.css";
 
-interface SectionInfo {
+type Sources = Record<string, SourceRef>;
+
+// One in-page section. The side nav, the section numbers and the sections
+// themselves all come from the same list, so they can't drift apart.
+interface SectionSpec {
   id: string;
-  label: string;
+  label: string; // the side nav entry
+  kicker: string;
+  title: ReactNode; // the h2, with its one italic word in <em>
+  body: ReactNode;
 }
 
-// The in-page sections in reading order. The side nav and the section
-// numbers both come from this list, so they can't drift apart.
-const SECTIONS: SectionInfo[] = [
-  { id: "claims", label: "What it claims to solve" },
-  { id: "mechanism", label: "How it's supposed to work" },
-  { id: "case", label: "Case and objections" },
-  { id: "scorecard", label: "Scorecard" },
-  { id: "minds", label: "The minds involved" },
-  { id: "milestones", label: "On the timeline" },
-];
+interface SectionContext {
+  technology: TechnologyPage;
+  sources: Sources;
+  // The same sources keyed by register id ("S02"), for the evidence register.
+  sourcesByRegisterId: Sources;
+  items: TimelineItem[];
+}
 
 function twoDigits(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-function sectionNumber(id: string): string {
-  for (let index = 0; index < SECTIONS.length; index++) {
-    if (SECTIONS[index].id === id) {
-      return twoDigits(index + 1);
-    }
-  }
-  return "00";
+// The outline fields are optional now, so a missing list is an empty one.
+function listOf<T>(items: T[] | undefined): T[] {
+  return items ?? [];
 }
+
+// True when the page carries any part of the team's populated scorecard.
+// Those pages get the scorecard layout; the rest keep the outline layout.
+function hasPopulatedScorecard(technology: TechnologyPage): boolean {
+  return Boolean(
+    technology.scope ||
+      listOf(technology.theory_of_change).length > 0 ||
+      listOf(technology.alternatives).length > 0 ||
+      listOf(technology.evidence_register).length > 0 ||
+      technology.alignment_assessment ||
+      technology.intelligence_curse_assessment ||
+      technology.artificial_minds_assessment ||
+      technology.welfare_governance ||
+      technology.evidence_gap,
+  );
+}
+
+function buildSections(context: SectionContext): SectionSpec[] {
+  const { technology } = context;
+  if (!hasPopulatedScorecard(technology)) {
+    return [
+      claimsSection(context),
+      mechanismSection(context),
+      caseSection(context),
+      scorecardSection(context),
+      mindsQuestionsSection(context),
+      milestonesSection(context),
+    ];
+  }
+
+  // Scorecard order: scope, theory of change, evidence, the two assessments,
+  // artificial minds, welfare and governance, then the summary. Outline
+  // sections that still hold content keep a place, so nothing in content is
+  // dropped from the page.
+  const sections: SectionSpec[] = [];
+  const steps = listOf(technology.theory_of_change);
+  const alternatives = listOf(technology.alternatives);
+  const register = listOf(technology.evidence_register);
+
+  if (technology.scope) {
+    sections.push(scopeSection(context, technology.scope));
+  }
+  if (listOf(technology.claims_to_solve).length > 0) {
+    sections.push(claimsSection(context));
+  }
+  if (steps.length > 0 || alternatives.length > 0) {
+    sections.push(theorySection(context, steps, alternatives));
+  }
+  if (listOf(technology.mechanism).length > 0) {
+    sections.push(mechanismSection(context));
+  }
+  if (listOf(technology.strongest_case).length > 0 || listOf(technology.strongest_objections).length > 0) {
+    sections.push(caseSection(context));
+  }
+  if (register.length > 0) {
+    sections.push(evidenceSection(context));
+  }
+  if (technology.alignment_assessment) {
+    sections.push({
+      id: "alignment",
+      label: "Alignment case",
+      kicker: "Assessment",
+      title: (
+        <>
+          The <em>alignment</em> case
+        </>
+      ),
+      body: (
+        <AssessmentView
+          assessment={technology.alignment_assessment}
+          mechanismLabel="The alignment problem it targets"
+          sources={context.sources}
+        />
+      ),
+    });
+  }
+  if (technology.intelligence_curse_assessment) {
+    sections.push({
+      id: "intelligence-curse",
+      label: "Intelligence Curse case",
+      kicker: "Assessment",
+      title: (
+        <>
+          The <em>Intelligence Curse</em> case
+        </>
+      ),
+      body: (
+        <AssessmentView
+          assessment={technology.intelligence_curse_assessment}
+          mechanismLabel="The mechanism it claims"
+          sources={context.sources}
+        />
+      ),
+    });
+  }
+  if (technology.artificial_minds_assessment) {
+    sections.push(mindsAssessmentSection(context));
+  } else if (listOf(technology.artificial_minds_questions).length > 0) {
+    sections.push(mindsQuestionsSection(context));
+  }
+  if (technology.welfare_governance) {
+    sections.push({
+      id: "welfare",
+      label: "Welfare and governance",
+      kicker: "Welfare and governance",
+      title: (
+        <>
+          Welfare and governance <em>risks</em>
+        </>
+      ),
+      body: (
+        <div className="reveal">
+          <WelfareSheet
+            welfare={technology.welfare_governance}
+            shortName={technology.short_name}
+            sources={context.sources}
+          />
+        </div>
+      ),
+    });
+  }
+  sections.push(scorecardSection(context));
+  sections.push(milestonesSection(context));
+  return sections;
+}
+
+// ---------- Outline sections ----------
+
+function claimsSection({ technology, sources }: SectionContext): SectionSpec {
+  return {
+    id: "claims",
+    label: "What it claims to solve",
+    kicker: "The problem",
+    title: (
+      <>
+        What it <em>claims</em> to solve
+      </>
+    ),
+    body: (
+      <div className="measure">
+        <ClaimList claims={listOf(technology.claims_to_solve)} sources={sources} />
+      </div>
+    ),
+  };
+}
+
+function mechanismSection({ technology, sources }: SectionContext): SectionSpec {
+  return {
+    id: "mechanism",
+    label: "How it’s supposed to work",
+    kicker: "The mechanism",
+    title: (
+      <>
+        How it&rsquo;s <em>supposed</em> to work
+      </>
+    ),
+    body: (
+      <div className="measure">
+        <ClaimList claims={listOf(technology.mechanism)} sources={sources} />
+      </div>
+    ),
+  };
+}
+
+function caseSection({ technology, sources }: SectionContext): SectionSpec {
+  return {
+    id: "case",
+    label: "Case and objections",
+    kicker: "For and against",
+    title: (
+      <>
+        The best arguments on each <em>side</em>
+      </>
+    ),
+    body: (
+      <div className={styles.debate}>
+        <ArgumentColumn
+          tone="for"
+          label="For"
+          title={
+            <>
+              The strongest <em>case</em>
+            </>
+          }
+          claims={listOf(technology.strongest_case)}
+          sources={sources}
+        />
+        <ArgumentColumn
+          tone="against"
+          label="Against"
+          title={
+            <>
+              The strongest <em>objections</em>
+            </>
+          }
+          claims={listOf(technology.strongest_objections)}
+          sources={sources}
+        />
+      </div>
+    ),
+  };
+}
+
+function mindsQuestionsSection({ technology, sources }: SectionContext): SectionSpec {
+  return {
+    id: "minds",
+    label: "The minds involved",
+    kicker: "Artificial minds",
+    title: (
+      <>
+        Questions about the <em>minds</em> involved
+      </>
+    ),
+    body: (
+      <>
+        <p className={`measure ${styles.sectionNote}`}>
+          The research still has to answer these questions about consciousness, moral status, identity and
+          welfare.
+        </p>
+        <div className="measure">
+          <ClaimList claims={listOf(technology.artificial_minds_questions)} sources={sources} />
+        </div>
+      </>
+    ),
+  };
+}
+
+// ---------- Populated scorecard sections ----------
+
+function scopeSection({ technology, sources }: SectionContext, scope: NonNullable<TechnologyPage["scope"]>): SectionSpec {
+  return {
+    id: "scope",
+    label: "Scope",
+    kicker: "Scope",
+    title: (
+      <>
+        What is being <em>proposed</em>
+      </>
+    ),
+    body: (
+      <div className="reveal">
+        <ScopeSheet scope={scope} shortName={technology.short_name} sources={sources} />
+      </div>
+    ),
+  };
+}
+
+function theorySection({ sources }: SectionContext, steps: Claim[], alternatives: Claim[]): SectionSpec {
+  return {
+    id: "theory",
+    label: "How it would work",
+    kicker: "Theory of change",
+    title: (
+      <>
+        How it would <em>work</em>
+      </>
+    ),
+    body: (
+      <>
+        {steps.length > 0 && (
+          <>
+            <p className={`measure ${styles.sectionNote}`}>The steps the proposal depends on, in order.</p>
+            <CausalChain steps={steps} sources={sources} />
+          </>
+        )}
+        {alternatives.length > 0 && (
+          <ChainBreaks claims={alternatives} sources={sources} afterChain={steps.length > 0} />
+        )}
+      </>
+    ),
+  };
+}
+
+function evidenceSection({ technology, sourcesByRegisterId }: SectionContext): SectionSpec {
+  return {
+    id: "evidence",
+    label: "Evidence register",
+    kicker: "Evidence",
+    title: (
+      <>
+        The evidence for each <em>claim</em>
+      </>
+    ),
+    body: (
+      <>
+        <p className={`measure ${styles.sectionNote}`}>
+          Directness is how close each piece of evidence comes to the scenario being assessed.
+        </p>
+        <div className="reveal">
+          <EvidenceRegister
+            rows={listOf(technology.evidence_register)}
+            technologyName={technology.name}
+            shortName={technology.short_name}
+            sourcesByRegisterId={sourcesByRegisterId}
+          />
+        </div>
+      </>
+    ),
+  };
+}
+
+function mindsAssessmentSection({ technology, sources }: SectionContext): SectionSpec {
+  const minds = technology.artificial_minds_assessment;
+  const questions = listOf(technology.artificial_minds_questions);
+  return {
+    id: "minds",
+    label: "Digital minds",
+    kicker: "Artificial minds",
+    title: (
+      <>
+        How it deals with digital <em>minds</em>
+      </>
+    ),
+    body: (
+      <>
+        <p className={`measure ${styles.sectionNote}`}>
+          The scorecard asks how the proposal handles each of these for any digital mind it might create.
+        </p>
+        {minds && <MindsGrid minds={minds} sources={sources} />}
+        {questions.length > 0 && (
+          <div className={`measure ${styles.subsection}`}>
+            <h3 className={styles.subsectionTitle}>Other open questions</h3>
+            <ClaimList claims={questions} sources={sources} />
+          </div>
+        )}
+      </>
+    ),
+  };
+}
+
+// ---------- Sections every page has ----------
+
+function scorecardSection({ technology, sources }: SectionContext): SectionSpec {
+  return {
+    id: "scorecard",
+    label: "Scorecard",
+    kicker: "Scorecard",
+    title: (
+      <>
+        The <em>ratings</em> so far
+      </>
+    ),
+    body: (
+      <>
+        <ScorecardNote rows={technology.scorecard} />
+        <div className="reveal">
+          <Scorecard
+            rows={technology.scorecard}
+            technologyName={technology.name}
+            shortName={technology.short_name}
+            sources={sources}
+          />
+        </div>
+        {technology.evidence_gap && <EvidenceGap claim={technology.evidence_gap} sources={sources} />}
+      </>
+    ),
+  };
+}
+
+function milestonesSection({ items }: SectionContext): SectionSpec {
+  return {
+    id: "milestones",
+    label: "On the timeline",
+    kicker: "Milestones",
+    title: (
+      <>
+        On the <em>timeline</em>
+      </>
+    ),
+    body: (
+      <>
+        <p className={`measure ${styles.sectionNote}`}>
+          The milestones are grouped by stage, and each stage depends on the one before it. Each card links
+          to the full timeline, which shows any forecasts behind its milestone.
+        </p>
+        <div className="reveal">
+          <MilestonePath items={items} />
+        </div>
+        <p className={styles.timelineCta}>
+          <Link href="/timeline/" className="btn btn-secondary">
+            Open the full timeline
+          </Link>
+        </p>
+      </>
+    ),
+  };
+}
+
+// ---------- Page ----------
 
 // This technology's milestones, built by the same model the timeline uses so
 // the codes ("WBE-01") and estimate summaries match what the timeline shows.
@@ -94,7 +493,9 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
   const items = timelineItemsFor(id);
   const facts = countTimelineFacts(items);
   const sources = sourceRefsById(getSources());
+  const sourcesByRegisterId = sourceRefsByRegisterId(getSources());
   const next = nextTechnology(id);
+  const sections = buildSections({ technology, sources, sourcesByRegisterId, items });
 
   return (
     <article>
@@ -116,7 +517,7 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
               </div>
             </div>
             <div className={styles.heroSide}>
-              {technology.sample && <SampleNotice />}
+              {technology.sample === true && <SampleNotice />}
               <QuickFacts facts={facts} />
             </div>
           </div>
@@ -127,7 +528,7 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
         <nav className={styles.toc} aria-label="On this page">
           <p className={`eyebrow ${styles.tocTitle}`}>On this page</p>
           <ol className={styles.tocList}>
-            {SECTIONS.map((section, index) => (
+            {sections.map((section, index) => (
               <li key={section.id}>
                 <a href={`#${section.id}`} className={styles.tocLink}>
                   <span className={styles.tocNumber}>{twoDigits(index + 1)}</span>
@@ -147,130 +548,17 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
             </Link>
           </div>
 
-          <PageSection
-            id="claims"
-            kicker="The problem"
-            title={
-              <>
-                What it <em>claims</em> to solve
-              </>
-            }
-          >
-            <div className="measure">
-              <ClaimList claims={technology.claims_to_solve} sources={sources} />
-            </div>
-          </PageSection>
-
-          <PageSection
-            id="mechanism"
-            kicker="The mechanism"
-            title={
-              <>
-                How it&apos;s <em>supposed</em> to work
-              </>
-            }
-          >
-            <div className="measure">
-              <ClaimList claims={technology.mechanism} sources={sources} />
-            </div>
-          </PageSection>
-
-          <PageSection
-            id="case"
-            kicker="For and against"
-            title={
-              <>
-                The best case, and the best reasons to <em>doubt it</em>
-              </>
-            }
-          >
-            <div className={styles.debate}>
-              <ArgumentColumn
-                tone="for"
-                label="The case for"
-                title={
-                  <>
-                    The strongest <em>case</em>
-                  </>
-                }
-                claims={technology.strongest_case}
-                sources={sources}
-              />
-              <ArgumentColumn
-                tone="against"
-                label="The case against"
-                title={
-                  <>
-                    The strongest <em>objections</em>
-                  </>
-                }
-                claims={technology.strongest_objections}
-                sources={sources}
-              />
-            </div>
-          </PageSection>
-
-          <PageSection
-            id="scorecard"
-            kicker="Scorecard"
-            title={
-              <>
-                The report card, <em>so far</em>
-              </>
-            }
-          >
-            <ScorecardNote technology={technology} />
-            <div className="reveal">
-              <Scorecard
-                rows={technology.scorecard}
-                technologyName={technology.name}
-                shortName={technology.short_name}
-                sources={sources}
-              />
-            </div>
-          </PageSection>
-
-          <PageSection
-            id="minds"
-            kicker="Artificial minds"
-            title={
-              <>
-                Questions about the <em>minds</em> involved
-              </>
-            }
-          >
-            <p className={`measure ${styles.sectionNote}`}>
-              Consciousness, moral status, identity and welfare. These are open questions the research
-              has to answer, so we list them here instead of guessing.
-            </p>
-            <div className="measure">
-              <ClaimList claims={technology.artificial_minds_questions} sources={sources} />
-            </div>
-          </PageSection>
-
-          <PageSection
-            id="milestones"
-            kicker="Milestones"
-            title={
-              <>
-                On the <em>timeline</em>
-              </>
-            }
-          >
-            <p className={`measure ${styles.sectionNote}`}>
-              Each technology has to become possible, then widely available, then actually helping.
-              This is where its milestones sit today. Every card opens the full timeline, where you can
-              see the forecasts behind each milestone.
-            </p>
-            <div className="reveal">
-              <MilestonePath items={items} />
-            </div>
-            <p className={styles.timelineCta}>
-              <Link href="/timeline/" className="btn btn-secondary">
-                Open the full timeline
-              </Link>
-            </p>
-          </PageSection>
+          {sections.map((section, index) => (
+            <PageSection
+              key={section.id}
+              id={section.id}
+              number={twoDigits(index + 1)}
+              kicker={section.kicker}
+              title={section.title}
+            >
+              {section.body}
+            </PageSection>
+          ))}
 
           {next && <NextTechnology next={next} />}
         </div>
@@ -281,11 +569,13 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
 
 function PageSection({
   id,
+  number,
   kicker,
   title,
   children,
 }: {
   id: string;
+  number: string;
   kicker: string;
   title: ReactNode;
   children: ReactNode;
@@ -294,7 +584,7 @@ function PageSection({
     <section id={id} className={styles.section} aria-labelledby={`${id}-title`}>
       <header className={`${styles.sectionHeader} reveal`}>
         <p className="eyebrow">
-          <span className={styles.sectionNumber}>{sectionNumber(id)}</span> · {kicker}
+          <span className={styles.sectionNumber}>{number}</span> · {kicker}
         </p>
         <h2 id={`${id}-title`}>{title}</h2>
       </header>
@@ -303,14 +593,14 @@ function PageSection({
   );
 }
 
+// Only sample pages get this. A page the team wrote has no AI notice.
 function SampleNotice() {
   return (
     <aside className={styles.sample} aria-label="About this draft">
       <p className={styles.sampleStamp}>Sample draft</p>
       <p className={styles.sampleText}>
-        An AI drafted this page as an outline for the team to react to. Nobody on the team has
-        reviewed it yet and it cites no sources, so read each line as a starting point for research,
-        not a finding.
+        An AI drafted this page as an outline for the team to react to. Nobody on the team has reviewed it
+        yet, and it cites no sources. Treat every line as something still to be checked.
       </p>
     </aside>
   );
@@ -352,7 +642,7 @@ interface ArgumentColumnProps {
   label: string;
   title: ReactNode;
   claims: Claim[];
-  sources: Record<string, SourceRef>;
+  sources: Sources;
 }
 
 // One side of the argument, set as numbered pull quotes on a paper card.
@@ -380,23 +670,46 @@ function ArgumentColumn({ tone, label, title, claims, sources }: ArgumentColumnP
   );
 }
 
-// A short reading guide above the scorecard. The counts come from the data, so
-// the note stays true as the team fills ratings in.
-function ScorecardNote({ technology }: { technology: TechnologyPage }) {
-  const unclearCount = countUnclearRatings(technology.scorecard);
-  const total = technology.scorecard.length;
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+
+// "six" for small counts, "12" for the rest
+function countWord(n: number): string {
+  return n < NUMBER_WORDS.length ? NUMBER_WORDS[n] : String(n);
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function unclearSentence(unclear: number, total: number): string {
+  if (unclear === total) {
+    return total === 1
+      ? "The one rating is Unclear for now, and its row gives the reason."
+      : `All ${countWord(total)} ratings are Unclear for now, and each row gives the reason.`;
+  }
+  return `${capitalize(countWord(unclear))} of the ${countWord(total)} ratings are Unclear for now, and each of those rows gives the reason.`;
+}
+
+// A short reading guide above the scorecard. The counts and the optional
+// sentence come from the data, so the note stays true as ratings change.
+function ScorecardNote({ rows }: { rows: ScorecardRow[] }) {
+  const unclearCount = countUnclearRatings(rows);
   return (
     <div className={`measure ${styles.sectionNote}`}>
       <p>
-        Ratings follow the team&apos;s draft scorecard.{" "}
-        {unclearCount > 0 && (
+        The ratings use the scales in the team&rsquo;s draft scorecard.
+        {unclearCount > 0 && <> {unclearSentence(unclearCount, rows.length)}</>}
+        {hasSeverityFlag(rows) && (
           <>
-            {unclearCount} of {total} are Unclear for now, and each one says why.{" "}
+            {" "}
+            If an Unclear risk could be severe, its row also says how severe.
           </>
         )}
-        Not claimed means the proposal doesn&rsquo;t claim that outcome, which is different from a weak case. A risk is
-        never rated Low just because nobody has studied it.
-        {isDraftEnum("RiskRating") && " The risk thresholds themselves are still being defined."}{" "}
+      </p>
+      <p>
+        &ldquo;Not claimed&rdquo; means the proposal doesn&rsquo;t claim that outcome, so there is no case to
+        grade. We never rate a risk Low just because nobody has studied it
+        {isDraftEnum("RiskRating") && ", and the cutoffs for the risk ratings aren’t set yet"}.{" "}
         <Link href="/methodology/">How we rate</Link>
       </p>
     </div>

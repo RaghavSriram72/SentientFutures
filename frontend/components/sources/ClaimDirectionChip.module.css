@@ -1,0 +1,32 @@
+/* Claim direction chips. The glyph (plus or minus) says which way the source
+   argues; the tint repeats it for readers who see color. */
+.chip:global(.chip) {
+  color: var(--ink-body);
+}
+
+.chipFor:global(.chip) {
+  border-color: color-mix(in srgb, var(--sage) 45%, transparent);
+  background: color-mix(in srgb, var(--sage) 9%, var(--paper-2));
+}
+
+.chipAgainst:global(.chip) {
+  border-color: color-mix(in srgb, var(--stamp) 30%, transparent);
+  background: var(--stamp-tint);
+}
+
+/* Inline so it can sit inside a sentence; the base styles make every svg a block. */
+.glyph {
+  display: inline-block;
+  flex: none;
+  width: 0.95em;
+  height: 0.95em;
+  vertical-align: -0.12em;
+}
+
+.glyphFor {
+  color: var(--stage-helping-ink);
+}
+
+.glyphAgainst {
+  color: var(--stamp);
+}

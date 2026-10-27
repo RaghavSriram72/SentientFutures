@@ -20,7 +20,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "Methodology",
   description:
-    "How to read this site, how the timeline draws uncertainty, what the AI is allowed to do, and every category we use to rate sources, including our credibility guidelines.",
+    "The rules behind this site's marks, timeline and ratings, including what the AI may do and our credibility guidelines for sources.",
 };
 
 const SECTIONS = [
@@ -30,7 +30,7 @@ const SECTIONS = [
   { id: "ai", label: "The AI's role" },
   { id: "credibility", label: "Credibility guidelines" },
   { id: "ratings", label: "Rating rules" },
-  { id: "categories", label: "Every other category" },
+  { id: "categories", label: "Other categories" },
   { id: "versions", label: "Versions" },
 ];
 
@@ -44,39 +44,43 @@ const RATING_GROUP: EnumName[] = ["CaseRating", "RiskRating", "Confidence"];
 // shows up below, with a title made from its name.
 const ENUM_COPY: Partial<Record<EnumName, { title?: string; note?: string }>> = {
   Credibility: {
-    note: "How far a source's claims can be trusted, judged on its methods and on whether the claims match the evidence. Kept separate from venue: a peer-reviewed paper can be weak and a blog post can be strong. Unclear always comes with a reason.",
+    note: "How far we trust a source's claims, judged on its methods and on whether the claims match the evidence. We rate it separately from where the work appeared, since a peer-reviewed paper can be weak and a blog post can be strong.",
   },
   Independence: {
     title: "Source independence",
-    note: "Whether the author or funder has a stake in the result. Rated on its own, so an affiliated source can still be credible.",
+    note: "Whether the author or funder has a stake in the result.",
   },
   EvidenceType: {
-    note: "What kind of support a source offers. An argument and an experiment can both matter, but they matter differently.",
+    note: "What kind of support a source gives. An argument and an experiment can both count, but we weigh them differently.",
   },
   Technology: { title: "Technology family" },
   Problem: { title: "Problem addressed" },
-  Stage: { note: "The only thing color means on the timeline." },
+  Stage: { note: "On the timeline, color shows stage and nothing else." },
   MilestoneCategory: { title: "Milestone category", note: "What kind of hurdle a milestone is." },
   MilestoneStatus: { title: "Milestone status" },
   Confidence: { note: "How sure we are of a rating or an estimate." },
   CaseRating: {
     title: "Positive-case rating",
-    note: "How strong the case is that a technology helps, for the alignment case and the Intelligence Curse case. Not claimed is not the same as weak or unclear.",
+    note: "How strong the case is that a technology helps. We rate the alignment case and the Intelligence Curse case separately.",
   },
   RiskRating: {
     title: "Risk rating",
-    note: "We weigh how bad the harm could be, who's exposed, whether it can be undone and what safeguards exist. Thresholds are still being set, and we never rate a risk low just because nobody has studied it.",
+    note: "This scale covers human welfare risk, artificial-mind welfare and rights risk, and governance risk. Each is judged in the scenario the proposal describes, weighing potential severity, who's exposed, reversibility and the safeguards available. A row that's still Unclear can also carry a “potentially high severity” warning. The warning isn't a rating, and the row stays Unclear.",
   },
   UnclearReason: { title: "Reason for unclear", note: "Every Unclear rating names one of these." },
   Directness: { title: "Directness to scenario" },
   SourceType: { title: "Source type" },
+  ClaimDirection: {
+    title: "Claim direction",
+    note: "Which way a source argues about a proposal. A source can argue more than one way, so it can carry several of these.",
+  },
   SourceKind: {
     title: "Source kind",
-    note: "Arguments are rare and valuable; technical progress is plentiful. Keeping them apart stops one from drowning out the other.",
+    note: "Arguments about these proposals are rare, and reports of technical progress are plentiful. We keep the two apart so the arguments don't get buried.",
   },
   Relevance: { note: "Placeholder values until the team agrees on them." },
   TimeHorizon: { title: "Time horizon", note: "Definitions still to be agreed." },
-  Provenance: { note: "Every research claim on the site carries one of these." },
+  Provenance: { note: "The four marks from section 01." },
 };
 
 function enumTitle(name: EnumName): string {
@@ -86,19 +90,19 @@ function enumTitle(name: EnumName): string {
 const PROVENANCE_EXPLAINERS: { kind: Provenance; text: string }[] = [
   {
     kind: "source",
-    text: "Taken straight from a source we cite. You get the exact quote (300 characters at most) and a link, so you can check it yourself.",
+    text: "The quote is 300 characters at most and links to the source, so you can check it yourself.",
   },
   {
     kind: "team",
-    text: "Our interpretation. It's marked so you can tell it apart from what a source actually says. If you read the evidence differently, tell us.",
+    text: "If you read the evidence differently from us, tell us.",
   },
   {
     kind: "ai",
-    text: "Suggested by an AI model. It names the person who checked it, or says “not yet reviewed” if nobody has. In this draft, that's every AI line on the technology pages.",
+    text: "Once a person checks the line, the dashed outline stays and their name replaces “not yet reviewed”.",
   },
   {
     kind: "unclear",
-    text: "We genuinely don't know, and we say why. The reason is always one of a short, fixed list:",
+    text: "The reason always comes from this list:",
   },
 ];
 
@@ -139,10 +143,10 @@ export default function MethodologyPage() {
         eyebrow="Methodology"
         title={
           <>
-            How we decide <em>what to say</em>
+            How we <em>mark and rate</em> what we publish
           </>
         }
-        lede="The rules behind every mark, bar and rating on this site. This page doubles as our rubric and our credibility guidelines, and it changes in versions you can see."
+        lede="What each mark, bar and rating on the site means and how we decide on it. This page is also our rubric and our credibility guidelines. Each change to the rules gets a new version number."
       >
         <span className="chip">Rubric v{RUBRIC_VERSION}</span>
       </PageHeader>
@@ -170,10 +174,10 @@ export default function MethodologyPage() {
               label="How to read this site"
               title={
                 <>
-                  Four kinds of <em>content</em>, always marked
+                  The four <em>marks</em> on every claim
                 </>
               }
-              intro="Every research claim on this site, from milestones and forecasts to sources and scorecards, carries one of four marks. They look different even in black and white, so you never have to guess whether you're reading a source, us, an AI or an open question."
+              intro="Every research claim on the site carries one of four marks, whether it sits in a milestone, a forecast, a source summary or a scorecard. Each mark has its own glyph and line style, so the four stay distinct even in black and white."
             >
               <div className={styles.legendWrap}>
                 <ProvenanceLegend />
@@ -200,10 +204,9 @@ export default function MethodologyPage() {
                 ))}
               </dl>
               <p className={`${styles.callout} ${styles.calloutAi}`}>
-                <strong>Once the site launches, nothing AI-written goes live unchecked.</strong> In this draft the technology
-                pages are AI-written outlines the team hasn&rsquo;t reviewed yet, so each line says &ldquo;not yet
-                reviewed&rdquo;. Once a person checks a line, the dashed outline stays on and their name replaces that
-                note.
+                <strong>After launch, nothing AI-written goes on the site until a person has checked it.</strong> In this
+                draft the BCI and neuromorphic pages are AI-written outlines the team hasn&rsquo;t reviewed yet, so every
+                line on them says &ldquo;not yet reviewed&rdquo;.
               </p>
             </MethodSection>
 
@@ -213,10 +216,10 @@ export default function MethodologyPage() {
               label="The three stages"
               title={
                 <>
-                  Three stages, <em>three different questions</em>
+                  The three <em>stages</em> on the timeline
                 </>
               }
-              intro="Can it be done, can people get it, and does it help? Claims about brain tech often blur these. Every milestone on the timeline is tagged with exactly one of them, and stage is the only thing color means there."
+              intro="Each stage asks something different: whether it can be done, whether people can get it, and whether it helps. Claims about brain tech often run these together. Every milestone on the timeline is tagged with exactly one stage, and the timeline uses color for stage only."
             >
               <div className={styles.stageKey}>
                 <StageLegend />
@@ -233,33 +236,24 @@ export default function MethodologyPage() {
                   How the timeline <em>draws uncertainty</em>
                 </>
               }
-              intro="We never collapse conflicting forecasts into one precise date. Each milestone gets at most one bar, and what that bar means depends on what we have."
+              intro="Each milestone gets one bar at most, and what the bar means depends on the estimates we have. Conflicting forecasts stay separate and never become one precise date."
             >
               <RuleSpecimens />
 
               <ul className={styles.ruleList}>
                 <li>
-                  <strong>Every forecast is drawn, always.</strong> Each one is its own whisker, and the panel says who
-                  made it, when, the window they gave and the exact quote.
+                  Every forecast is drawn as its own whisker. Its panel says who made it and when, the window they gave
+                  and the exact quote.
                 </li>
                 <li>
-                  <strong>The team range wins, but hides nothing.</strong> When the team sets a range, it comes with a
-                  written basis, and the forecasts and any disagreement stay visible next to it.
+                  Any milestone with at least one forecast has a count, &ldquo;N forecasts from M sources&rdquo;, which
+                  tells you whether it&rsquo;s well studied or rests on a single guess.
                 </li>
                 <li>
-                  <strong>
-                    &ldquo;N forecasts from M sources&rdquo;
-                  </strong>{" "}
-                  appears whenever there&rsquo;s at least one forecast, so you can tell a well-studied milestone from one
-                  that rests on a single guess.
+                  If a forecast&rsquo;s window has passed and the milestone hasn&rsquo;t happened, the forecast is
+                  grayed out and counted separately.
                 </li>
-                <li>
-                  <strong>Old forecasts fade.</strong> If a forecast&rsquo;s window has passed and the milestone
-                  hasn&rsquo;t happened, it&rsquo;s greyed out and counted separately.
-                </li>
-                <li>
-                  <strong>Done is a point.</strong> A milestone that has happened is marked at the year it happened.
-                </li>
+                <li>A milestone that has already happened is drawn as a point at the year it happened.</li>
               </ul>
 
               <div className={`paper ${styles.ruleCard}`}>
@@ -287,7 +281,7 @@ export default function MethodologyPage() {
                   What the AI <em>is allowed</em> to do
                 </>
               }
-              intro="Soon an AI will help us keep up with new research. It won't decide anything on its own. For now, the team adds sources by hand."
+              intro="Soon an AI model will help us keep up with new research, and a person will review everything it suggests. For now the team adds sources by hand."
             >
               <ul className={styles.aiGrid}>
                 <li className={styles.aiItem}>
@@ -297,7 +291,7 @@ export default function MethodologyPage() {
                   <h3>Finds and triages</h3>
                   <p>
                     Once the pipeline is running, a weekly script will search research databases, and an AI model will read
-                    titles and abstracts to sort likely-relevant papers from the noise.
+                    the titles and abstracts to pick out the papers that look relevant.
                   </p>
                 </li>
                 <li className={styles.aiItem}>
@@ -306,7 +300,7 @@ export default function MethodologyPage() {
                   </span>
                   <h3>Never publishes</h3>
                   <p>
-                    The AI can&rsquo;t approve a source, edit the timeline or put anything on this site. Only a person can.
+                    Only a person can approve a source or put anything on this site, including changes to the timeline.
                   </p>
                 </li>
                 <li className={styles.aiItem}>
@@ -315,9 +309,8 @@ export default function MethodologyPage() {
                   </span>
                   <h3>Every suggestion gets reviewed</h3>
                   <p>
-                    A team member checks each one against the source and approves, edits or rejects it. If the AI cites a
-                    quote, code checks that the quote is really in the text. The technology pages are the exception in
-                    this draft: they&rsquo;re AI-written outlines nobody has checked yet, and every line says so.
+                    A team member checks each suggestion against the source, then approves, edits or rejects it. When the
+                    AI quotes a source, our code checks that the quote really appears in the text.
                   </p>
                 </li>
                 <li className={styles.aiItem}>
@@ -326,8 +319,8 @@ export default function MethodologyPage() {
                   </span>
                   <h3>The original is kept</h3>
                   <p>
-                    The AI&rsquo;s first assessment will be stored untouched, next to the human version. That&rsquo;s our
-                    audit trail, and it will show us where the AI is consistently wrong.{" "}
+                    We&rsquo;ll store the AI&rsquo;s first assessment unchanged, next to the version a person approved.
+                    That record is our audit trail, and it will show us where the AI keeps getting things wrong.{" "}
                     <Link href="/admin/">See a preview of the review screen</Link>.
                   </p>
                 </li>
@@ -340,16 +333,16 @@ export default function MethodologyPage() {
               label="Credibility guidelines"
               title={
                 <>
-                  Credibility <em>guidelines</em>
+                  Three scales for <em>sources</em>
                 </>
               }
-              intro="We rate sources on three separate scales instead of one score. A source can be independent and still weak, or affiliated and still careful, and you should be able to see each part."
+              intro="We rate each source on three separate scales and don't combine them into one score. A source can be independent and still weak, or affiliated and still careful, and keeping the scales apart lets you see which. Sources from the team's scouting database start out unrated, and their cards say Not rated yet until someone rates them."
             >
               <p className={styles.draftNote}>
                 <DraftBadge />
                 <span>
                   Draft categories are placeholders. The team and our mentor haven&rsquo;t signed off on them yet, so their
-                  values may change in the next rubric version. Ratings made with them are still shown, and still marked.
+                  values may change in the next rubric version. We still show ratings made with them, marked as drafts.
                 </span>
               </p>
               <div className={styles.enumList}>
@@ -365,16 +358,16 @@ export default function MethodologyPage() {
               label="Rating rules"
               title={
                 <>
-                  Five ratings, <em>one scorecard</em>
+                  The <em>scorecard&rsquo;s</em> rating scales
                 </>
               }
-              intro="Each technology page has a scorecard. It follows the team's proposal scorecard v0.1, which sums a proposal up in five ratings: the alignment case, the Intelligence Curse case, welfare risk, governance risk and safeguard adequacy. Each rating comes with how confident we are and the claim it rests on, and an Unclear rating always names its reason."
+              intro="Each technology page has a scorecard based on the team's proposal scorecard v0.1. Its summary gives a proposal six ratings: the alignment case, the Intelligence Curse case, human welfare risk, artificial-mind welfare and rights risk, governance risk and safeguard adequacy. Each rating says how confident we are and which claim it rests on."
             >
               {isDraftEnum("RiskRating") && (
                 <p className={styles.draftNote}>
                   <DraftBadge />
                   <span>
-                    Risk thresholds are still being set during the pilot, so the risk scale is a draft for now.
+                    The risk scale is a draft until the team sets its cutoffs during the pilot.
                   </span>
                 </p>
               )}
@@ -383,18 +376,23 @@ export default function MethodologyPage() {
                   <EnumDefinitions key={name} name={name} title={enumTitle(name)} note={ENUM_COPY[name]?.note} />
                 ))}
               </div>
+              <p className={`${styles.callout} ${styles.calloutAi}`}>
+                Only the whole brain emulation page has the team&rsquo;s full scorecard: scope, the causal chain, the
+                evidence register, the alignment and Intelligence Curse assessments, artificial minds, and welfare and
+                governance.
+              </p>
             </MethodSection>
 
             <MethodSection
               id="categories"
               number="07"
-              label="Every other category"
+              label="Other categories"
               title={
                 <>
-                  Categories, <em>not scores</em>
+                  Other <em>categories</em> we use
                 </>
               }
-              intro="Everything we rate uses a short, named list of values instead of a number. Each list lives in one shared file, so changing a category is a one-line edit and a version bump."
+              intro="Everything we rate gets a value from a short list of named categories. The lists all live in one shared file, so changing a category takes a one-line edit and a version bump."
             >
               <div className={styles.enumList}>
                 {otherEnums.map((name) => (
@@ -409,7 +407,7 @@ export default function MethodologyPage() {
               label="Versions"
               title={
                 <>
-                  Every change gets <em>a version</em>
+                  Rubric and rule <em>versions</em>
                 </>
               }
             >
@@ -419,8 +417,8 @@ export default function MethodologyPage() {
                   <span className={styles.versionValue}>v{RUBRIC_VERSION}</span>
                 </p>
                 <p className={styles.versionText}>
-                  When a category changes, the rubric version goes up. Every AI assessment and every review records the
-                  version it was made under, so an old rating can always be read against the rules that produced it.
+                  When a category changes, the rubric version goes up. Each AI assessment and each review records the
+                  version it was made under, so you can always read an old rating against the rules in force at the time.
                   &ldquo;Draft&rdquo; in the version means some categories above are still placeholders.
                 </p>
                 <p className={styles.versionNumber}>
@@ -429,8 +427,8 @@ export default function MethodologyPage() {
                 </p>
                 <p className={styles.versionText}>
                   Changing the {DISAGREEMENT_GAP_YEARS}-year threshold or the wording of the{" "}
-                  <a href="#timeline">disagreement rule</a> bumps this version. Flags are worked out again every time
-                  the site is built, so every stamp you see follows the current rule.
+                  <a href="#timeline">disagreement rule</a> bumps this version. The disagreement flags are recalculated
+                  every time the site is built, so every stamp you see follows the current rule.
                 </p>
               </div>
             </MethodSection>

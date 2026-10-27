@@ -36,12 +36,11 @@
   color: var(--mauve);
 }
 
-.sampleNote {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
+/* Where the sources come from and what hasn't been done to them yet */
+.scoutNote {
+  max-width: 68ch;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--lavender);
   font-size: var(--text-sm);
   color: var(--ink-muted);
 }
-

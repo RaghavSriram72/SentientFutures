@@ -4,28 +4,33 @@ import { ProvenanceLegend } from "@/components/provenance/Legends";
 import { TimelinePreview } from "@/components/timeline/TimelinePreview";
 import { getSiteData } from "@/lib/data";
 import { enumDescription, enumValues } from "@/lib/enums";
+import { realSources } from "@/lib/sources";
 import type { Stage, Technology } from "@/lib/types";
 
 import styles from "./page.module.css";
 
-const TECH_CARDS: { id: Exclude<Technology, "hybrid">; href: string; title: string; number: string }[] = [
-  { id: "wbe", href: "/wbe/", title: "Whole brain emulation", number: "01" },
-  { id: "bci", href: "/bci/", title: "Brain computer interfaces", number: "02" },
-  { id: "neuromorphic", href: "/neuromorphic/", title: "Neuromorphic AI", number: "03" },
+// status says what the page holds right now: the team's own scorecard, or an
+// AI-drafted outline nobody on the team has reviewed yet.
+const TECH_CARDS: {
+  id: Exclude<Technology, "hybrid">;
+  href: string;
+  title: string;
+  number: string;
+  status: string;
+}[] = [
+  { id: "wbe", href: "/wbe/", title: "Whole brain emulation", number: "01", status: "Team scorecard" },
+  { id: "bci", href: "/bci/", title: "Brain computer interfaces", number: "02", status: "AI-drafted outline" },
+  { id: "neuromorphic", href: "/neuromorphic/", title: "Neuromorphic AI", number: "03", status: "AI-drafted outline" },
 ];
 
 const STEPS = [
   {
-    title: "An AI pipeline will find new work",
-    text: "Once it's running, it will search research databases each week for papers and posts that bear on these proposals, and sort out the noise. For this draft, the team adds sources by hand.",
+    title: "A weekly search",
+    text: "Once it's built, the AI pipeline will check research databases every week for papers and posts relevant to these proposals and screen out the irrelevant ones. Until then the team adds sources by hand.",
   },
   {
     title: "A person reviews every item",
-    text: "Nothing the AI finds goes live on its own. We keep its original assessment next to ours, so we can see where it gets things wrong.",
-  },
-  {
-    title: "Reviewed work goes live",
-    text: "Approved sources and team-reviewed milestones go on the site, and everything else stays in the queue. Until launch, the technology pages also show AI-written outlines, marked “not yet reviewed”.",
+    text: "A reviewer approves, edits or rejects each item the AI finds, and the AI's original assessment is saved next to the final version so we can see where it gets things wrong. Only approved sources and reviewed milestones appear on the site, and the rest stays in the queue.",
   },
 ];
 
@@ -52,13 +57,13 @@ export default function HomePage() {
           </h1>
           <p className={`lede ${styles.heroLede}`}>
             Some people think whole brain emulation, brain computer interfaces or brain-inspired AI
-            could help with AI alignment, or keep human work and voices valuable as AI gets more
-            capable. We map how each idea is supposed to work, what would have to happen first, and
-            where the strongest objections are.
+            could help with AI alignment, or keep people&rsquo;s work and political voice from losing
+            value as AI gets more capable. For each idea we lay out how it&rsquo;s supposed to work
+            and what would have to happen first, and we collect the strongest objections.
           </p>
           <div className={styles.heroActions}>
             <Link href="/timeline/" className="btn btn-primary">
-              Explore the timeline
+              See the timeline
             </Link>
             <Link href="/methodology/" className="btn btn-secondary">
               How we judge evidence
@@ -70,12 +75,12 @@ export default function HomePage() {
               <dd>{data.milestones.length}</dd>
             </div>
             <div>
-              <dt>Forecasts shown</dt>
+              <dt>Forecasts</dt>
               <dd>{forecastTotal}</dd>
             </div>
             <div>
               <dt>Sources</dt>
-              <dd>{data.sources.length}</dd>
+              <dd>{realSources(data.sources).length}</dd>
             </div>
           </dl>
         </div>
@@ -84,13 +89,13 @@ export default function HomePage() {
       <section className="section">
         <div className="container">
           <div className={styles.sectionHead}>
-            <p className="eyebrow">The key distinction</p>
+            <p className="eyebrow">Stages</p>
             <h2>
-              Possible is not the same as <em>helpful</em>.
+              Every milestone sits in one of three <em>stages</em>
             </h2>
             <p className="lede">
-              It&rsquo;s easy to jump from &ldquo;someone built it&rdquo; straight to &ldquo;it fixes
-              the problem.&rdquo; We keep three stages apart, and color the timeline by them.
+              We split &ldquo;someone built it&rdquo; and &ldquo;it fixes the problem&rdquo; into
+              separate stages, with a third in between, and the timeline is colored by stage.
             </p>
           </div>
           <ol className={styles.stages}>
@@ -110,13 +115,14 @@ export default function HomePage() {
         <div className="container">
           <div className={styles.sectionHeadRow}>
             <div className={styles.sectionHead}>
-              <p className="eyebrow">The timeline</p>
+              <p className="eyebrow">Timeline preview</p>
               <h2>
-                Uncertain dates, <em>shown honestly</em>.
+                When the milestones <em>might</em> happen
               </h2>
               <p className="lede">
-                Every forecast stays visible. When credible sources disagree, we show the
-                disagreement instead of averaging it into one tidy date.
+                Milestones are drawn as ranges of years, and the full timeline lists every forecast
+                behind each one separately. Where credible sources disagree, the milestone gets a red
+                &ldquo;Sources disagree&rdquo; stamp.
               </p>
             </div>
             <Link href="/timeline/" className="btn btn-secondary">
@@ -134,8 +140,13 @@ export default function HomePage() {
           <div className={styles.sectionHead}>
             <p className="eyebrow">Three proposals</p>
             <h2>
-              What each one <em>claims</em> to do.
+              What each one <em>is</em>
             </h2>
+            <p className="lede">
+              Only the whole brain emulation page has the team&rsquo;s completed scorecard. The other
+              two are still AI-drafted outlines, and each of their lines stays marked &ldquo;not yet
+              reviewed&rdquo; until someone on the team checks it.
+            </p>
           </div>
           <ul className={styles.techGrid}>
             {TECH_CARDS.map((tech) => (
@@ -145,7 +156,7 @@ export default function HomePage() {
                   <h3>{tech.title}</h3>
                   <p>{enumDescription("Technology", tech.id)}</p>
                   <span className={styles.techMeta}>
-                    {milestoneCounts[tech.id] ?? 0} milestones
+                    {milestoneCounts[tech.id] ?? 0} milestones · {tech.status}
                     <span aria-hidden="true"> →</span>
                   </span>
                 </Link>
@@ -160,11 +171,11 @@ export default function HomePage() {
           <div className={styles.sectionHead}>
             <p className="eyebrow">Four kinds of content</p>
             <h2>
-              Always know what <em>you&rsquo;re reading</em>.
+              The four <em>marks</em>
             </h2>
             <p className="lede">
-              Every research claim is marked as coming from a source, our own read, an AI suggestion,
-              or genuine uncertainty. The marks look different, so you never have to guess.
+              You don&rsquo;t need color to tell them apart, since each has its own glyph and line
+              style.
             </p>
           </div>
           <ProvenanceLegend />
@@ -174,9 +185,9 @@ export default function HomePage() {
       <section className="section">
         <div className="container">
           <div className={styles.sectionHead}>
-            <p className="eyebrow">How it will stay current</p>
+            <p className="eyebrow">Keeping it current</p>
             <h2>
-              Automated search, <em>human</em> judgment.
+              How new sources will reach the <em>site</em>
             </h2>
           </div>
           <ol className={styles.steps}>

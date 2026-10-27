@@ -54,7 +54,7 @@ const NARROW_SIZES: ChartSizes = {
 // What a screen reader hears for the strip: where the bar sits and every forecast.
 function stripAriaLabel(item: TimelineItem, nowYear: number): string {
   const parts: string[] = [];
-  parts.push(`${item.code} on the timeline, with now at ${nowYear}`);
+  parts.push(`${item.code} on the timeline, where the current year is ${nowYear}`);
   parts.push(estimateSummary(item));
   if (item.view.forecastCount >= 1) {
     parts.push(forecastsSummary(item.view));

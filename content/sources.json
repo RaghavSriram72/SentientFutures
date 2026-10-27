@@ -2,7 +2,10 @@
   {
     "id": "sample-roadmap-report",
     "title": "Sample source: a technical roadmap for emulation (placeholder)",
-    "authors": ["Example Author", "Second Example"],
+    "authors": [
+      "Example Author",
+      "Second Example"
+    ],
     "year": 2021,
     "url": "https://example.org/sample-roadmap",
     "doi": null,
@@ -10,7 +13,9 @@
     "venue": "Example Institute report",
     "source_type": "report",
     "kind": "milestone_evidence",
-    "technology": ["wbe"],
+    "technology": [
+      "wbe"
+    ],
     "problem": null,
     "evidence_type": "review",
     "directness": "adjacent",
@@ -30,7 +35,9 @@
   {
     "id": "sample-expert-survey",
     "title": "Sample source: a survey of neurotechnology and brain-inspired AI researchers (placeholder)",
-    "authors": ["Example Surveyor"],
+    "authors": [
+      "Example Surveyor"
+    ],
     "year": 2024,
     "url": "https://example.org/sample-survey",
     "doi": null,
@@ -38,7 +45,11 @@
     "venue": "Example Journal",
     "source_type": "peer_reviewed",
     "kind": "milestone_evidence",
-    "technology": ["wbe", "bci", "neuromorphic"],
+    "technology": [
+      "wbe",
+      "bci",
+      "neuromorphic"
+    ],
     "problem": null,
     "evidence_type": "review",
     "directness": "adjacent",
@@ -47,18 +58,22 @@
     "credibility": "adequate",
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Placeholder summary. Survey forecasts are useful for showing how much researchers disagree, not for picking one date.",
+      "text": "Placeholder summary. A survey like this is most useful for showing how far apart researchers' forecasts are.",
       "provenance": "team"
     },
-    "ai_suggested_fields": ["evidence_type"],
+    "ai_suggested_fields": [
+      "evidence_type"
+    ],
     "reviewed_by": "Sample reviewer",
     "reviewed_on": "2026-10-26",
     "sample": true
   },
   {
     "id": "sample-skeptic-essay",
-    "title": "Sample source: why emulation may never be practical (placeholder)",
-    "authors": ["Example Skeptic"],
+    "title": "Sample source: why brain-like AI may never be easier to align (placeholder)",
+    "authors": [
+      "Example Skeptic"
+    ],
     "year": 2023,
     "url": "https://example.org/sample-skeptic",
     "doi": null,
@@ -66,7 +81,9 @@
     "venue": "Example Blog",
     "source_type": "blog",
     "kind": "argument",
-    "technology": ["wbe"],
+    "technology": [
+      "neuromorphic"
+    ],
     "problem": "alignment",
     "evidence_type": "argument",
     "directness": "direct",
@@ -75,7 +92,7 @@
     "credibility": "unclear",
     "credibility_unclear_reason": "search_incomplete",
     "summary": {
-      "text": "Placeholder summary. A skeptical essay arguing the biology is too messy to emulate at any reasonable cost.",
+      "text": "Placeholder summary. A skeptical essay arguing that brain-like training will never make AI measurably easier to align.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
@@ -86,7 +103,11 @@
   {
     "id": "sample-bci-trial",
     "title": "Sample source: results from an implanted interface trial (placeholder)",
-    "authors": ["Example Clinician", "Example Engineer", "Third Example"],
+    "authors": [
+      "Example Clinician",
+      "Example Engineer",
+      "Third Example"
+    ],
     "year": 2025,
     "url": "https://example.org/sample-trial",
     "doi": null,
@@ -94,7 +115,9 @@
     "venue": "Example Medical Journal",
     "source_type": "peer_reviewed",
     "kind": "milestone_evidence",
-    "technology": ["bci"],
+    "technology": [
+      "bci"
+    ],
     "problem": null,
     "evidence_type": "experiment",
     "directness": "adjacent",
@@ -103,7 +126,7 @@
     "credibility": "strong",
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Placeholder summary. A small trial showing an implanted interface working for months outside the lab.",
+      "text": "Placeholder summary. A small trial in which an implanted interface kept working for months outside the lab.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
@@ -114,7 +137,10 @@
   {
     "id": "sample-decoding-study",
     "title": "Sample source: a non-invasive text decoding study (placeholder)",
-    "authors": ["Example Engineer", "Fourth Example"],
+    "authors": [
+      "Example Engineer",
+      "Fourth Example"
+    ],
     "year": 2025,
     "url": "https://example.org/sample-decoding",
     "doi": null,
@@ -122,7 +148,9 @@
     "venue": "Example Conference",
     "source_type": "preprint",
     "kind": "milestone_evidence",
-    "technology": ["bci"],
+    "technology": [
+      "bci"
+    ],
     "problem": null,
     "evidence_type": "experiment",
     "directness": "direct",
@@ -142,7 +170,9 @@
   {
     "id": "sample-neuromorphic-benchmark",
     "title": "Sample source: a neuromorphic chip benchmark study (placeholder)",
-    "authors": ["Example Hardware Lab"],
+    "authors": [
+      "Example Hardware Lab"
+    ],
     "year": 2025,
     "url": "https://example.org/sample-benchmark",
     "doi": null,
@@ -150,7 +180,9 @@
     "venue": null,
     "source_type": "preprint",
     "kind": "milestone_evidence",
-    "technology": ["neuromorphic"],
+    "technology": [
+      "neuromorphic"
+    ],
     "problem": null,
     "evidence_type": "experiment",
     "directness": "adjacent",
@@ -159,10 +191,13 @@
     "credibility": "adequate",
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Placeholder summary. Benchmarks a brain-inspired chip against conventional hardware on energy per task.",
+      "text": "Placeholder summary. Compares a brain-inspired chip with conventional hardware on energy per task.",
       "provenance": "team"
     },
-    "ai_suggested_fields": ["directness", "relevance"],
+    "ai_suggested_fields": [
+      "directness",
+      "relevance"
+    ],
     "reviewed_by": "Sample reviewer",
     "reviewed_on": "2026-10-26",
     "sample": true
@@ -170,7 +205,9 @@
   {
     "id": "sample-alignment-argument",
     "title": "Sample source: could brain-like AI be easier to align? (placeholder)",
-    "authors": ["Example Researcher"],
+    "authors": [
+      "Example Researcher"
+    ],
     "year": 2024,
     "url": "https://example.org/sample-argument",
     "doi": null,
@@ -178,7 +215,9 @@
     "venue": "Example Forum",
     "source_type": "forum_post",
     "kind": "argument",
-    "technology": ["neuromorphic"],
+    "technology": [
+      "neuromorphic"
+    ],
     "problem": "alignment",
     "evidence_type": "argument",
     "directness": "direct",
@@ -187,12 +226,1173 @@
     "credibility": "adequate",
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Placeholder summary. Argues that copying how brains learn values could make AI values easier to understand, and lists what would have to be true.",
+      "text": "Placeholder summary. Argues that copying how brains learn values could make AI values easier to understand, and lists what would have to be true for that to work.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "reviewed_by": "Sample reviewer",
     "reviewed_on": "2026-10-26",
     "sample": true
+  },
+  {
+    "id": "s01",
+    "register_id": "S01",
+    "title": "Brain-Computer Interfaces for AI Alignment",
+    "authors": [],
+    "year": 2023,
+    "url": "https://www.youtube.com/watch?v=VCxTCuntrS4",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "talk",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "both",
+    "claim_directions": [
+      "ai_alignment",
+      "human_empowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "The project aims to find effective BCI solutions through specific experiments. These include enhancing human capabilities with BCIs and using autoencoders to deter ASI from representing non-human brain states. The project's success depends on either debunking most BCI methods or inventing new ones, which would contribute to AI safety by quickly pinpointing scalable, promising approaches.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s02",
+    "register_id": "S02",
+    "title": "Alignment Perspectives",
+    "authors": [
+      "Lisa Thiergart"
+    ],
+    "year": 2023,
+    "url": "https://www.youtube.com/watch?v=gf7W82mrRfI",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "talk",
+    "kind": null,
+    "technology": [
+      "wbe"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Thiergart reviews potential threats from narrow forms of AI and whole brain emulation. She acknowledges that WBE could be useful for alignment, but stresses the need to consider the regulatory and moral bottlenecks that could slow alignment progress. She also names the confidentiality of technical insights in WBE as an important consideration.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s03",
+    "register_id": "S03",
+    "title": "Brain-Computer Interface Aligns Better with Humans via AI",
+    "authors": [
+      "Cami Rosso"
+    ],
+    "year": 2026,
+    "url": "https://www.psychologytoday.com/us/blog/the-future-brain/202608/brain-computer-interface-aligns-better-with-humans-via-ai",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": "Psychology Today",
+    "source_type": "blog",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_empowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Describes a framework that couples reinforcement-driven neuroplasticity with adaptive algorithmic optimization. It moves BCI training from passive calibration to active human-machine joint learning, which makes neural interfaces for communication and rehabilitation practical and scalable.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s04",
+    "register_id": "S04",
+    "title": "Ethical considerations for artificial intelligence-enhanced brain-computer interface",
+    "authors": [
+      "Yuyu Cao",
+      "Yuhang Xue",
+      "Hengyuan Yang",
+      "Fan Wang",
+      "Tianwen Li",
+      "Lei Zhao",
+      "Yunfa Fu"
+    ],
+    "year": 2025,
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12568730/",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "AI-enhanced BCI systems might raise new or more severe ethical issues than traditional BCI systems. These include making users' intentions and behaviors more predictable and easier to manipulate, and a greater likelihood of technological abuse.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s05",
+    "register_id": "S05",
+    "title": "Governance at the Edge of Architecture: Regulating NeuroAI and Neuromorphic Systems",
+    "authors": [
+      "Afifah Kashif",
+      "Abdul Muhsin Hameed",
+      "Asim Iqbal"
+    ],
+    "year": 2026,
+    "url": "https://arxiv.org/html/2602.01503v1",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": "2602.01503",
+    "venue": null,
+    "source_type": "preprint",
+    "kind": null,
+    "technology": [
+      "neuromorphic"
+    ],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Governing neuromorphic systems is becoming more urgent as neuromorphic computing moves out of the lab and into real-world applications. These systems are especially well suited to edge computing that demands energy efficiency, low latency, and autonomous adaptation, which are critical in healthcare devices and autonomous vehicles. In autonomous driving or medical diagnostics, a system that keeps learning on the device without a clear audit trail can behave in ways that are neither reproducible nor explainable, and that can raise serious liability and accountability problems.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s06",
+    "register_id": "S06",
+    "title": "Safety of self-assembled neuromorphic hardware",
+    "authors": [
+      "Can Rager",
+      "Kyle Webster"
+    ],
+    "year": 2022,
+    "url": "https://arxiv.org/pdf/2301.10201",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": "2301.10201",
+    "venue": null,
+    "source_type": "preprint",
+    "kind": null,
+    "technology": [
+      "neuromorphic"
+    ],
+    "problem": "both",
+    "claim_directions": [
+      "ai_misalignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Physical bottlenecks and high energy use limit how far modern computing hardware can scale. Neuromorphic hardware (NMH), which is inspired by the human brain, could address these limits. Neuromorphic computing needs a new approach to safe, interpretable AI if it is to deal effectively with the risk of misaligned AI.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s07",
+    "register_id": "S07",
+    "title": "Emerging Threats and Countermeasures in Neuromorphic Systems: A Survey",
+    "authors": [
+      "P. Sorrentino",
+      "S. Picek",
+      "I. Alouani",
+      "N.A. Anagnostopoulos",
+      "F. Regazzoni",
+      "L. Batina",
+      "T. Banerjee",
+      "F. Turkmen"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/html/2601.16589v1",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": "2601.16589",
+    "venue": null,
+    "source_type": "preprint",
+    "kind": null,
+    "technology": [
+      "neuromorphic"
+    ],
+    "problem": null,
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Emerging neuromorphic computing architectures introduce new attack surfaces, particularly because of their asynchronous, event-driven processing and stochastic device behavior. This survey covers side-channel and fault-injection attacks on neuromorphic systems, hardware Trojans, adversarial and backdoor attacks, privacy attacks, and countermeasures. It also discusses security primitives that neuromorphic and emerging-memory devices make possible, including physical unclonable functions (PUFs), true random number generators (TRNGs), and secure in-memory or near-sensor computation.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s08",
+    "register_id": "S08",
+    "title": "Solving AI alignment using brain signals",
+    "authors": [
+      "Thorsten Zander"
+    ],
+    "year": 2026,
+    "url": "https://theexistentialhope.substack.com/p/we-could-teach-ai-empathy-using-brain",
+    "other_urls": [
+      "https://www.zanderlabs.com/blog/neuralink-passive-bcis-and-the-future-of-neuroadaptive-technology"
+    ],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "podcast",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Passive brain-computer interfaces (devices that read brain signals to decode a user's mental state, non-invasively and with no effort from the user) and continuous neural feedback could dramatically improve AI training compared with current methods based on human ratings. Zander believes passive BCIs may offer the most concrete path to solving the AI alignment problem.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s09",
+    "register_id": "S09",
+    "title": "Scoping Brain-Computer Interfaces for AI Safety",
+    "authors": [
+      "Tom Burns"
+    ],
+    "year": 2025,
+    "url": "https://www.youtube.com/watch?v=lar2BlPIyUw",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "talk",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "The talk examines whether it is technically and economically feasible to use BCIs for real-time human oversight, faster intervention, and better alignment. Building on recent advances in neural interfaces, the project aims to lay out a roadmap for future research and to show how BCIs could strengthen human-AI collaboration and reduce the risks from misaligned AI in high-stakes situations.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s10",
+    "register_id": "S10",
+    "title": "Overview of BCI and Neuro-Applications in AI Safety and the Whole Brain Emulation Space",
+    "authors": [
+      "Claire Short"
+    ],
+    "year": 2024,
+    "url": "https://www.youtube.com/watch?v=N3151oVuA7M&t=729s",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "talk",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Proposes using BCIs to connect neural feedback directly to AI systems. The suggested uses are to improve the alignment of state-of-the-art prediction models, to develop new reward models, and to generate more efficient, individually tailored signals with high reward fidelity.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s11",
+    "register_id": "S11",
+    "title": "Confluence of Mind and Machine: Exploratory Analysis of Human Agency and Ethical Governance at Nexus of Brain-Computer Interface and Superintelligent AI-Machines",
+    "authors": [
+      "P. S. Aithal",
+      "Diana Saldanha",
+      "Sapathy J.",
+      "Sandhya S."
+    ],
+    "year": 2025,
+    "url": "https://zenodo.org/records/17175388",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "both",
+    "claim_directions": [
+      "ai_alignment",
+      "ai_misalignment",
+      "human_disempowerment",
+      "human_empowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Using a structured SWOC and ABCD analysis, the paper argues that the convergence of BCI and superintelligent AI could bring immense benefits, such as eradicating disease and augmenting human cognition, along with grave risks, such as existential threats from misaligned AI and the erosion of human autonomy. Among the main challenges it identifies are irreversible social inequality, loss of mental privacy, and a possible devaluation of human purpose. Through scenario building, it sets out three plausible futures (Symbiotic Harmony, Gilded Cage, and Volatile Partnership) and concludes that the outcome depends on solving the critical problems of AI alignment and establishing strong ethical governance.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s12",
+    "register_id": "S12",
+    "title": "Synergizing DeepSeek's artificial intelligence innovations with brain-computer interfaces",
+    "authors": [
+      "Canbiao Wu",
+      "Nayu Chen",
+      "Tuo Sun",
+      "Ping Tan",
+      "Peng Wang",
+      "Guangli Li"
+    ],
+    "year": 2025,
+    "url": "https://onlinelibrary.wiley.com/doi/full/10.1002/brx2.70035",
+    "other_urls": [
+      "https://journals.physiology.org/doi/epdf/10.1152/physrev.00027.2016"
+    ],
+    "doi": "10.1002/brx2.70035",
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Long-term exposure to BCIs may induce changes in neuroplasticity. Long-term use of BCIs induces changes in synaptic plasticity (such as long-term enhancement or inhibition), which may in turn change local and global connectivity patterns in the cerebral cortex. Algorithmic fairness is also a critical issue: AI models may pick up data biases in training (including biases inherited by DeepSeek models) and may carry that unfairness into BCI applications.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s13",
+    "register_id": "S13",
+    "title": "NeuroAI for AI Safety",
+    "authors": [
+      "Patrick Mineault",
+      "Niccolò Zanichelli",
+      "Joanne Zichen Peng",
+      "Anton Arkhipov",
+      "Eli Bingham",
+      "Julian Jara-Ettinger",
+      "Emily Mackevicius",
+      "Adam Marblestone",
+      "Marcelo Mattar",
+      "Andrew Payne",
+      "Sophia Sanborn",
+      "Karen Schroeder",
+      "Zenna Tavares",
+      "Andreas Tolias",
+      "Anthony Zador"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/pdf/2411.18526",
+    "other_urls": [
+      "https://www.basis.ai/blog/neuroai-for-ai-safety/",
+      "https://www.lesswrong.com/posts/ksw38zuXBAQCWzEqr/neuroai-for-ai-safety-a-differential-path",
+      "https://www.thetransmitter.org/neuroai/does-the-solution-to-building-safe-artificial-intelligence-lie-in-the-brain/"
+    ],
+    "doi": null,
+    "arxiv_id": "2411.18526",
+    "venue": null,
+    "source_type": "preprint",
+    "kind": null,
+    "technology": [
+      "wbe"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Neuroscience may hold important keys to technical AI safety that are currently underexplored and underused. This roadmap sets out and critically evaluates several neuroscience-inspired paths toward AI safety: emulating the brain's representations, information processing, and architecture; building robust sensory and motor systems by imitating brain data and bodies; fine-tuning AI systems on brain data; advancing interpretability with neuroscience methods; and scaling up cognitively inspired architectures.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s14",
+    "register_id": "S14",
+    "title": "Brain-Computer Interfaces and AI Alignment",
+    "authors": [],
+    "year": 2021,
+    "url": "https://www.lesswrong.com/posts/rpRsksjrBXEDJuHHy/brain-computer-interfaces-and-ai-alignment",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": "LessWrong",
+    "source_type": "forum_post",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "both",
+    "claim_directions": [
+      "ai_alignment",
+      "ai_misalignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Researching BCIs would be net positive in expectation, but there are similarly tractable approaches to AI alignment with much higher expected value. BCIs offer only a constant speedup in interaction between AI systems and humans, with no clear qualitative change in the way humans interact with AI systems, and they speed up alignment work no more than capabilities work.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s15",
+    "register_id": "S15",
+    "title": "The Intelligence Curse: With AGI, powerful actors will lose their incentives to invest in people",
+    "authors": [
+      "Luke Drago"
+    ],
+    "year": 2025,
+    "url": "https://lukedrago.substack.com/p/the-intelligence-curse",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "blog",
+    "kind": null,
+    "technology": [],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Luke Drago argues that AGI will behave more like oil than like a normal technology. Once it can do most economically valuable work better, cheaper, and more reliably than people, states and companies lose their incentives to invest in human education, wages, and welfare. As with the resource curse in rentier states, the likely default is a small elite capturing the value while most people lose the economic and political leverage they need to make demands.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Raghav",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s16",
+    "register_id": "S16",
+    "title": "Advancing Safe AI: Neurotech, BCI, and WBE for AI Alignment",
+    "authors": [
+      "Foresight Institute"
+    ],
+    "year": 2024,
+    "url": "https://foresightinstitute.substack.com/p/advancing-safe-ai-neurotech-bci-and",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "report",
+    "kind": null,
+    "technology": [
+      "bci",
+      "wbe"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment",
+      "human_empowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Presents neurotechnology, BCI, and WBE as possible pathways toward safer AI and improved human-AI interaction. The proposed benefits depend on unproven technical and institutional assumptions.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s18",
+    "register_id": "S18",
+    "title": "Using Brain-Computer Interfaces to get more data for AI alignment",
+    "authors": [
+      "Robbo"
+    ],
+    "year": 2021,
+    "url": "https://www.lesswrong.com/posts/iWv6Pu2fWPKqevzFE/using-brain-computer-interfaces-to-get-more-data-for-ai",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": "LessWrong",
+    "source_type": "forum_post",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Proposes using brain recordings to improve imitative amplification, approval signals for debate or amplification, and human value learning. The idea is to supplement language and behavior with neural data, which could reveal human reasoning and reactions in more detail.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s19",
+    "register_id": "S19",
+    "title": "Neurosurveillance in the workplace: do employers have the right to monitor employees’ minds?",
+    "authors": [
+      "Ekaterina Muhl",
+      "Roberto Andorno"
+    ],
+    "year": 2023,
+    "url": "https://www.frontiersin.org/journals/human-dynamics/articles/10.3389/fhumd.2023.1245619/full",
+    "other_urls": [],
+    "doi": "10.3389/fhumd.2023.1245619",
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Analyzes a hypothetical scenario in which an employer monitors workers with EEG, and identifies a greater power imbalance between employer and employee, threats to mental privacy, and neuro-discrimination. Workers are disempowered because employers use neural information for monitoring and employment decisions while workers have limited freedom to refuse. Its link to the Intelligence Curse is through weakened worker agency and institutional power.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s20",
+    "register_id": "S20",
+    "title": "The Age of Em: Work, Love, and Life when Robots Rule the Earth",
+    "authors": [
+      "Robin Hanson"
+    ],
+    "year": 2016,
+    "url": "https://ageofem.com/",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "book",
+    "kind": null,
+    "technology": [
+      "wbe"
+    ],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Models a hypothetical economy dominated by copied human emulations. Cheap replication could intensify labor competition and change how wages and returns are distributed. It connects to the Intelligence Curse through its analysis of displacement and bargaining power.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s21",
+    "register_id": "S21",
+    "title": "Values and acausal reasoning of whole brain emulations",
+    "authors": [],
+    "year": 2017,
+    "url": "https://longtermrisk.org/media/Whole-brain-emulation.pdf",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": "Center on Long-Term Risk",
+    "source_type": "report",
+    "kind": null,
+    "technology": [
+      "wbe"
+    ],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Discusses the values and strategic behavior of whole brain emulations. The economic scenario it describes raises questions about competition between biological humans and copied emulations.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s22",
+    "register_id": "S22",
+    "title": "Sharing the World with Digital Minds",
+    "authors": [
+      "Carl Shulman",
+      "Nick Bostrom"
+    ],
+    "year": 2020,
+    "url": "https://nickbostrom.com/papers/digital-minds.pdf",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "book",
+    "kind": null,
+    "technology": [
+      "wbe"
+    ],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Analyzes conflicts over resources and influence between humans and possible digital minds. It raises distributional and political questions relevant to human agency.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s23",
+    "register_id": "S23",
+    "title": "Whole Brain Emulation",
+    "authors": [
+      "Alignment Forum"
+    ],
+    "year": 2021,
+    "url": "https://www.alignmentforum.org/w/whole-brain-emulation",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": "Alignment Forum",
+    "source_type": "blog",
+    "kind": null,
+    "technology": [
+      "wbe"
+    ],
+    "problem": "both",
+    "claim_directions": [
+      "ai_alignment",
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Summarizes strategic, ethical, and economic issues around WBE. We use it to find arguments about human-derived intelligence and displacement.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s24",
+    "register_id": "S24",
+    "title": "Towards interactive reinforcement learning with intrinsic feedback",
+    "authors": [
+      "Benjamin Poole",
+      "Minwoo Lee"
+    ],
+    "year": 2024,
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S0925231224003990",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Examines intrinsic human signals as feedback for interactive reinforcement learning. Such signals may help agents learn the behavior their human users intend.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s25",
+    "register_id": "S25",
+    "title": "Deep reinforcement learning from error-related potentials via an adaptive decision boundary",
+    "authors": [],
+    "year": 2018,
+    "url": "https://ieeexplore.ieee.org/document/8621183",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment",
+      "ai_misalignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Investigates error-related potentials, measured with EEG, as feedback for robotic reinforcement learning. It bears on one narrow mechanism, neural feedback guiding an agent's behavior, but does not establish safety under advanced capabilities or distribution shift.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s26",
+    "register_id": "S26",
+    "title": "Error-Related Potentials in Reinforcement Learning-Based Brain-Machine Interfaces",
+    "authors": [
+      "Aline Xavier Fidêncio",
+      "Christian Klaes",
+      "Ioannis Iossifidis"
+    ],
+    "year": 2022,
+    "url": "https://www.frontiersin.org/journals/human-neuroscience/articles/10.3389/fnhum.2022.806517/full",
+    "other_urls": [],
+    "doi": "10.3389/fnhum.2022.806517",
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment",
+      "ai_misalignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Reviews brain-machine interfaces that use error-related potentials for reinforcement learning. It sets out the opportunities and limits of decoding neural responses into learning signals. Its relevance to alignment is limited to the feedback mechanism, and it does not establish any improvement in frontier AI safety.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s27",
+    "register_id": "S27",
+    "title": "Towards Reinforcement Learning from Neural Feedback: Mapping fNIRS Signals to Agent Performance",
+    "authors": [
+      "Julia Santaniello",
+      "Matthew Russell",
+      "Benson Jiang"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2511.12844",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": "2511.12844",
+    "venue": null,
+    "source_type": "preprint",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment",
+      "ai_misalignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Investigates whether fNIRS signals can predict observed agent performance. This tests a prerequisite for using neural feedback in reinforcement learning. Predicting performance is not the same as showing that an agent trained on neural feedback is aligned.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s28",
+    "register_id": "S28",
+    "title": "Helpful, harmless, honest? Sociotechnical limits of AI alignment and RLHF",
+    "authors": [
+      "Adam Dahlgren Lindström",
+      "Leila Methnani",
+      "Lea Krause"
+    ],
+    "year": 2025,
+    "url": "https://arxiv.org/abs/2406.18346",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": "2406.18346",
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_misalignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Critiques feedback-based AI alignment and how it handles complex human values and safety. It gives a point of comparison for judging whether richer BCI feedback would address the underlying limits of RLHF.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s29",
+    "register_id": "S29",
+    "title": "Delivering Responsible Neurotechnologies Governance",
+    "authors": [
+      "Jonathan Andrew"
+    ],
+    "year": 2026,
+    "url": "https://www.geneva-academy.ch/wp-content/uploads/2026/03/Delivering-Responsible-Neurotechnologies-Governance.pdf",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "report",
+    "kind": null,
+    "technology": [
+      "bci"
+    ],
+    "problem": "intelligence_curse",
+    "claim_directions": [
+      "human_disempowerment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Discusses neurotechnology governance and the potential for coercive monitoring by powerful institutions. Such uses could weaken privacy, freedom, and individual agency. It connects to the Intelligence Curse through institutional disempowerment, but it doesn't prove the curse's labor-substitution mechanism.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
+  },
+  {
+    "id": "s30",
+    "register_id": "S30",
+    "title": "Anthropomorphic reasoning about neuro-morphic AGI safety",
+    "authors": [
+      "David J. Jilk",
+      "Seth J. Herd",
+      "Stephen J. Read",
+      "Randall C. O’Reilly"
+    ],
+    "year": 2017,
+    "url": "https://www.tandfonline.com/doi/full/10.1080/0952813X.2017.1354081",
+    "other_urls": [],
+    "doi": "10.1080/0952813X.2017.1354081",
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "neuromorphic"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_alignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Argues that safety analysis of neuromorphic AGI can draw on comparisons with human cognition when the systems reproduce essential human computational mechanisms. It proposes prosocial motivational drives, bounded competing drives, and a carefully designed social developmental environment as ways to promote human-friendly behavior and motivational stability.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Aila",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "sample": false
   }
 ]

@@ -14,7 +14,7 @@ export type MilestoneCategory =
   | "legal_regulatory"
   | "institutional_legitimacy"
   | "equitable_access";
-export type MilestoneStatus = "not_demonstrated" | "prototype" | "replicated" | "mature";
+export type MilestoneStatus = "not_demonstrated" | "prototype" | "replicated" | "mature" | "not_claimed";
 export type Confidence = "high" | "medium" | "low";
 export type CaseRating = "strong" | "moderate" | "weak" | "unclear" | "not_claimed";
 export type RiskRating = "high" | "medium" | "low" | "unclear";
@@ -27,7 +27,9 @@ export type UnclearReason =
 export type EvidenceType = "argument" | "simulation" | "experiment" | "deployment" | "review";
 export type Directness = "direct" | "adjacent" | "remote";
 export type Independence = "independent" | "non_biased" | "affiliated";
-export type SourceType = "peer_reviewed" | "preprint" | "blog" | "report" | "forum_post";
+export type SourceType = "peer_reviewed" | "preprint" | "blog" | "report" | "forum_post" | "talk" | "podcast" | "book";
+// Which way a source's argument points (the team's "Claim (+/-)" column).
+export type ClaimDirection = "ai_alignment" | "ai_misalignment" | "human_empowerment" | "human_disempowerment";
 export type SourceKind = "argument" | "milestone_evidence";
 export type Relevance = "core" | "supporting" | "peripheral" | "not_relevant";
 export type Credibility = "strong" | "adequate" | "weak" | "unclear";
@@ -112,25 +114,30 @@ export interface Milestone {
 
 export interface Source {
   id: string;
+  register_id?: string | null; // the team's evidence register id, e.g. "S02"
   title: string;
-  authors: string[];
+  authors: string[]; // empty when the authors aren't known
   year: number;
   url: string;
+  other_urls?: string[];
   doi?: string | null;
   arxiv_id?: string | null;
   venue?: string | null;
   source_type: SourceType;
-  kind: SourceKind;
+  kind?: SourceKind | null; // null = not classified yet
   technology: Technology[];
   problem: Problem | null;
-  evidence_type: EvidenceType;
-  directness: Directness;
-  independence: Independence;
-  relevance: Relevance;
-  credibility: Credibility;
+  claim_directions?: ClaimDirection[];
+  // The rubric ratings. null = not rated yet.
+  evidence_type?: EvidenceType | null;
+  directness?: Directness | null;
+  independence?: Independence | null;
+  relevance?: Relevance | null;
+  credibility?: Credibility | null;
   credibility_unclear_reason?: UnclearReason | null;
   summary: Claim;
   ai_suggested_fields: string[];
+  added_by?: string | null;
   reviewed_by?: string | null;
   reviewed_on?: string | null;
   sample?: boolean;
@@ -143,7 +150,65 @@ export interface ScorecardRow {
   rating: CaseRating | RiskRating;
   confidence: Confidence;
   unclear_reason?: UnclearReason | null;
+  // Risk rows only: how bad it could be while the rating is still Unclear.
+  potential_severity?: "high" | "medium" | "low" | null;
   basis: Claim;
+}
+
+// ---------- The populated scorecard (scorecard v0.1 sections 1 to 6) ----------
+
+export interface Scope {
+  intervention: Claim;
+  deployment_scenario: Claim;
+  affected_groups: Claim;
+  time_horizon: Claim;
+  comparator: Claim;
+  problem: Problem;
+}
+
+// One line of the evidence register. The ids are the team's register ids
+// ("S02"), shown as plain text until those sources are in sources.json.
+export interface EvidenceRow {
+  claim: string;
+  supporting_ids: string[];
+  contrary_ids: string[];
+  evidence_type: string;
+  directness: Directness;
+  limitation: string;
+  independence: string;
+  provenance: "team" | "ai";
+}
+
+export interface AssessmentQuestion {
+  question: string;
+  answer: Claim;
+}
+
+export interface Assessment {
+  mechanism: Claim;
+  questions: AssessmentQuestion[];
+  rating: CaseRating;
+  confidence: Confidence;
+  unclear_reason?: UnclearReason | null;
+  reason: Claim;
+  decisive_question: Claim;
+}
+
+export interface ArtificialMindsAssessment {
+  consciousness: Claim;
+  moral_status: Claim;
+  identity: Claim;
+  welfare: Claim;
+}
+
+export interface WelfareGovernance {
+  exposed: Claim;
+  harms: Claim;
+  severity: Claim;
+  detectability: Claim;
+  control: Claim;
+  confidence: Confidence;
+  rationale: Claim;
 }
 
 export interface TechnologyPage {
@@ -152,12 +217,23 @@ export interface TechnologyPage {
   short_name: string;
   headline: string; // use *asterisks* around the one italic word or phrase
   intro: Claim;
-  claims_to_solve: Claim[];
-  mechanism: Claim[];
-  strongest_case: Claim[];
-  strongest_objections: Claim[];
+  // The outline sections. A page with a populated scorecard can leave these empty.
+  claims_to_solve?: Claim[];
+  mechanism?: Claim[];
+  strongest_case?: Claim[];
+  strongest_objections?: Claim[];
   scorecard: ScorecardRow[];
-  artificial_minds_questions: Claim[];
+  artificial_minds_questions?: Claim[];
+  // The populated scorecard, section by section. All optional.
+  scope?: Scope | null;
+  theory_of_change?: Claim[];
+  alternatives?: Claim[];
+  evidence_register?: EvidenceRow[];
+  alignment_assessment?: Assessment | null;
+  intelligence_curse_assessment?: Assessment | null;
+  artificial_minds_assessment?: ArtificialMindsAssessment | null;
+  welfare_governance?: WelfareGovernance | null;
+  evidence_gap?: Claim | null;
   sample?: boolean;
 }
 

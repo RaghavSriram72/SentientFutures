@@ -124,7 +124,7 @@ function ListRow({ item, selected, onSelect }: { item: TimelineItem; selected: b
           </span>
         )}
         {!disagreement.flagged && disagreement.decidedBy === "team" && (
-          <span className={styles.flagBy}>Not flagged: team override</span>
+          <span className={styles.flagBy}>Not flagged (team decision)</span>
         )}
       </div>
     </li>

@@ -13,19 +13,19 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "A Sentient Futures incubator project on whether whole brain emulation, brain computer interfaces or neuromorphic AI could help with AI alignment or the Intelligence Curse.",
+    "A Sentient Futures incubator project looking at whether whole brain emulation, brain computer interfaces or neuromorphic AI could help with AI alignment or counter the Intelligence Curse.",
 };
 
 const SITE_IS = [
-  "A map of each proposal: what it claims to solve, how it's supposed to work, and the strongest case for and against.",
-  "A timeline of milestones with honest, uncertain windows, where every forecast is shown on its own.",
-  "Marked line by line as sourced, our read, AI-suggested or unclear.",
+  "A page for each proposal on what it claims to solve and how it's supposed to work, with the strongest case for it and against it.",
+  "The team's completed scorecard for whole brain emulation.",
+  "A timeline that draws each milestone as a range of years. Forecasts are listed one by one, and when credible sources disagree, the timeline flags it.",
+  "One of four marks on every research claim: From a source, Our read, AI-suggested or Unclear.",
 ];
 
 const SITE_ISNT = [
-  "A prediction of one date. When credible sources disagree, we show the disagreement.",
-  "Finished. This is an early draft, and some of our categories are still being decided.",
-  "Written by an AI without telling you. In this draft the technology pages are AI-written outlines the team hasn't reviewed yet, and every line says so. Once the site launches, nothing AI-written goes live unchecked.",
+  "This is an early draft. Some categories are still being decided, including how we rate a source's relevance and credibility.",
+  "The brain computer interface and neuromorphic AI pages are still AI-written outlines that nobody on the team has reviewed.",
 ];
 
 interface Person {
@@ -63,10 +63,10 @@ export default function AboutPage() {
         eyebrow="About"
         title={
           <>
-            What would brain tech <em>actually</em> have to do?
+            The <em>question</em> we&rsquo;re working on
           </>
         }
-        lede={`${SITE_NAME} looks at three ideas: whole brain emulation, brain computer interfaces and neuromorphic AI. For each, we ask how it's supposed to help with AI alignment or the Intelligence Curse, what would have to happen first, and where the strongest objections are.`}
+        lede={`${SITE_NAME} covers three ideas: whole brain emulation, brain computer interfaces and neuromorphic AI. People have suggested each one as a way to help with AI alignment or to counter the Intelligence Curse. We want to know how well those suggestions hold up, which means working out how each idea is meant to work, what it depends on, and what the strongest objections are.`}
       />
 
       <section className="container section" aria-labelledby="question-heading">
@@ -79,7 +79,7 @@ export default function AboutPage() {
               <p>
                 How strong is the case that whole brain emulation, brain computer interfaces or neuromorphic AI could
                 address AI alignment or the Intelligence Curse? And what new welfare and governance problems would each
-                create, including for any artificial minds created along the way?
+                bring, including for any artificial minds made along the way?
               </p>
             </blockquote>
           </figure>
@@ -93,15 +93,15 @@ export default function AboutPage() {
               <dt>The Intelligence Curse</dt>
               <dd>
                 The risk that increasingly capable AI reduces the economic and political value of human labor and
-                participation, gradually weakening human agency.{" "}
+                participation, and that this gradually weakens human agency.{" "}
                 <ExternalLink href="https://intelligence-curse.ai">Background reading</ExternalLink>
               </dd>
             </div>
             <div className={styles.term}>
               <dt>Artificial minds</dt>
               <dd>
-                If any of these technologies creates a mind, it raises its own questions about consciousness, moral
-                status, identity and welfare. We track those questions alongside the rest.
+                If one of these technologies creates a mind, that mind brings its own questions about consciousness,
+                moral status, identity and welfare. Each technology page has a section on them.
               </dd>
             </div>
           </dl>
@@ -112,13 +112,13 @@ export default function AboutPage() {
         <div className="container section">
           <SectionHead
             id="stages-heading"
-            eyebrow="The key distinction"
+            eyebrow="Stages"
             title={
               <>
-                Possible isn&rsquo;t the same as <em>helping</em>
+                How we sort milestones into <em>stages</em>
               </>
             }
-            intro="A technology can be possible for decades before it's widely available, and widely available without helping at all. These are easy to blur together, so every milestone on our timeline is tagged with exactly one."
+            intro="A technology can be possible for decades before it's widely available, and it can be widely available without helping at all. So every milestone on our timeline is tagged with exactly one stage."
           />
           <StageCards />
           <p className={styles.stagesLink}>
@@ -132,16 +132,16 @@ export default function AboutPage() {
       <section className="container section" aria-labelledby="is-heading">
         <SectionHead
           id="is-heading"
-          eyebrow="What you're looking at"
+          eyebrow="Where things stand"
           title={
             <>
-              What this site is, and <em>isn&rsquo;t</em>
+              What&rsquo;s here so far, and what&rsquo;s <em>unfinished</em>
             </>
           }
         />
         <div className={styles.isGrid}>
           <div className={styles.isCol}>
-            <p className={`eyebrow ${styles.isLabel}`}>It is</p>
+            <p className={`eyebrow ${styles.isLabel}`}>On the site</p>
             <ul className={styles.isList}>
               {SITE_IS.map((line) => (
                 <li key={line}>{line}</li>
@@ -149,7 +149,7 @@ export default function AboutPage() {
             </ul>
           </div>
           <div className={`${styles.isCol} ${styles.isntCol}`}>
-            <p className={`eyebrow ${styles.isLabel}`}>It isn&rsquo;t</p>
+            <p className={`eyebrow ${styles.isLabel}`}>Still in progress</p>
             <ul className={styles.isList}>
               {SITE_ISNT.map((line) => (
                 <li key={line}>{line}</li>
@@ -162,10 +162,10 @@ export default function AboutPage() {
       <section className="container section" aria-labelledby="team-heading">
         <SectionHead
           id="team-heading"
-          eyebrow="The team"
+          eyebrow="People"
           title={
             <>
-              The <em>people</em> behind it
+              The team and <em>advisors</em>
             </>
           }
         />
@@ -187,7 +187,7 @@ export default function AboutPage() {
           <p>
             <span className={styles.fundingName}>A Sentient Futures incubator project</span>
             <span className={styles.fundingNote}>
-              Questions or corrections? <Link href="/contact/">Get in touch</Link>.
+              Questions and corrections are welcome. The <Link href="/contact/">contact page</Link> has our email.
             </span>
           </p>
         </div>
@@ -196,7 +196,7 @@ export default function AboutPage() {
   );
 }
 
-// The dashed orbit from the site mark, as a quiet seal for the funding note.
+// The dashed orbit from the site mark, drawn small next to the funding note.
 function FundingMark() {
   return (
     <svg className={styles.fundingMark} viewBox="0 0 32 32" aria-hidden="true">

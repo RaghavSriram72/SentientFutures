@@ -22,13 +22,12 @@ export const DISAGREEMENT_GAP_YEARS = 10;
 
 export const DISAGREEMENT_RULE_TEXT: string[] = [
   "We compare every pair of forecasts, except two from the same forecaster in the same source, like one report's optimistic and pessimistic cases.",
-  'The same name in two different sources still counts as two forecasts. Two surveys can both report a "median respondent", and those answers get compared.',
+  "The same name in two different sources counts as two different forecasters. Two surveys can both report a “median respondent”, and those answers get compared.",
   "A pair disagrees if one forecaster says it will never happen and the other gives a year.",
   `A pair also disagrees if their windows are more than ${DISAGREEMENT_GAP_YEARS} years apart, measured from the end of the earlier window to the start of the later one.`,
-  'An open end ("by 2045" or "not before 2045") counts as unbounded, so it can never create a gap in that direction.',
-  "If any pair disagrees, the milestone gets a SOURCES DISAGREE stamp and we don't draw a summary band over the forecasts.",
-  "Forecasts this far apart never get a summary band, even when the team decides they aren't really in conflict. A band would blur them into one range.",
-  "When no pair disagrees and there's no team range, the band runs from the earliest year any forecast allows to the latest. If any forecast is open on one side, the band is open on that side too. If that leaves it open on both sides, we skip the band and show the forecasts alone.",
+  "An open end (“by 2045” or “not before 2045”) counts as unbounded, so it can never create a gap in that direction.",
+  "If any pair disagrees, the milestone gets a SOURCES DISAGREE stamp and no summary band. Even if the team decides the forecasts aren't really in conflict, we don't draw a band, because it would blur them into one range.",
+  "A summary band needs at least two forecasts, no disagreeing pair and no team range. It runs from the earliest year any forecast allows to the latest. If any forecast is open on one side, the band is open on that side too. If that leaves it open on both sides, we skip the band and show the forecasts alone.",
   "The team can override the rule either way, but only with a published reason. The milestone then says whether the flag came from our rule or from the team, and what the rule alone would have said.",
   "A team range never hides a disagreement. The stamp and every individual forecast stay visible.",
 ];
@@ -52,7 +51,7 @@ export interface DisagreementView {
   decidedBy: "rule" | "team" | null;
   // What the rule alone says, kept even when the team overrides it.
   ruleFlagged: boolean;
-  // One sentence per disagreeing pair, e.g. "Example Skeptic says never; Example Author gives 2045 to 2060"
+  // One sentence per disagreeing pair, e.g. "Example Skeptic says never, while Example Author gives 2045 to 2060"
   reasons: string[];
   overrideBasis: Claim | null;
 }
@@ -156,10 +155,10 @@ function pairDisagreement(a: Forecast, b: Forecast): string | null {
     return null;
   }
   if (a.never && givesAYear(b)) {
-    return `${a.forecaster} says never; ${otherLabel(a, b)} gives ${formatWindow(b)}`;
+    return `${a.forecaster} says never, while ${otherLabel(a, b)} gives ${formatWindow(b)}`;
   }
   if (b.never && givesAYear(a)) {
-    return `${b.forecaster} says never; ${otherLabel(b, a)} gives ${formatWindow(a)}`;
+    return `${b.forecaster} says never, while ${otherLabel(b, a)} gives ${formatWindow(a)}`;
   }
   if (a.never || b.never) {
     return null;
@@ -172,7 +171,7 @@ function pairDisagreement(a: Forecast, b: Forecast): string | null {
   const aFirst = (a.latest ?? a.earliest ?? 0) <= (b.latest ?? b.earliest ?? 0);
   const first = aFirst ? a : b;
   const second = aFirst ? b : a;
-  return `${first.forecaster} gives ${formatWindow(first)}; ${otherLabel(first, second)} gives ${formatWindow(second)} (${gap} years apart)`;
+  return `${first.forecaster} gives ${formatWindow(first)} and ${otherLabel(first, second)} gives ${formatWindow(second)}, with ${gap} years between them`;
 }
 
 export function computeDisagreement(milestone: Milestone): DisagreementView {

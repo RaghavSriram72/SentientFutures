@@ -230,7 +230,7 @@ export function TimelineExplorer({ milestones, sources, nowYear }: TimelineExplo
           </svg>
           {selectedItem
             ? `Showing ${selectedItem.code}. Press Esc or the close button to put it away.`
-            : "Select a milestone to see what the estimate is based on."}
+            : "Select a milestone to see everything we have on it."}
         </p>
         <div
           className={`${styles.toggle} ${viewChoice === null ? styles.autoToggle : ""}`}

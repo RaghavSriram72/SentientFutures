@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "Could whole brain emulation, brain computer interfaces or neuromorphic AI help with AI alignment or keep humans in the loop? What would have to happen first, and what new problems would they create?",
+    "We look at whether whole brain emulation, brain computer interfaces or neuromorphic AI could help with AI alignment or keep humans in the loop, what would have to happen first, and what new problems each one would bring.",
   // Draft prototype: keep it out of search engines until launch.
   robots: IS_DRAFT ? { index: false, follow: false } : undefined,
 };

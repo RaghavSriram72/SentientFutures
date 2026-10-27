@@ -26,27 +26,31 @@ function toIsoDate(value: unknown): string {
   return String(value);
 }
 
+// A build reads each file once and keeps it. The dev server re-reads on every
+// request instead, so edits to content/ show up on refresh without a restart.
+const KEEP_IN_MEMORY = process.env.NODE_ENV === "production";
+
 let cachedMilestones: Milestone[] | null = null;
 let cachedSources: Source[] | null = null;
 let cachedTechnologies: TechnologyPage[] | null = null;
 let cachedPosts: Post[] | null = null;
 
 export function getMilestones(): Milestone[] {
-  if (cachedMilestones === null) {
+  if (cachedMilestones === null || !KEEP_IN_MEMORY) {
     cachedMilestones = readJson<Milestone[]>("milestones.json");
   }
   return cachedMilestones;
 }
 
 export function getSources(): Source[] {
-  if (cachedSources === null) {
+  if (cachedSources === null || !KEEP_IN_MEMORY) {
     cachedSources = readJson<Source[]>("sources.json");
   }
   return cachedSources;
 }
 
 export function getTechnologies(): TechnologyPage[] {
-  if (cachedTechnologies === null) {
+  if (cachedTechnologies === null || !KEEP_IN_MEMORY) {
     cachedTechnologies = readJson<TechnologyPage[]>("technologies.json");
   }
   return cachedTechnologies;
@@ -62,7 +66,7 @@ export function getTechnology(id: string): TechnologyPage | undefined {
 }
 
 export function getPosts(): Post[] {
-  if (cachedPosts === null) {
+  if (cachedPosts === null || !KEEP_IN_MEMORY) {
     const postsDir = path.join(DATA_DIR, "posts");
     const posts: Post[] = [];
     for (const fileName of fs.readdirSync(postsDir)) {

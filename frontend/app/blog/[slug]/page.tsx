@@ -73,8 +73,7 @@ export default async function PostPage({ params }: PostPageProps) {
               See something we got <em>wrong</em>?
             </p>
             <p className={styles.endText}>
-              Corrections, sources we missed and disagreements with our reads all help. A link or an exact quote makes it
-              quick to check.
+              Send us corrections, sources we missed or disagreements with how we&rsquo;ve read the evidence.
             </p>
             <div className={styles.endActions}>
               <Link href="/contact/" className="btn btn-primary">

@@ -29,6 +29,7 @@ from sf_shared.claims import (
 )
 from sf_shared.enums import (
     CaseRating,
+    ClaimDirection,
     Confidence,
     Credibility,
     Directness,
@@ -256,25 +257,30 @@ class Source(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: Slug
+    register_id: str | None = None  # the team's evidence register id, e.g. "S02"
     title: NonEmptyStr
-    authors: list[NonEmptyStr]
+    authors: list[NonEmptyStr]  # empty when the authors aren't known
     year: PublicationYear
     url: NonEmptyStr
+    other_urls: list[NonEmptyStr] = []  # mirrors, write-ups, or the primary source behind a secondary one
     doi: str | None = None
     arxiv_id: str | None = None
     venue: str | None = None
     source_type: SourceType
-    kind: SourceKind
-    technology: list[Technology]
+    kind: SourceKind | None = None  # null = not classified yet
+    technology: list[Technology]  # empty for general background, like the Intelligence Curse essay
     problem: Problem | None
-    evidence_type: EvidenceType
-    directness: Directness
-    independence: Independence
-    relevance: Relevance
-    credibility: Credibility
+    claim_directions: list[ClaimDirection] = []
+    # The rubric ratings. null = not rated yet (the scouting database has no ratings).
+    evidence_type: EvidenceType | None = None
+    directness: Directness | None = None
+    independence: Independence | None = None
+    relevance: Relevance | None = None
+    credibility: Credibility | None = None
     credibility_unclear_reason: UnclearReason | None = None
     summary: Claim
     ai_suggested_fields: list[str]  # source field names an AI filled in, e.g. ["evidence_type"]
+    added_by: str | None = None
     reviewed_by: str | None = None
     reviewed_on: IsoDate | None = None
     sample: StrictBool = False
@@ -285,6 +291,12 @@ class Source(BaseModel):
 
         if not (self.url.startswith("https://") or self.url.startswith("http://")):
             problems.append(("url", "must start with https:// or http://"))
+        for index, other_url in enumerate(self.other_urls):
+            if not (other_url.startswith("https://") or other_url.startswith("http://")):
+                problems.append((f"other_urls[{index}]", "must start with https:// or http://"))
+
+        if self.register_id is not None and re.fullmatch(r"S\d{2,}", self.register_id) is None:
+            problems.append(("register_id", 'must look like "S02": a capital S and at least two digits'))
 
         if self.credibility == Credibility.UNCLEAR and self.credibility_unclear_reason is None:
             problems.append(("credibility_unclear_reason", 'required when credibility is "unclear"'))
@@ -339,11 +351,17 @@ class ScorecardRow(BaseModel):
     rating: str = Field(json_schema_extra={"enum": sorted(set(CASE_RATING_VALUES + RISK_RATING_VALUES))})
     confidence: Confidence
     unclear_reason: UnclearReason | None = None
+    # Risk rows only: how bad it could be, when the rating itself is still
+    # Unclear ("Unclear, with potentially high severity" in the scorecard).
+    potential_severity: Literal["high", "medium", "low"] | None = None
     basis: Claim
 
     @model_validator(mode="after")
     def check_rating(self) -> "ScorecardRow":
         problems: list[RuleProblem] = []
+
+        if self.potential_severity is not None and self.scale != "risk":
+            problems.append(("potential_severity", 'only risk rows (scale "risk") can have a potential severity'))
 
         if self.scale == "case" and self.rating not in CASE_RATING_VALUES:
             problems.append(
@@ -378,6 +396,101 @@ class ScorecardRow(BaseModel):
         return self
 
 
+# ---------- The populated scorecard (scorecard v0.1 sections 1 to 6) ----------
+# A technology page can carry the team's filled-in scorecard. Each section is
+# optional, so a page can start as an outline and fill in as the review goes.
+
+
+class Scope(BaseModel):
+    """Section 1: what exactly is proposed. Descriptive, not rated."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    intervention: Claim
+    deployment_scenario: Claim
+    affected_groups: Claim
+    time_horizon: Claim
+    comparator: Claim
+    problem: Problem
+
+
+class EvidenceRow(BaseModel):
+    """One line of the evidence register (section 3).
+
+    The ids are the team's register ids ("S02"). They stay plain text until
+    the register's sources are added to sources.json.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    claim: NonEmptyStr
+    supporting_ids: list[NonEmptyStr]  # empty means none found
+    contrary_ids: list[NonEmptyStr]  # empty means none found
+    evidence_type: NonEmptyStr  # as the register words it, e.g. "Argument / review"
+    directness: Directness
+    limitation: NonEmptyStr
+    independence: NonEmptyStr  # e.g. "Independent", "Mixed", "Unclear"
+    provenance: Literal["team", "ai"]
+
+
+class AssessmentQuestion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: NonEmptyStr
+    answer: Claim
+
+
+class Assessment(BaseModel):
+    """Sections 4 and 5: the alignment and Intelligence Curse assessments."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    mechanism: Claim  # the alignment problem addressed, or the mechanism claimed
+    questions: list[AssessmentQuestion]
+    rating: CaseRating
+    confidence: Confidence
+    unclear_reason: UnclearReason | None = None
+    reason: Claim
+    decisive_question: Claim
+
+    @model_validator(mode="after")
+    def check_assessment(self) -> "Assessment":
+        problems: list[RuleProblem] = []
+        if self.rating == CaseRating.UNCLEAR and self.unclear_reason is None:
+            problems.append(("unclear_reason", 'required when rating is "unclear"'))
+        if self.unclear_reason == UnclearReason.OTHER:
+            problems.append(
+                ("unclear_reason", f'"other" needs a note. Use the closest of: {SPECIFIC_UNCLEAR_REASONS}')
+            )
+        raise_problems(problems)
+        return self
+
+
+class ArtificialMindsAssessment(BaseModel):
+    """Section 4.1: how the proposal deals with the minds it might create."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    consciousness: Claim
+    moral_status: Claim
+    identity: Claim
+    welfare: Claim
+
+
+class WelfareGovernance(BaseModel):
+    """Section 6: who could be harmed, how badly, and who can stop it."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    exposed: Claim
+    harms: Claim
+    severity: Claim
+    detectability: Claim
+    control: Claim
+    confidence: Confidence
+    rationale: Claim
+
+
 class TechnologyPage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -386,12 +499,23 @@ class TechnologyPage(BaseModel):
     short_name: NonEmptyStr
     headline: NonEmptyStr  # *asterisks* around the one italic word or phrase
     intro: Claim
-    claims_to_solve: list[Claim]
-    mechanism: list[Claim]
-    strongest_case: list[Claim]
-    strongest_objections: list[Claim]
+    # The outline sections. A page with a populated scorecard can leave these empty.
+    claims_to_solve: list[Claim] = []
+    mechanism: list[Claim] = []
+    strongest_case: list[Claim] = []
+    strongest_objections: list[Claim] = []
     scorecard: list[ScorecardRow]
-    artificial_minds_questions: list[Claim]
+    artificial_minds_questions: list[Claim] = []
+    # The populated scorecard, section by section.
+    scope: Scope | None = None
+    theory_of_change: list[Claim] = []  # the causal chain, in order
+    alternatives: list[Claim] = []  # the most credible alternatives and counterarguments
+    evidence_register: list[EvidenceRow] = []
+    alignment_assessment: Assessment | None = None
+    intelligence_curse_assessment: Assessment | None = None
+    artificial_minds_assessment: ArtificialMindsAssessment | None = None
+    welfare_governance: WelfareGovernance | None = None
+    evidence_gap: Claim | None = None  # the primary evidence gap from the synopsis
     sample: StrictBool = False
 
     @model_validator(mode="after")
@@ -434,6 +558,12 @@ ALL_MODELS: list[type[BaseModel]] = [
     Milestone,
     Source,
     ScorecardRow,
+    Scope,
+    EvidenceRow,
+    AssessmentQuestion,
+    Assessment,
+    ArtificialMindsAssessment,
+    WelfareGovernance,
     TechnologyPage,
     PostFrontmatter,
 ]

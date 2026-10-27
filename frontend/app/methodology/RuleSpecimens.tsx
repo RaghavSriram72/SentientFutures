@@ -91,26 +91,26 @@ const SPECIMENS: Specimen[] = [
   {
     key: "team",
     label: "Team range",
-    text: "The team has set a range with a written basis, so it's a solid bar. It wins over the forecasts, but every forecast is still drawn.",
+    text: "The team has set a range and written down its basis, so the timeline draws a solid bar. The bar takes priority over the forecasts, which are still drawn alongside it.",
     drawing: <TeamRange />,
   },
   {
     key: "span",
     label: "Forecasts agree",
-    text: "No team range, two or more forecasts, and no disagreement: a faint band over their full span, next to the forecasts themselves.",
+    text: "If there's no team range and there are at least two forecasts with no disagreement between them, a faint band covers their full span, with the forecasts drawn over it.",
     drawing: <SpanBand />,
   },
   {
     key: "disagree",
     label: "Forecasts disagree",
-    text: "No band at all. You see each forecast on its own and a stamp, so the split is impossible to miss.",
+    text: "There's no band. Each forecast is drawn separately, with a stamp that marks the disagreement.",
     drawing: <Disagree />,
     stamp: true,
   },
   {
     key: "none",
     label: "Nothing yet",
-    text: "No range and no forecasts: a hatched \"No estimate yet\" label instead of a guess.",
+    text: "With no range and no forecasts, the timeline shows a hatched “No estimate yet” label.",
     drawing: <NoEstimate />,
   },
 ];

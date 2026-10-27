@@ -3,11 +3,9 @@ title: "About *this blog*"
 slug: about-this-blog
 date: "2026-10-26"
 author: The team
-summary: "What we'll post here: field notes from the research, new evidence as it comes in, and changes to the timeline."
+summary: "What we'll write about here, and how posts differ from the rest of the site."
 ---
 
-This blog is where we think out loud. The rest of the site is built to be checked line by line, with every claim marked as sourced, our read, AI-suggested or unclear. Posts are looser. They’re where we explain what we’re reading, what surprised us and what we’re still unsure about.
+Posts here are looser than the rest of the site, which is built to be checked line by line, with every claim marked as sourced, our read, AI-suggested or unclear. On the blog we think out loud about what we’re reading, and about whatever surprised us or still has us unsure.
 
-Expect three kinds of posts. **Field notes** from the research, like a paper that changed how we think about a milestone. **New evidence**, when a result comes out that bears on whole brain emulation, brain computer interfaces or neuromorphic AI. And **timeline changes**: when we move an estimate, add a forecast or flag a disagreement, we’ll say what changed and why.
-
-If you think we’ve got something wrong, [tell us](/contact/). Corrections and sources we missed are the most useful things you can send.
+We’ll mostly post field notes from the research, say about a paper that changed how we think about a milestone, and new results that bear on whole brain emulation, brain computer interfaces or neuromorphic AI. When we move an estimate, add a forecast or flag a disagreement on the timeline, we’ll write up what changed and why.

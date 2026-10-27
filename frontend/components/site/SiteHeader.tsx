@@ -14,7 +14,7 @@ export function SiteHeader() {
       {IS_DRAFT && (
         <section className={styles.draftBanner} aria-label="Draft notice">
           <span className={styles.draftDot} aria-hidden="true" />
-          Draft prototype. Content is placeholder or unreviewed, and not for citation.
+          Draft site. Much of the content is placeholder or unreviewed, so please don&rsquo;t cite it yet.
         </section>
       )}
       <header className={styles.header}>

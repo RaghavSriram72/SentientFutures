@@ -13,10 +13,9 @@ export function SiteFooter() {
           <p className={styles.name}>{SITE_NAME}</p>
           <p className={styles.tagline}>{SITE_TAGLINE}</p>
           <p className={styles.note}>
-            Every research claim on this site is marked as sourced, our read, AI-suggested or
-            unclear. AI text a person hasn&rsquo;t checked says &ldquo;not yet reviewed&rdquo;. In
-            this draft, the technology pages are AI-written outlines the team hasn&rsquo;t reviewed
-            yet. Once the site launches, nothing AI-written goes live unchecked.
+            Every research claim here carries one of four marks: From a source, Our read,
+            AI-suggested or Unclear. AI text that nobody has checked yet is marked &ldquo;not yet
+            reviewed,&rdquo; and after launch none of it will go live until a person has checked it.
           </p>
         </div>
         <nav className={styles.cols} aria-label="Footer">

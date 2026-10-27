@@ -14,11 +14,11 @@ export default function NotFound() {
         <OffTheMap />
         <p className={`eyebrow ${styles.eyebrow}`}>404 · Not found</p>
         <h1 className={styles.title}>
-          This page is <em>off the map</em>
+          We couldn&rsquo;t find this <em>page</em>
         </h1>
         <p className={`lede ${styles.lede}`}>
-          The link may be old, or the page may have moved while the site is still a draft. Everything else is still
-          where you left it.
+          The link may be out of date, or the page may have moved. Pages still move around while the
+          site is a draft.
         </p>
         <div className={styles.actions}>
           <Link href="/" className="btn btn-primary">

@@ -81,7 +81,7 @@ def model_errors(model_class: type[BaseModel], data: dict) -> list[str]:
     return []
 
 
-def sample_milestone(milestone_id: str = "wbe-sample-mouse-connectome") -> dict:
+def sample_milestone(milestone_id: str = "neuro-sample-alignment-benefit") -> dict:
     """A fresh copy of one of the worked examples in content/milestones.json."""
     milestones = read_json(REAL_CONTENT / "milestones.json")
     return milestones[milestone_index(milestones, milestone_id)]

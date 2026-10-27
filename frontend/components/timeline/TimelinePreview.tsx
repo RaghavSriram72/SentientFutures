@@ -3,7 +3,7 @@
 // component. Usage: <TimelinePreview milestones={getMilestones()} nowYear={getSiteData().nowYear} />
 import Link from "next/link";
 
-import { countLabel, type MilestoneView } from "@/lib/estimates";
+import { countLabel, pluralize, type MilestoneView } from "@/lib/estimates";
 import type { Milestone } from "@/lib/types";
 
 import { BandHeaders, ChartBackdrop, NowMarker } from "./ChartAxes";
@@ -54,12 +54,16 @@ export function TimelinePreview({ milestones, nowYear }: TimelinePreviewProps) {
       sampleCount += 1;
     }
   }
-  let summary = `${layout.tracks.length} milestones, ${flaggedCount} where sources disagree`;
+  let summary = pluralize(layout.tracks.length, "milestone", "milestones");
+  // "0 where sources disagree" reads oddly, so the count only shows when there is one.
+  if (flaggedCount > 0) {
+    summary += `, ${flaggedCount} where sources disagree`;
+  }
   // The preview has no room for SAMPLE chips, so say it once up top.
   if (sampleCount === layout.tracks.length) {
     summary += " · sample data";
   } else if (sampleCount > 0) {
-    summary += ` · ${sampleCount} samples`;
+    summary += ` · ${sampleCount} are samples`;
   }
 
   // No aria-label: the visible summary and "Open the timeline" already name the

@@ -21,16 +21,16 @@ const STEPS: { title: string; text: string; isAi?: boolean }[] = [
   },
   {
     title: "Triaged",
-    text: "An AI model reads the title and abstract and suggests what the paper is about.",
+    text: "An AI model reads each title and abstract and suggests how to categorize the paper.",
     isAi: true,
   },
   {
     title: "Reviewed",
-    text: "A person checks every suggestion and approves, edits or rejects it.",
+    text: "A person checks every suggestion, then approves, edits or rejects it.",
   },
   {
     title: "Published",
-    text: "Only approved sources reach the public site, on the next rebuild.",
+    text: "Only approved sources go on the public site. They appear the next time it rebuilds.",
   },
 ];
 
@@ -41,10 +41,10 @@ export default function AdminPage() {
         eyebrow="Admin preview"
         title={
           <>
-            Where people <em>check the AI</em>
+            The team&rsquo;s <em>review</em> workspace
           </>
         }
-        lede="This is a static preview of the team's workspace. Nothing on this page is live yet, and nothing here can change the public site."
+        lede="A static preview of the screens the team will use. None of it is connected to anything yet, so nothing here can change the public site."
       />
 
       <div className="container section">
@@ -52,9 +52,9 @@ export default function AdminPage() {
           <LoginCard />
 
           <section className={styles.flow} aria-labelledby="flow-heading">
-            <p className="eyebrow">How a source gets here</p>
+            <p className="eyebrow">Planned pipeline</p>
             <h2 id="flow-heading" className={styles.flowHeading}>
-              No source goes live <em>without a person</em>
+              How a source gets <em>published</em>
             </h2>
             <ol className={styles.steps}>
               {STEPS.map((step, index) => (

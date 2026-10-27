@@ -39,13 +39,13 @@ export const COLOR_GROUPS: SwatchGroup[] = [
   {
     title: "Accent",
     swatches: [
-      { token: "--grape", value: "#533a71", label: "Grape", note: "Links, focus, the one accent" },
+      { token: "--grape", value: "#533a71", label: "Grape", note: "Links and focus" },
       { token: "--grape-deep", value: "#3f2c57", label: "Grape deep", note: "Button gradient end" },
       { token: "--grape-tint", value: "#533a7114", label: "Grape tint", note: "AI fills, hovers" },
       { token: "--grape-tint-2", value: "#533a7126", label: "Grape tint 2" },
       { token: "--mauve", value: "#654f6f", label: "Mauve", note: "Our read, draft marks" },
       { token: "--lavender", value: "#c9a0dc", label: "Lavender", note: "Fill only, never text" },
-      { token: "--lavender-soft", value: "#c9a0dc40", label: "Lavender soft", note: "Highlights" },
+      { token: "--lavender-soft", value: "#c9a0dc40", label: "Lavender soft", note: "Text selection" },
     ],
   },
   {

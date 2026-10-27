@@ -9,7 +9,7 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Blog",
-  description: "Field notes from the research, new evidence as it comes in, and changes to the timeline.",
+  description: "Notes from the team on the research, new evidence and changes to the timeline.",
 };
 
 export default function BlogIndexPage() {
@@ -24,7 +24,7 @@ export default function BlogIndexPage() {
             Notes from <em>the research</em>
           </>
         }
-        lede="Field notes, new evidence as it comes in, and what changed on the timeline and why."
+        lede="What we're reading, new results as they come out, and the reasons behind changes to the timeline."
       >
         <span className="chip">
           {posts.length} {posts.length === 1 ? "post" : "posts"}

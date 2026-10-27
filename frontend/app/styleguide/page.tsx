@@ -30,7 +30,7 @@ const FONTS = [
     name: "Instrument Serif",
     variable: "--font-display",
     className: styles.fontDisplay,
-    use: "Headlines, card titles, quotes. One italic word or phrase per headline.",
+    use: "Headlines, card titles and quotes.",
     sample: "Could brain tech keep humans in the loop?",
   },
   {
@@ -38,7 +38,7 @@ const FONTS = [
     variable: "--font-sans",
     className: styles.fontSans,
     use: "Body copy and interface text.",
-    sample: "Every claim on this site is marked as sourced, our read, AI-suggested or unclear.",
+    sample: "Every research claim on this site carries one of four marks: From a source, Our read, AI-suggested or Unclear.",
   },
   {
     name: "IBM Plex Mono",
@@ -68,7 +68,7 @@ const EXAMPLE_CLAIMS: Claim[] = [
     reviewed_by: "Sample reviewer",
   },
   {
-    text: "Style example: we can't tell yet, and we name the reason.",
+    text: "Style example: something we can't tell yet, with the reason in the tag.",
     provenance: "unclear",
     unclear_reason: "conflicting_evidence",
   },
@@ -123,10 +123,10 @@ export default function StyleguidePage() {
         eyebrow="Style tile"
         title={
           <>
-            One page, <em>every piece</em>
+            Tokens, type and <em>components</em>
           </>
         }
-        lede="The look of the site in one place: tokens, type and the parts every page is built from. Change a token in tokens.css and it changes everywhere."
+        lede="Everything the site is built from is collected here. Change a token in tokens.css and it changes on every page."
       >
         <span className="chip">Internal · not indexed</span>
       </PageHeader>
@@ -138,10 +138,10 @@ export default function StyleguidePage() {
           label="Color"
           title={
             <>
-              Ivory paper, <em>one grape</em> accent
+              Paper, ink and one <em>accent</em> color
             </>
           }
-          intro="Warm paper, near-black ink and a single accent. Stage colors and the red stamp are the only other colors, and each has one job."
+          intro="The pages are warm ivory paper with near-black ink, plus a single grape accent. The only other colors are the three stage colors and the red stamp, and each is reserved for one use."
         >
           <div className={styles.colorGroups}>
             {COLOR_GROUPS.map((group) => (
@@ -163,7 +163,7 @@ export default function StyleguidePage() {
           label="Type"
           title={
             <>
-              Three faces, <em>three jobs</em>
+              The three <em>typefaces</em>
             </>
           }
         >
@@ -211,7 +211,7 @@ export default function StyleguidePage() {
               One italic word <em>per headline</em>
             </>
           }
-          intro="Display serif, tight leading, and exactly one word or phrase in grape italics. Pick the word a reader should carry away."
+          intro="Headlines use the display serif with tight leading, and each has exactly one word or phrase in grape italics. Write a plain headline that names what the section holds, then italicize the word you'd stress reading it aloud."
         >
           <div className={`paper ${styles.headlineCard}`}>
             <p className="eyebrow">01 · Page title</p>
@@ -220,7 +220,7 @@ export default function StyleguidePage() {
             </p>
             <p className="eyebrow">02 · Section headline</p>
             <p className={styles.headlineLg}>
-              Possible isn&rsquo;t the same as <em>helping</em>
+              Every milestone sits in one of three <em>stages</em>
             </p>
             <p className="lede">A lede sits under the headline in muted ink, at about sixty characters a line.</p>
           </div>
@@ -229,10 +229,10 @@ export default function StyleguidePage() {
         <TileSection
           id="controls"
           number="04"
-          label="Buttons and chips"
+          label="Controls"
           title={
             <>
-              Controls that <em>stay quiet</em>
+              Buttons and <em>chips</em>
             </>
           }
         >
@@ -265,15 +265,15 @@ export default function StyleguidePage() {
           label="Surfaces"
           title={
             <>
-              Paper, <em>not plastic</em>
+              Paper <em>cards</em>
             </>
           }
-          intro="Cards are paper with a faint grain, hairline edges and grape-tinted shadows. Radii run from 1.25 to 2rem on anything card-sized."
+          intro="Cards look like paper, with a faint grain, a hairline edge and a grape-tinted shadow. Anything card-sized gets a radius between 1.25 and 2rem."
         >
           <div className={styles.surfaceGrid}>
             <div className={`paper ${styles.paperDemo}`}>
               <p className="eyebrow">Paper card</p>
-              <p className={styles.paperTitle}>A card, with grain</p>
+              <p className={styles.paperTitle}>Card title</p>
               <p className={styles.paperText}>
                 Background <code className={styles.code}>--paper-2</code> plus <code className={styles.code}>--grain</code>,
                 a <code className={styles.code}>--rule-soft</code> edge and <code className={styles.code}>--shadow-paper</code>.
@@ -297,10 +297,10 @@ export default function StyleguidePage() {
           label="Catalog card"
           title={
             <>
-              Sources as <em>library cards</em>
+              Source <em>catalog</em> cards
             </>
           }
-          intro="Mono call line, serif title, our summary, then every category as a labeled chip. AI-suggested fields keep the dashed mark and the name of whoever checked them."
+          intro="Each card has a mono call line at the top, then the serif title, our summary and a labeled chip for every category. Fields an AI suggested keep the dashed mark and the name of whoever checked them."
         >
           <ul className={styles.catalogGrid}>
             {catalogExamples.map((source) => (
@@ -317,10 +317,10 @@ export default function StyleguidePage() {
           label="Provenance"
           title={
             <>
-              Four marks, <em>distinct</em> without color
+              The four provenance <em>marks</em>
             </>
           }
-          intro="Each kind has its own glyph and line style, so the four still read apart in grayscale."
+          intro="Each kind has a glyph and line style of its own. In grayscale, those are what tell the four apart."
         >
           <ProvenanceLegend />
           <div className={styles.legendCompact}>
@@ -349,10 +349,10 @@ export default function StyleguidePage() {
           label="Stages"
           title={
             <>
-              Color means <em>stage</em>, and only stage
+              Stage <em>colors</em>
             </>
           }
-          intro="Each stage has a fill for bars and a darker ink for labels. Labels always name the stage, so color is never the only cue."
+          intro="These colors are only ever used to show stage. Each stage has a fill for bars and a darker ink for labels, and labels always name the stage, so color is never the only cue."
         >
           <StageLegend />
           <ul className={styles.stageSwatches}>
@@ -380,10 +380,10 @@ export default function StyleguidePage() {
           label="Signals"
           title={
             <>
-              The stamp is <em>reserved</em>
+              The disagreement <em>stamp</em>
             </>
           }
-          intro="Red appears in one place: the rubber stamp on a milestone whose sources disagree. It never replaces the forecasts, it sits next to them."
+          intro="Red is used in one place only: the rubber stamp on a milestone whose sources disagree. The stamp sits next to that milestone's forecasts without hiding them."
         >
           <div className={`paper ${styles.stampDemo}`}>
             <Stamp />
@@ -400,7 +400,7 @@ export default function StyleguidePage() {
               The milestone <em>dossier</em>
             </>
           }
-          intro="The panel that opens when you pick a milestone on the timeline, shown here live. It uses the first milestone whose sources disagree, or the first milestone if none do."
+          intro="This is the live panel that opens when you pick a milestone on the timeline. Here it shows the first milestone whose sources disagree, or the first milestone if none do."
         >
           <DossierSlot />
         </TileSection>

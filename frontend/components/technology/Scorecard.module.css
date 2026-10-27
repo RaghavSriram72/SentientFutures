@@ -259,9 +259,45 @@
   color: var(--prov-unclear);
 }
 
+/* The chip and, on risk rows, the severity warning. They wrap onto two lines
+   in the narrow rating column. */
+.unclearLine {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+
 .reason {
   font-size: var(--text-xs);
   line-height: 1.35;
+  color: var(--ink-muted);
+}
+
+/* Potential severity: an unrated warning. Plain sans text with an outline
+   triangle and no fill or pips, so it never reads as a High chip. */
+.severity {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.35em;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.severity .glyph {
+  margin-top: 0.15em;
+}
+
+.severityHigh {
+  color: var(--stamp);
+}
+
+.severityMedium {
+  color: var(--stage-widely-ink);
+}
+
+.severityLow {
   color: var(--ink-muted);
 }
 
@@ -358,6 +394,19 @@
 /* The unclear reason isn't shown in the key, so its wrapper can sit inline */
 .keyRow .unclear {
   display: inline-flex;
+}
+
+.keyNote {
+  flex-basis: 100%;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+@media (min-width: 560px) {
+  .keyNote {
+    flex-basis: auto;
+  }
 }
 
 .keyLabel {

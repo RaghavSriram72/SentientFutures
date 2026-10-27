@@ -13,7 +13,7 @@ export function LoginCard() {
         Team <em>login</em>
       </h2>
       <p className={styles.text}>
-        Reviewers sign in here to work through the review queue, add sources and edit milestones.
+        Reviewers will sign in here to work through the review queue, add sources and edit milestones.
       </p>
       <button type="button" className={styles.google} disabled aria-describedby="login-note">
         {/* A plain letter in a ring, not Google's colored logo */}
@@ -23,7 +23,7 @@ export function LoginCard() {
         Sign in with Google
       </button>
       <p id="login-note" className={styles.note}>
-        Sign-in arrives in a later phase. Only people on the team&rsquo;s allowlist will be able to get in.
+        Sign-in isn&rsquo;t built yet. When it is, only people on the team&rsquo;s allowlist will be able to get in.
       </p>
     </section>
   );
