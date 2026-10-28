@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <title type="html">ArXiv Query: test</title>
+  <id>http://arxiv.org/api/test</id>
+  <updated>2026-10-27T00:00:00-04:00</updated>
+  <opensearch:totalResults>3</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <opensearch:itemsPerPage>2</opensearch:itemsPerPage>
+  <entry>
+    <id>http://arxiv.org/abs/2610.11111v2</id>
+    <updated>2026-10-20T12:00:00Z</updated>
+    <published>2026-10-18T09:30:00Z</published>
+    <title>Brain-Computer Interfaces as a
+      Channel for Human Feedback</title>
+    <summary>  We argue that brain-computer interfaces could give
+  alignment researchers a richer feedback signal.
+</summary>
+    <author><name>Ada Example</name></author>
+    <author><name>Grace Sample</name></author>
+    <arxiv:doi>10.1234/BCI.Feedback.2026</arxiv:doi>
+    <arxiv:journal_ref>Journal of Examples 12, 34 (2026)</arxiv:journal_ref>
+    <link href="http://arxiv.org/abs/2610.11111v2" rel="alternate" type="text/html"/>
+    <arxiv:primary_category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2610.22222v1</id>
+    <updated>2026-10-19T12:00:00Z</updated>
+    <published>2026-10-19T08:00:00Z</published>
+    <title>Neuromorphic Chips and AI Governance</title>
+    <summary>A survey of neuromorphic hardware and what it means for governance.</summary>
+    <author><name>Alan Placeholder</name></author>
+    <link href="http://arxiv.org/abs/2610.22222v1" rel="alternate" type="text/html"/>
+  </entry>
+</feed>

@@ -10,8 +10,12 @@ export const IS_DRAFT = true;
 export interface NavItem {
   href: string;
   label: string;
+  // Only in the phone menu. The desktop header has no room for it, and the
+  // footer links to it on every page.
+  menuOnly?: boolean;
 }
 
+// The header. On phones all of it folds into the Menu button.
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/timeline/", label: "Timeline" },
   { href: "/wbe/", label: "Brain emulation" },
@@ -19,10 +23,14 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/neuromorphic/", label: "Neuromorphic AI" },
   { href: "/sources/", label: "Source database" },
   { href: "/blog/", label: "Blog" },
+  { href: "/about/", label: "About" },
+  { href: "/methodology/", label: "Methodology", menuOnly: true },
+  { href: "/contact/", label: "Contact", menuOnly: true },
 ];
 
+// The footer's one line of links.
 export const SECONDARY_NAV: NavItem[] = [
-  { href: "/methodology/", label: "Methodology" },
   { href: "/about/", label: "About" },
+  { href: "/methodology/", label: "Methodology" },
   { href: "/contact/", label: "Contact" },
 ];

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { DraftMark, SampleChip } from "@/components/common/Marks";
@@ -12,10 +14,20 @@ import { ProvenanceTag } from "@/components/provenance/ProvenanceTag";
 import { CatalogCard } from "@/components/sources/CatalogCard";
 import { DossierSlot } from "@/components/styleguide/DossierSlot";
 import { Swatch } from "@/components/styleguide/Swatch";
-import { getSources, sourcesById } from "@/lib/data";
+import {
+  AchievedDot,
+  DependencySwatch,
+  FaintRibbonSwatch,
+  LineSwatch,
+  NeverCross,
+  RibbonSwatch,
+  UnknownZoneSwatch,
+} from "@/components/timeline3d/TrackGlyphs";
+import { TrackTeaser } from "@/components/timeline3d/TrackTeaser";
+import { getPublicMilestones, getSiteData, getSources, sourcesById } from "@/lib/data";
 import { enumLabel } from "@/lib/enums";
 import { sourceRefsById } from "@/lib/sources";
-import type { Claim, Source } from "@/lib/types";
+import type { Claim, Source, Stage } from "@/lib/types";
 
 import styles from "./page.module.css";
 import { COLOR_GROUPS, RADII, STAGE_SWATCHES, TYPE_SCALE } from "./tokens-list";
@@ -74,6 +86,21 @@ const EXAMPLE_CLAIMS: Claim[] = [
   },
 ];
 
+const STAGES: Stage[] = ["possible", "widely_available", "actually_helping"];
+
+// Each floor mark, in neutral ink and (where it takes one) in each stage color.
+const TRACK_MARKS: { label: string; staged: boolean; draw: (stage: Stage | undefined) => ReactNode }[] = [
+  { label: "Solid ribbon: the team's range", staged: true, draw: (stage) => <RibbonSwatch stage={stage} /> },
+  { label: "Solid ribbon with no end year", staged: true, draw: (stage) => <RibbonSwatch stage={stage} open /> },
+  { label: "Faint ribbon: forecasts that agree", staged: true, draw: (stage) => <FaintRibbonSwatch stage={stage} /> },
+  { label: "Dot: the year it was reached", staged: true, draw: (stage) => <AchievedDot stage={stage} /> },
+  { label: "Thin line: one forecast", staged: false, draw: () => <LineSwatch /> },
+  { label: "Thin line that disagrees", staged: false, draw: () => <LineSwatch disagrees /> },
+  { label: "Cross in the Never zone", staged: false, draw: () => <NeverCross /> },
+  { label: "Timing unknown zone", staged: false, draw: () => <UnknownZoneSwatch /> },
+  { label: "Dependency link", staged: false, draw: () => <DependencySwatch /> },
+];
+
 // Show the sample sources that exercise the most card states: AI-suggested
 // fields, an arXiv id, and an Unclear credibility with its reason.
 function pickCatalogExamples(): Source[] {
@@ -113,7 +140,13 @@ function TileSection({
   );
 }
 
+// The style tile shows the worked examples, so it only exists under
+// `next dev`. A production build gets "not found" here before any data is
+// read, so the samples never reach the published site.
 export default function StyleguidePage() {
+  if (process.env.NODE_ENV === "production") {
+    notFound();
+  }
   const sourceRefs = sourceRefsById(getSources());
   const catalogExamples = pickCatalogExamples();
 
@@ -352,7 +385,7 @@ export default function StyleguidePage() {
               Stage <em>colors</em>
             </>
           }
-          intro="These colors are only ever used to show stage. Each stage has a fill for bars and a darker ink for labels, and labels always name the stage, so color is never the only cue."
+          intro="These colors are only ever used to show stage. Each stage has a fill for ribbons and dots and a darker ink for labels, and labels always name the stage, so color is never the only cue."
         >
           <StageLegend />
           <ul className={styles.stageSwatches}>
@@ -400,9 +433,39 @@ export default function StyleguidePage() {
               The milestone <em>dossier</em>
             </>
           }
-          intro="This is the live panel that opens when you pick a milestone on the timeline. Here it shows the first milestone whose sources disagree, or the first milestone if none do."
+          intro="This is the live panel that opens when you pick a milestone on the timeline. The first is a worked example with every section filled in. The second is the first real milestone, which shows how a dossier reads while most of it hasn't been assessed."
         >
           <DossierSlot />
+        </TileSection>
+
+        <TileSection
+          id="track"
+          number="11"
+          label="Timeline marks"
+          title={
+            <>
+              What the track draws on its <em>floor</em>
+            </>
+          }
+          intro="The Key and the list view draw these in neutral ink, because on the track color means the stage. Pages that explain the marks can import the same glyphs from components/timeline3d/TrackGlyphs."
+        >
+          <ul className={styles.trackGlyphs}>
+            {TRACK_MARKS.map((mark) => (
+              <li key={mark.label} className={styles.trackGlyph}>
+                <span className={styles.trackGlyphPictures}>
+                  {mark.draw(undefined)}
+                  {mark.staged && STAGES.map((stage) => <span key={stage}>{mark.draw(stage)}</span>)}
+                </span>
+                <span className={styles.trackGlyphLabel}>{mark.label}</span>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.trackLink}>
+            <Link href="/styleguide/track/">Open the full track with the worked examples</Link> to see ribbons, forecast
+            lines, the Never zone and dependency links in place.
+          </p>
+          <h3 className={styles.subTitle}>Home page teaser</h3>
+          <TrackTeaser milestones={getPublicMilestones()} nowYear={getSiteData().nowYear} />
         </TileSection>
       </div>
     </>

@@ -13,6 +13,7 @@ Every sentence shown on the site is a Claim, so its provenance travels with it:
 Mirrors `Claim` in frontend/lib/types.ts. Change both together.
 """
 
+from enum import Enum
 from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
@@ -159,13 +160,37 @@ def find_claims(value: object, path: str = "") -> list[tuple[str, Claim]]:
     return found
 
 
+def compact_dump(value: object) -> object:
+    """A model as plain JSON values, with each Claim's empty optional keys left out.
+
+    That's how content/milestones.json is written by hand ({"text": ..., "provenance": "team"}),
+    so a milestone exported from the database reads like one from the file.
+    """
+    if isinstance(value, Claim):
+        return value.model_dump(mode="json", exclude_defaults=True)
+    if isinstance(value, BaseModel):
+        result = {}
+        for field_name in type(value).model_fields:
+            result[field_name] = compact_dump(getattr(value, field_name))
+        return result
+    if isinstance(value, list):
+        items = []
+        for item in value:
+            items.append(compact_dump(item))
+        return items
+    if isinstance(value, Enum):
+        return value.value
+    return value
+
+
 def ai_review_problems(record: BaseModel, is_sample: bool) -> list[RuleProblem]:
     """AI-suggested claims need a named human reviewer before they go public.
 
     Sample records (sample: true) are exempt: the fictional worked examples and
-    the AI-drafted outlines on the technology pages. The site tags their AI
-    claims "not yet reviewed" instead, and validate.py prints a warning with
-    the count, so they can't be forgotten when the sample flag comes off.
+    the AI-drafted outlines on the technology pages. The public site leaves
+    sample milestones and sources out, and puts an "AI draft" banner on a draft
+    technology page. validate.py prints a warning with the count, so these
+    claims can't be forgotten when the sample flag comes off.
     """
     if is_sample:
         return []

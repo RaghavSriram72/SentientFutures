@@ -1,0 +1,30 @@
+{
+  "total": 3,
+  "token": "NEXT-PAGE-TOKEN",
+  "data": [
+    {
+      "paperId": "s2aaa111",
+      "title": "Brain-Computer Interfaces as a Channel for Human Feedback",
+      "authors": [{"authorId": "1", "name": "Ada Example"}, {"authorId": "2", "name": "Grace Sample"}],
+      "year": 2026,
+      "externalIds": {"DOI": "10.1234/bci.feedback.2026", "ArXiv": "2610.11111", "CorpusId": 1},
+      "url": "https://www.semanticscholar.org/paper/s2aaa111",
+      "abstract": "We argue that brain-computer interfaces could give alignment researchers a richer feedback signal.",
+      "venue": "Journal of Examples",
+      "publicationTypes": ["JournalArticle"],
+      "publicationDate": "2026-10-18"
+    },
+    {
+      "paperId": "s2bbb222",
+      "title": "Mental Privacy and the Intelligence Curse",
+      "authors": [{"authorId": "3", "name": "Sam Placeholder"}],
+      "year": 2026,
+      "externalIds": {"DOI": "10.5555/mental.privacy", "CorpusId": 2},
+      "url": "https://www.semanticscholar.org/paper/s2bbb222",
+      "abstract": null,
+      "venue": "",
+      "publicationTypes": null,
+      "publicationDate": "2026-10-20"
+    }
+  ]
+}

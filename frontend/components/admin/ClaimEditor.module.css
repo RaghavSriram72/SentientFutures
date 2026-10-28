@@ -1,0 +1,187 @@
+/* One claim: its text, where it comes from, and what that kind needs. */
+.claim {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+}
+
+/* A legend sits on the fieldset's border by default; this keeps it inside. */
+.legend {
+  float: left;
+  width: 100%;
+  padding-right: 5rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.legend + * {
+  clear: both;
+}
+
+.action {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+}
+
+/* Grows with what's typed, where the browser can, so long claims stay readable */
+.text,
+.quote {
+  field-sizing: content;
+  max-height: 24rem;
+}
+
+.text {
+  min-height: 4.25rem;
+}
+
+.quote {
+  min-height: 4rem;
+  font-style: italic;
+}
+
+.over {
+  color: var(--stamp);
+  font-weight: 600;
+}
+
+/* ---------- The four kinds: as many side by side as the column fits ---------- */
+.kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: 0.4rem;
+}
+
+.kind {
+  position: relative;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem 0.65rem 0.55rem 2rem;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-sm);
+  background: var(--paper-2);
+  cursor: pointer;
+}
+
+.kind:hover {
+  border-color: var(--rule-strong);
+}
+
+.kindChosen {
+  border-color: var(--grape);
+  box-shadow: inset 0 0 0 1px var(--grape);
+  background: var(--paper);
+}
+
+.kind:has(.radio:focus-visible) {
+  outline: 2px solid var(--grape);
+  outline-offset: 2px;
+}
+
+.radio {
+  position: absolute;
+  top: 0.62rem;
+  left: 0.65rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  accent-color: var(--grape);
+  cursor: pointer;
+}
+
+.kindName {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.kindName svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex: none;
+}
+
+.kind_ai {
+  color: var(--grape);
+}
+
+.kind_unclear {
+  color: var(--stage-widely-ink);
+}
+
+.kindHint {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+.sourceOnly {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.sourceOnly svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* What the chosen kind asks for, set in from the edge */
+.details {
+  display: grid;
+  gap: 0.75rem;
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--rule);
+}
+
+.unclear {
+  border-left-style: dashed;
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inline input {
+  flex: 1 1 12rem;
+}
+
+/* ---------- A list of claims ---------- */
+.list {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.listHead {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.listTitle {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.none {
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--ink-faint);
+}

@@ -2,17 +2,18 @@
 // render time. Nothing here is ever stored. The methodology page prints the same
 // rule text, so if you change the logic, change DISAGREEMENT_RULE_TEXT too.
 //
-// Display rule:
-//   achieved_in set          -> "achieved": a point marker at that year
-//   team estimate            -> "team": a solid bar (latest null = open-ended)
-//   2+ forecasts, no flag    -> "span": a faint band over the forecasts' full span
-//                               (no band if the rule flags them, even when the team
-//                               overrides the flag: a band would merge them anyway;
-//                               and no band if the span is open on both sides)
-//   1+ forecasts             -> "whiskers": individual forecasts only
-//   nothing                  -> "none": a hatched "No estimate yet" chip
-// Forecasts are always drawn one by one, whatever the bar mode. Disagreement is
-// worked out separately, so a team range never hides it.
+// Display rule, in the words of the track's Key:
+//   achieved_in set          -> "achieved": a dot at that year
+//   team estimate            -> "team": a solid ribbon (latest null = it fades out on the right)
+//   2+ forecasts, no flag    -> "span": a faint ribbon over the forecasts' full span
+//                               (no ribbon if the rule flags them, even when the team
+//                               overrides the flag: a ribbon would merge them anyway;
+//                               and no ribbon if the span is open on both sides)
+//   1+ forecasts             -> "whiskers": thin lines only, one per forecast
+//   nothing                  -> "none": the card stands in the Timing unknown zone
+// Forecasts are always drawn one by one, whatever the mode. "Never" forecasts
+// are crosses in the Never zone. Disagreement is worked out separately, so a
+// team range never hides it. (The mode names are code only; readers never see them.)
 import type { Claim, Forecast, Milestone } from "./types";
 
 // v0.2: two forecasts count as the same forecaster only when the name and the
@@ -26,16 +27,17 @@ export const DISAGREEMENT_RULE_TEXT: string[] = [
   "A pair disagrees if one forecaster says it will never happen and the other gives a year.",
   `A pair also disagrees if their windows are more than ${DISAGREEMENT_GAP_YEARS} years apart, measured from the end of the earlier window to the start of the later one.`,
   "An open end (“by 2045” or “not before 2045”) counts as unbounded, so it can never create a gap in that direction.",
-  "If any pair disagrees, the milestone gets a SOURCES DISAGREE stamp and no summary band. Even if the team decides the forecasts aren't really in conflict, we don't draw a band, because it would blur them into one range.",
-  "A summary band needs at least two forecasts, no disagreeing pair and no team range. It runs from the earliest year any forecast allows to the latest. If any forecast is open on one side, the band is open on that side too. If that leaves it open on both sides, we skip the band and show the forecasts alone.",
+  "If any pair disagrees, the milestone gets a SOURCES DISAGREE stamp and no faint ribbon. Even if the team decides the forecasts aren't really in conflict, we don't draw one, because it would blur them into one range.",
+  "A faint ribbon needs at least two forecasts, no disagreeing pair and no team range. It runs from the earliest year any forecast allows to the latest. If any forecast is open on one side, the ribbon is open on that side too. If that leaves it open on both sides, we skip the ribbon and show the forecasts alone.",
   "The team can override the rule either way, but only with a published reason. The milestone then says whether the flag came from our rule or from the team, and what the rule alone would have said.",
   "A team range never hides a disagreement. The stamp and every individual forecast stay visible.",
 ];
 
 export type BarMode = "team" | "span" | "whiskers" | "none" | "achieved";
 
-// A bar's years. null means open-ended on that side: start null runs off the
-// left edge ("by 2045"), end null runs off the right edge ("not before 2035").
+// A ribbon's years. null means open-ended on that side: start null runs back
+// to the start of the track ("by 2045"), end null fades out on the right
+// ("not before 2035").
 export interface BarRange {
   start: number | null;
   end: number | null;
@@ -206,11 +208,11 @@ export function computeDisagreement(milestone: Milestone): DisagreementView {
   };
 }
 
-// The faint band: every year any dated forecast allows, from the smallest
+// The faint ribbon: every year any dated forecast allows, from the smallest
 // earliest to the largest latest. A null bound is unbounded, so if any forecast
-// is open on a side ("by 2045" on the left), the band is open on that side too.
-// Open on both sides would cover the whole chart and say nothing, so that gives
-// no band. "Never" forecasts have no years and are left out.
+// is open on a side ("by 2045" on the left), the ribbon is open on that side too.
+// Open on both sides would run the whole length of the track and say nothing,
+// so that gives no ribbon. "Never" forecasts have no years and are left out.
 function forecastSpan(forecasts: Forecast[]): BarRange | null {
   let start: number | null = null;
   let end: number | null = null;
@@ -275,7 +277,7 @@ export function computeMilestoneView(milestone: Milestone, nowYear: number): Mil
   } else if (forecasts.length >= 2 && !disagreement.flagged && !disagreement.ruleFlagged) {
     bar = forecastSpan(forecasts);
     // No span to draw (every forecast says never, or together they're open on
-    // both sides), so fall back to whiskers.
+    // both sides), so fall back to thin lines alone.
     barMode = bar ? "span" : "whiskers";
   } else if (forecasts.length >= 1) {
     barMode = "whiskers";

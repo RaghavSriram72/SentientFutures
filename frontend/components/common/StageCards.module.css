@@ -77,3 +77,16 @@
   font-size: var(--text-sm);
   color: var(--ink-muted);
 }
+
+.compact .stage {
+  gap: 0.35rem;
+  padding: 1.25rem 1.15rem 1.1rem;
+}
+
+.compact .name {
+  font-size: 1.5rem;
+}
+
+.compact .desc {
+  font-size: var(--text-sm);
+}

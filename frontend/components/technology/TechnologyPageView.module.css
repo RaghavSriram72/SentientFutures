@@ -1,5 +1,5 @@
-/* Long-read layout for the technology pages. Mobile-first: everything stacks,
-   then the hero splits at 960px and a sticky side nav appears at 1080px. */
+/* Layout for the technology pages. Mobile-first: everything stacks, then the
+   hero splits at 960px and a sticky side nav appears at 1080px. */
 
 /* ---------- Hero ---------- */
 .hero {
@@ -12,7 +12,7 @@
   overflow: hidden;
   display: grid;
   gap: 2rem;
-  padding: clamp(24px, 5vw, 64px);
+  padding: clamp(22px, 4.5vw, 56px);
   border: 1px solid var(--rule-soft);
   border-radius: var(--radius-card);
   background-color: var(--paper-2);
@@ -28,59 +28,103 @@
 
 @media (min-width: 960px) {
   .heroPanel {
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-    gap: clamp(2rem, 4vw, 4rem);
-    align-items: end;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: clamp(2rem, 4vw, 3.5rem);
+    align-items: start;
   }
 }
 
-/* The technology number, set huge and faint behind the headline */
+/* The technology number, set large and faint in the top corner beside the
+   headline. It is decorative: phones skip it rather than set it behind the
+   eyebrow, and from 960px the "Where we land" box takes that corner, so
+   it only shows in between, where the headline leaves room for it. */
 .numeral {
+  display: none;
   position: absolute;
   z-index: -1;
-  top: -0.22em;
-  right: -0.03em;
+  top: clamp(10px, 2vw, 24px);
+  right: clamp(18px, 3vw, 36px);
   font-family: var(--font-display);
-  font-size: clamp(7rem, 20vw, 16rem);
+  font-size: clamp(6rem, 13vw, 9rem);
   font-style: italic;
   line-height: 1;
-  color: var(--grape-tint);
+  color: var(--grape-tint-2);
   pointer-events: none;
   user-select: none;
 }
 
+@media (min-width: 720px) and (max-width: 959px) {
+  .numeral {
+    display: block;
+  }
+}
+
 .heroMain {
   display: grid;
-  gap: 1.25rem;
+  gap: 1.1rem;
   align-content: start;
 }
 
 .headline {
-  max-width: 15ch;
+  max-width: 16ch;
 }
 
 .intro {
   max-width: var(--text-width);
-  font-size: clamp(1.0625rem, 0.95rem + 0.6vw, 1.25rem);
+  font-size: clamp(1.0625rem, 0.97rem + 0.45vw, 1.1875rem);
   line-height: 1.55;
 }
 
 .heroSide {
   display: grid;
   gap: 1rem;
+  min-width: 0;
 }
 
-/* ---------- Sample notice ---------- */
+/* ---------- Review status ---------- */
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  justify-self: start;
+  padding: 0.25em 0.75em;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--prov-team);
+}
+
+.statusChip svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* The one banner on an AI-drafted page */
 .sample {
-  padding: 1rem 1.15rem 1.1rem;
+  display: grid;
+  gap: 0.5rem;
+  max-width: var(--text-width);
+  padding: 0.85rem 1rem 0.9rem;
   border: 1.5px dashed var(--rule-strong);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--paper-2) 82%, transparent);
 }
 
+@media (min-width: 560px) {
+  .sample {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.9rem;
+  }
+}
+
 .sampleStamp {
-  display: inline-block;
-  margin-bottom: 0.65rem;
+  justify-self: start;
   padding: 0.2em 0.6em;
   border: 1.5px solid var(--grape);
   border-radius: 6px;
@@ -89,6 +133,7 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--grape);
   transform: rotate(-2deg);
 }
@@ -99,64 +144,17 @@
   color: var(--ink-body);
 }
 
-/* ---------- Quick facts ---------- */
-.facts {
-  padding: 1.1rem 1.25rem 0.45rem;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-lg);
-  background: var(--paper);
-}
-
-.factsHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 0.6rem;
-}
-
-.factsLink {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.04em;
-}
-
-.factList > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-block: 0.55rem;
-  border-top: 1px solid var(--rule-soft);
-}
-
-.factList dt {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-.factList dd {
-  font-family: var(--font-display);
-  font-size: 1.875rem;
-  line-height: 1;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ---------- Body: side nav + content ---------- */
 .body {
   display: grid;
-  gap: 2rem;
-  padding-top: clamp(36px, 6vw, 72px);
+  gap: 1.5rem;
+  padding-top: clamp(28px, 4vw, 52px);
 }
 
 @media (min-width: 1080px) {
   .body {
-    grid-template-columns: 180px minmax(0, 1fr);
-    gap: clamp(3rem, 5vw, 5rem);
+    grid-template-columns: 196px minmax(0, 1fr);
+    gap: clamp(3rem, 5vw, 4.5rem);
   }
 }
 
@@ -164,128 +162,89 @@
   min-width: 0;
 }
 
-/* On phones the nav is a wrapped row of chips; on wide screens it is a
-   sticky ruled list beside the text. No JavaScript either way. */
-.tocTitle {
-  margin-bottom: 0.75rem;
-}
-
-.tocList {
-  list-style: none;
+.topNotes {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.75rem;
 }
 
-.tocLink {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.5em;
-  padding: 0.35rem 0.8rem;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: var(--paper-2);
-  font-size: var(--text-sm);
-  line-height: 1.35;
-  color: var(--ink-muted);
-  text-decoration: none;
-  transition:
-    color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
-}
-
-.tocLink:hover {
-  color: var(--grape);
-  border-color: var(--rule-strong);
-}
-
-.tocNumber {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  color: var(--grape);
-}
-
-@media (min-width: 1080px) {
-  .toc {
-    position: sticky;
-    top: calc(var(--header-height) + 4rem);
-    align-self: start;
-  }
-
-  .tocList {
-    display: grid;
-    gap: 0;
-    border-left: 1px solid var(--rule);
-  }
-
-  .tocLink {
-    display: flex;
-    margin-left: -1px;
-    padding: 0.45rem 0 0.45rem 1rem;
-    border: 0;
-    border-left: 1px solid transparent;
-    border-radius: 0;
-    background: none;
-  }
-
-  .tocLink:hover {
-    border-left-color: var(--grape);
-  }
-}
-
-/* ---------- Legend strip ---------- */
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.5rem;
-  padding: 1rem 1.25rem;
-  border: 1px solid var(--rule-soft);
-  border-radius: var(--radius-lg);
-  background: var(--paper-3);
-}
-
-.legendLink {
-  margin-left: auto;
-  font-size: var(--text-sm);
+.tension {
+  margin-top: 1.5rem;
 }
 
 /* ---------- Sections ---------- */
 .section {
-  padding-top: clamp(48px, 7vw, 96px);
+  padding-top: clamp(32px, 3.75vw, 52px);
   /* Leave room for the sticky site header when jumping to an anchor */
-  scroll-margin-top: calc(var(--header-height) + 3rem);
+  scroll-margin-top: calc(var(--header-height) + 1.5rem);
 }
 
-/* The first section sits right under the legend, so it needs less air */
-.legend + .section {
-  padding-top: clamp(36px, 5vw, 64px);
+/* At a glance follows the small marks help, so it needs less air */
+.topNotes + .section,
+.tension + .section {
+  padding-top: clamp(24px, 3vw, 36px);
 }
 
 .sectionHeader {
-  display: grid;
-  gap: 0.75rem;
-  margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
-  padding-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem 1.5rem;
+  margin-bottom: clamp(1.25rem, 2.5vw, 1.75rem);
+  padding-top: 1.1rem;
   border-top: 1px solid var(--rule);
 }
 
-.sectionNumber {
-  color: var(--grape);
-}
-
 .sectionNote {
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.25rem;
   color: var(--ink-muted);
 }
 
-/* A follow-on list inside a section, such as extra open questions */
+.stack {
+  display: grid;
+  gap: clamp(1.75rem, 3.5vw, 2.5rem);
+}
+
+/* "How it would work": the claims beside the mechanism on wide screens */
+.howGrid {
+  display: grid;
+  gap: clamp(1.75rem, 3.5vw, 2.5rem);
+}
+
+@media (min-width: 900px) {
+  .howGrid {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr);
+    gap: clamp(2rem, 4vw, 3.5rem);
+  }
+}
+
 .subsection {
-  margin-top: clamp(2rem, 4vw, 3rem);
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
 }
 
 .subsectionTitle {
-  margin-bottom: 1.25rem;
+  font-size: var(--text-lg);
+}
+
+.fromScope {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.placeholder {
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+.placeholderBlock {
+  color: var(--ink-muted);
 }
 
 /* ---------- Case and objections ---------- */
@@ -304,7 +263,7 @@
 
 .column {
   position: relative;
-  padding: clamp(22px, 3vw, 36px);
+  padding: clamp(20px, 2.75vw, 32px);
   border-radius: var(--radius-panel);
 }
 
@@ -317,7 +276,7 @@
   top: 0.06em;
   right: 0.22em;
   font-family: var(--font-display);
-  font-size: 7.5rem;
+  font-size: 6.5rem;
   line-height: 1;
   color: var(--grape-tint-2);
   pointer-events: none;
@@ -351,18 +310,24 @@
 }
 
 .columnTitle {
-  margin: 1rem 0 1.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.columnNote {
+  margin: -0.5rem 0 1.25rem;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
 }
 
 .pullList {
   list-style: none;
   display: grid;
-  gap: 1.75rem;
+  gap: 1.1rem;
 }
 
 .pullItem {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 /* The index number runs into a hairline rule */
@@ -387,14 +352,9 @@
    the provenance tag keeps its own monospace. */
 .pullClaim {
   font-family: var(--font-display);
-  font-size: clamp(1.1875rem, 1.05rem + 0.45vw, 1.4375rem);
+  font-size: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
   line-height: 1.32;
   letter-spacing: -0.003em;
-}
-
-/* ---------- Timeline section ---------- */
-.timelineCta {
-  margin-top: 2rem;
 }
 
 /* ---------- Next technology ---------- */
@@ -402,8 +362,8 @@
   position: relative;
   display: grid;
   gap: 0.5rem;
-  margin-top: clamp(56px, 8vw, 112px);
-  padding: clamp(24px, 4vw, 44px);
+  margin-top: clamp(40px, 4vw, 56px);
+  padding: clamp(20px, 2.75vw, 30px);
   padding-right: clamp(64px, 8vw, 112px);
   border: 1px solid var(--rule-soft);
   border-radius: var(--radius-panel);

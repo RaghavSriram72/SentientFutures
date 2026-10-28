@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ClaimText } from "@/components/provenance/ClaimText";
 import { enumLabel } from "@/lib/enums";
 import { shortCitation, type SourceRef } from "@/lib/sources";
-import type { Claim, EvidenceRow } from "@/lib/types";
+import type { Claim, EvidenceRow, Provenance } from "@/lib/types";
 
 import styles from "./EvidenceRegister.module.css";
 
@@ -13,6 +13,8 @@ interface EvidenceRegisterProps {
   shortName: string;
   // Keyed by register id ("S02"), the ids the register cites.
   sourcesByRegisterId: Record<string, SourceRef>;
+  // The page's default provenance; claims of this kind show only their glyph.
+  quiet?: Provenance;
 }
 
 type RegisterSources = Record<string, SourceRef>;
@@ -47,7 +49,13 @@ function linkNote(linked: number, unlinked: number): string {
 
 // The evidence register as a ruled table when there is room for seven
 // columns, and one card per claim otherwise, built like the Scorecard.
-export function EvidenceRegister({ rows, technologyName, shortName, sourcesByRegisterId }: EvidenceRegisterProps) {
+export function EvidenceRegister({
+  rows,
+  technologyName,
+  shortName,
+  sourcesByRegisterId,
+  quiet,
+}: EvidenceRegisterProps) {
   const counts = countLinked(rows, sourcesByRegisterId);
   return (
     <div className={`paper ${styles.card}`}>
@@ -89,7 +97,7 @@ export function EvidenceRegister({ rows, technologyName, shortName, sourcesByReg
         </thead>
         <tbody role="rowgroup">
           {rows.map((row, index) => (
-            <RegisterRow key={index} row={row} sources={sourcesByRegisterId} />
+            <RegisterRow key={index} row={row} sources={sourcesByRegisterId} quiet={quiet} />
           ))}
         </tbody>
       </table>
@@ -99,14 +107,14 @@ export function EvidenceRegister({ rows, technologyName, shortName, sourcesByReg
   );
 }
 
-function RegisterRow({ row, sources }: { row: EvidenceRow; sources: RegisterSources }) {
+function RegisterRow({ row, sources, quiet }: { row: EvidenceRow; sources: RegisterSources; quiet?: Provenance }) {
   // A register line is a plain string with a provenance, so it is wrapped as
   // a Claim to get the same mark as every other sentence on the site.
   const claim: Claim = { text: row.claim, provenance: row.provenance };
   return (
     <tr className={styles.row} role="row">
       <th className={styles.claimCell} scope="row" role="rowheader">
-        <ClaimText claim={claim} variant="compact" />
+        <ClaimText claim={claim} variant="compact" quiet={quiet} />
       </th>
       <td className={`${styles.cell} ${styles.supporting}`} data-label="Supporting" role="cell">
         <IdList ids={row.supporting_ids} sources={sources} />

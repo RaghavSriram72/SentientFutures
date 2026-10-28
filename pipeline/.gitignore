@@ -1,0 +1,4 @@
+# Results from python -m sf_pipeline.eval --out. They hold model output, not
+# labels, and change on every run, so they stay out of git.
+eval/results*.json
+results*.json

@@ -47,6 +47,8 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound();
   }
   const isSample = isSamplePost(post);
+  // "More posts" only when there are other posts to see.
+  const hasOtherPosts = getPosts().length > 1;
 
   return (
     <article>
@@ -79,9 +81,11 @@ export default async function PostPage({ params }: PostPageProps) {
               <Link href="/contact/" className="btn btn-primary">
                 Get in touch
               </Link>
-              <Link href="/blog/" className="btn btn-secondary">
-                More posts
-              </Link>
+              {hasOtherPosts && (
+                <Link href="/blog/" className="btn btn-secondary">
+                  More posts
+                </Link>
+              )}
             </div>
           </aside>
         </div>

@@ -1,0 +1,458 @@
+/*
+  The floor and the cards, shared by the full timeline and the home teaser.
+  The floor is one wide element tilted away from the reader (rotateX). Anything
+  that stands on it (cards, year labels, the Now pole) is rotated back by the
+  same angle, so it faces the reader. Keep every ancestor of a 3D child free of
+  filter, opacity, overflow and mask: those flatten 3D. The container sets
+  --tilt and --world-scale.
+*/
+
+.floor {
+  --offset: 0px;
+  position: absolute;
+  left: 0;
+  /* Scale from the left edge, so the camera offset maps straight to screen pixels */
+  transform-origin: 0 100%;
+  transform-style: preserve-3d;
+  /* scale3d, not scale: standing cards need their depth scaled too, or they lean */
+  transform: translateX(var(--offset)) rotateX(var(--tilt)) scale3d(var(--world-scale, 1), var(--world-scale, 1), var(--world-scale, 1));
+  background-color: var(--paper-2);
+  background-image: var(--grain);
+  border-top: 1px solid var(--rule-soft);
+  will-change: transform;
+}
+
+/* Zones painted on the floor */
+.pastZone,
+.neverZone,
+.unknownZone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.pastZone {
+  background: var(--grape-tint);
+}
+
+.neverZone {
+  background: var(--stamp-tint);
+  border-left: 2px dashed color-mix(in srgb, var(--stamp) 40%, transparent);
+  border-right: 2px dashed color-mix(in srgb, var(--stamp) 40%, transparent);
+}
+
+.unknownZone {
+  background: var(--hatch), linear-gradient(90deg, var(--lavender-soft), var(--wash-soft) 40%, var(--lavender-soft));
+  border-left: 2px dashed var(--rule-strong);
+}
+
+.gridMajor,
+.gridMinor {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--rule);
+}
+
+.gridMinor {
+  width: 1px;
+  background: var(--rule-soft);
+}
+
+.axis {
+  position: absolute;
+  left: 0;
+  height: 3px;
+  margin-top: -1px;
+  background: var(--rule-strong);
+}
+
+.nowFloor {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  margin-left: -2px;
+  background: repeating-linear-gradient(180deg, var(--grape) 0 18px, transparent 18px 30px);
+}
+
+/* Things that stand up off the floor */
+.post {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.standing {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  transform-origin: 0 100%;
+  transform: rotateX(calc(-1 * var(--tilt))) translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.yearMajor,
+.yearMinor {
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.yearMajor {
+  font-size: 30px;
+}
+
+.yearMinor {
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.nowLabel {
+  display: block;
+  margin-top: 10px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--grape);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* A zone's name and note stand together as one sign, so they can't overlap */
+.zoneSignPost {
+  transform: rotateX(calc(-1 * var(--tilt)));
+}
+
+.zoneSign {
+  display: grid;
+  gap: 4px;
+  width: 560px;
+}
+
+.zoneLabel {
+  font-family: var(--font-display);
+  font-size: 46px;
+  font-style: italic;
+  line-height: 1;
+  color: var(--ink-muted);
+}
+
+.zoneNote {
+  max-width: 520px;
+  white-space: normal;
+  font-size: 21px;
+  line-height: 1.3;
+  color: var(--ink-muted);
+}
+
+/* What milestones cast on the floor */
+.bandTeam,
+.bandSpan {
+  position: absolute;
+  height: 18px;
+  border-radius: 9px;
+}
+
+.bandTeam {
+  background: var(--stage-color);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--stage-ink) 55%, transparent);
+}
+
+.bandSpan {
+  background: color-mix(in srgb, var(--stage-color) 35%, transparent);
+  border: 1.5px dashed var(--stage-ink);
+}
+
+.openRight {
+  mask-image: linear-gradient(90deg, black 70%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, black 70%, transparent);
+}
+
+.forecastLine {
+  position: absolute;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.forecastLine::before,
+.forecastLine::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  width: 4px;
+  height: 19px;
+  border-radius: 2px;
+  background: inherit;
+}
+
+.forecastLine::before {
+  left: 0;
+}
+
+.forecastLine::after {
+  right: 0;
+}
+
+.flaggedLine {
+  background: var(--stamp);
+}
+
+.expired {
+  opacity: 0.35;
+}
+
+.achievedDot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--stage-color);
+  box-shadow: 0 0 0 4px var(--paper-2), 0 0 0 5.5px var(--stage-ink);
+}
+
+.neverMark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--stamp);
+}
+
+/* A milestone's code painted on the floor along its long ribbons */
+.traceLabel {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.unknownBase,
+.neverBase {
+  position: absolute;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--hatch), var(--paper-2);
+  border: 1.5px dashed var(--rule-strong);
+}
+
+.neverBase {
+  background: var(--stamp-tint);
+  border-color: color-mix(in srgb, var(--stamp) 45%, transparent);
+}
+
+/* From a milestone's year to its card, when crowding moved the card right */
+.leader {
+  position: absolute;
+  height: 0;
+  border-top: 3px dashed var(--rule-strong);
+}
+
+.traceDimmed {
+  opacity: 0.3;
+}
+
+/* Stage colors, as variables so ribbons, dots and strips share them */
+.stage_possible {
+  --stage-color: var(--stage-possible);
+  --stage-ink: var(--stage-possible-ink);
+}
+
+.stage_widely {
+  --stage-color: var(--stage-widely);
+  --stage-ink: var(--stage-widely-ink);
+}
+
+.stage_helping {
+  --stage-color: var(--stage-helping);
+  --stage-ink: var(--stage-helping-ink);
+}
+
+.stageInk_possible {
+  color: var(--stage-possible-ink);
+}
+
+.stageInk_widely {
+  color: var(--stage-widely-ink);
+}
+
+.stageInk_helping {
+  color: var(--stage-helping-ink);
+}
+
+/* ---------- Cards ---------- */
+.card {
+  --card-name: 25px;
+  --card-meta: 15px;
+  --card-top: 14px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 18px 20px 18px 26px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background-color: var(--paper-2);
+  background-image: var(--grain);
+  box-shadow: var(--shadow-lift);
+  color: var(--ink-body);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transform-origin: 50% 100%;
+  transform: rotateX(calc(-1 * var(--tilt)));
+  transition:
+    transform 850ms var(--ease-out),
+    opacity 450ms var(--ease-out),
+    box-shadow var(--dur-med) var(--ease-out);
+  backface-visibility: hidden;
+  -webkit-user-drag: none;
+}
+
+/* The teaser and phones draw the world smaller, so their cards use bigger type */
+.cardLarge {
+  --card-name: 30px;
+  --card-meta: 19px;
+  --card-top: 17px;
+}
+
+/* Lying flat on the floor until it scrolls into view, then it rises */
+.card[data-up="false"] {
+  transform: rotateX(-2deg);
+  opacity: 0;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lift), 0 0 0 2px var(--rule-strong);
+}
+
+.card:focus-visible {
+  outline: 3px solid var(--grape);
+  outline-offset: 4px;
+}
+
+.cardSelected,
+.cardSelected:hover {
+  box-shadow: var(--shadow-lift), 0 0 0 3px var(--grape);
+}
+
+/* A card linked to the one in focus: ringed. Unrelated cards fade back. */
+.cardRelated,
+.cardRelated:hover {
+  box-shadow: var(--shadow-lift), 0 0 0 3px var(--paper-2), 0 0 0 6px var(--grape);
+}
+
+.card.cardDimmed[data-up="true"] {
+  opacity: 0.4;
+}
+
+.cardUnknown {
+  border-style: dashed;
+  border-color: var(--rule-strong);
+  background-image: var(--grain), var(--hatch);
+}
+
+.stageStrip {
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 7px;
+  border-radius: 0 6px 6px 0;
+  background: var(--stage-color);
+}
+
+.cardTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--card-top);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.cardCode {
+  white-space: nowrap;
+}
+
+.techGlyph {
+  display: inline-block;
+  flex: none;
+  width: 13px;
+  height: 13px;
+  color: var(--grape);
+}
+
+.cardChip {
+  flex: none;
+  padding: 1px 7px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.cardChips {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+
+.cardName {
+  font-family: var(--font-display);
+  font-size: var(--card-name);
+  line-height: 1.12;
+  color: var(--ink);
+}
+
+.cardMeta {
+  font-size: var(--card-meta);
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+
+.stamp {
+  justify-self: start;
+  padding: 3px 10px;
+  border: 2px solid var(--stamp);
+  border-radius: 6px;
+  background: var(--stamp-tint);
+  color: var(--stamp);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: rotate(-2deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card[data-up="false"] {
+    transition: none;
+    transform: rotateX(calc(-1 * var(--tilt)));
+    opacity: 1;
+  }
+}

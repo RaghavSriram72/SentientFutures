@@ -9,7 +9,8 @@ first one) and exits with status 1. Each problem names where it is, e.g.
 What it checks:
   1. Each file parses and each record matches its model in models.py.
   2. Cross-record rules: unique ids, every source id exists, every
-     depends_on exists, and no dependency cycles.
+     depends_on exists, no dependency cycles, and nothing real links to a
+     sample (the public site leaves samples out).
   3. Blog posts: valid frontmatter, unique slugs, at least one post.
   4. No em dashes (U+2014) in any content file.
 
@@ -254,6 +255,69 @@ def check_source_references(report: Report, known_source_ids: set[str]) -> None:
         check_claim_sources(record, known_source_ids, report.errors)
 
 
+SAMPLE_SOURCE_HINT = "The public site leaves samples out, so a real record has to cite a real source"
+SAMPLE_MILESTONE_HINT = "The public site leaves samples out, so a real milestone can only depend on real ones"
+
+
+def sample_ids(records: list[Record]) -> set[str]:
+    """Ids of the records marked "sample": true, read from the raw JSON."""
+    ids: set[str] = set()
+    for record in records:
+        record_id = raw_id(record)
+        if record_id is not None and isinstance(record.raw, dict) and record.raw.get("sample") is True:
+            ids.add(record_id)
+    return ids
+
+
+def sample_source_problems(record_model: BaseModel, sample_source_ids: set[str], prefix: str) -> list[str]:
+    """Every claim in a real record that cites a sample source."""
+    problems = []
+    for path, claim in find_claims(record_model):
+        for index, source_id in enumerate(claim.source_ids):
+            if source_id in sample_source_ids:
+                location = join_path(join_path(prefix, path), f"source_ids[{index}]")
+                problems.append(f'{location}: "{source_id}" is a sample source. {SAMPLE_SOURCE_HINT}')
+    return problems
+
+
+def sample_link_problems(
+    milestone: Milestone, sample_source_ids: set[str], sample_milestone_ids: set[str], prefix: str
+) -> list[str]:
+    """A real milestone can't cite a sample source or depend on a sample
+    milestone: readers would get a link to something the site doesn't show.
+    Samples can link to anything. The API runs this on every milestone save."""
+    if milestone.sample:
+        return []
+    problems = []
+    for index, dependency in enumerate(milestone.depends_on):
+        if dependency in sample_milestone_ids:
+            location = join_path(prefix, f"depends_on[{index}]")
+            problems.append(f'{location}: "{dependency}" is a sample milestone. {SAMPLE_MILESTONE_HINT}')
+    for index, source_id in enumerate(milestone.source_ids):
+        if source_id in sample_source_ids:
+            location = join_path(prefix, f"source_ids[{index}]")
+            problems.append(f'{location}: "{source_id}" is a sample source. {SAMPLE_SOURCE_HINT}')
+    for index, forecast in enumerate(milestone.forecasts):
+        if forecast.source_id in sample_source_ids:
+            location = join_path(prefix, f"forecasts[{index}].source_id")
+            problems.append(f'{location}: "{forecast.source_id}" is a sample source. {SAMPLE_SOURCE_HINT}')
+    problems.extend(sample_source_problems(milestone, sample_source_ids, prefix))
+    return problems
+
+
+def check_sample_links(report: Report) -> None:
+    sample_source_ids = sample_ids(report.sources)
+    sample_milestone_ids = sample_ids(report.milestones)
+    for record in report.milestones:
+        if isinstance(record.model, Milestone):
+            report.errors.extend(
+                sample_link_problems(record.model, sample_source_ids, sample_milestone_ids, record.label)
+            )
+    for record in report.technologies:
+        if isinstance(record.model, TechnologyPage) and not record.model.sample:
+            report.errors.extend(sample_source_problems(record.model, sample_source_ids, record.label))
+
+
 def check_dependencies(records: list[Record], errors: list[str]) -> None:
     known_ids: set[str] = set()
     for record in records:
@@ -352,13 +416,13 @@ def check_unreviewed_sample_claims(report: Report) -> None:
         return
     if count == 1:
         report.warnings.append(
-            "Warning: 1 AI-suggested claim in a sample record has no reviewer. It shows as not yet reviewed "
-            "and must be reviewed before the sample flag comes off."
+            "Warning: 1 AI-suggested claim in a sample record has no reviewer. The site shows it as unchecked, "
+            "and it must be reviewed before the sample flag comes off."
         )
     else:
         report.warnings.append(
-            f"Warning: {count} AI-suggested claims in sample records have no reviewer. They show as not yet "
-            "reviewed and must be reviewed before the sample flag comes off."
+            f"Warning: {count} AI-suggested claims in sample records have no reviewer. The site shows them as "
+            "unchecked, and they must be reviewed before the sample flag comes off."
         )
 
 
@@ -544,16 +608,48 @@ def load_posts(posts_dir: Path, report: Report) -> None:
 # Em dashes
 
 
+EM_DASH_FIX = "Use a period, comma, colon or parentheses instead"
+
+
+def has_em_dash(text: str) -> bool:
+    """True for the character itself or its JSON escape."""
+    return EM_DASH in text or "\\u2014" in text.lower()
+
+
+def em_dash_line_numbers(text: str) -> list[int]:
+    """The line numbers (from 1) of the lines with an em dash."""
+    numbers: list[int] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if has_em_dash(line):
+            numbers.append(line_number)
+    return numbers
+
+
+def em_dash_paths(value: object, path: str = "") -> list[str]:
+    """The path of every string with an em dash inside a dict or list, like "summary.text".
+
+    The API checks milestones with this when they're saved, so an edit in
+    admin follows the same rule as a file in content/.
+    """
+    found: list[str] = []
+    if isinstance(value, str):
+        if has_em_dash(value):
+            found.append(path)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            found.extend(em_dash_paths(item, join_path(path, str(key))))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            found.extend(em_dash_paths(item, join_path(path, f"[{index}]")))
+    return found
+
+
 def check_em_dashes(content_dir: Path, errors: list[str]) -> None:
     """Site copy never uses em dashes. Catches the character and its JSON escape."""
     files = sorted(list(content_dir.rglob("*.json")) + list(content_dir.rglob("*.md")))
     for path in files:
-        text = path.read_text(encoding="utf-8")
-        for line_number, line in enumerate(text.splitlines(), start=1):
-            if EM_DASH in line or "\\u2014" in line.lower():
-                errors.append(
-                    f"{path} line {line_number}: has an em dash. Use a period, comma, colon or parentheses instead"
-                )
+        for line_number in em_dash_line_numbers(path.read_text(encoding="utf-8")):
+            errors.append(f"{path} line {line_number}: has an em dash. {EM_DASH_FIX}")
 
 
 # ---------------------------------------------------------------------------
@@ -586,6 +682,7 @@ def validate_content(content_dir: Path) -> Report:
             if source_id is not None:
                 known_source_ids.add(source_id)
         check_source_references(report, known_source_ids)
+        check_sample_links(report)
 
     check_dependencies(report.milestones, report.errors)
     if technologies is not None:

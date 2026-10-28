@@ -8,16 +8,18 @@ import styles from "./SiteHeader.module.css";
 // The draft banner sits above the sticky header and scrolls away with the page,
 // so the part that sticks is always exactly --header-height (plus its border)
 // however many lines the banner wraps to.
+// data-site-chrome lets the admin's sign-in overlay find the header and banner
+// and make them inert while it's showing.
 export function SiteHeader() {
   return (
     <>
       {IS_DRAFT && (
-        <section className={styles.draftBanner} aria-label="Draft notice">
+        <section className={styles.draftBanner} aria-label="Draft notice" data-site-chrome="banner">
           <span className={styles.draftDot} aria-hidden="true" />
           Draft site. Much of the content is placeholder or unreviewed, so please don&rsquo;t cite it yet.
         </section>
       )}
-      <header className={styles.header}>
+      <header className={styles.header} data-site-chrome="header">
         <div className={`container ${styles.bar}`}>
           <Link href="/" className={styles.brand} aria-label={`${SITE_NAME} home`}>
             <BrandMark />

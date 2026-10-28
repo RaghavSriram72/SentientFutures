@@ -1,0 +1,36 @@
+[project]
+name = "sf-api"
+version = "0.1.0"
+description = "The admin API for the Sentient Futures source pipeline: sign-in, the review queue, runs and search config"
+requires-python = ">=3.12"
+# sf-shared (the schema in ../shared) is a dependency too, but it isn't on
+# PyPI, so it's installed first: pip install -e ./shared -e ./backend
+# Listing it here would send pip looking for it on PyPI, where anyone could
+# publish a package with that name. The pipeline (../pipeline) is only needed
+# for PIPELINE_RUNNER=local and is imported when a run starts.
+dependencies = [
+    "flask>=3.1,<4",
+    "flask-cors>=6",
+    "pymongo>=4.10,<5",
+    "mongomock>=4.3",
+    "google-auth>=2.40",
+    "requests>=2.32",
+    "PyJWT>=2.10",
+    "gunicorn>=23",
+    "pydantic>=2.9,<3",
+    "httpx>=0.28",
+    "tenacity>=9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["sf_api*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

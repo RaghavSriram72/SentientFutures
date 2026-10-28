@@ -1,0 +1,130 @@
+# Runs the source pipeline: collect new papers from arXiv and Semantic
+# Scholar, then triage them with Claude so they wait in the admin review queue.
+#
+# It runs every week on a schedule. The admin dashboard starts it too ("Run
+# now", when the API has PIPELINE_RUNNER=github), and so does the "Run
+# workflow" button in the Actions tab.
+#
+# Secrets (Settings > Secrets and variables > Actions):
+#   MONGO_URI                  required: the Atlas connection string for the
+#                              pipeline's own database user (see "The database
+#                              user" in pipeline/README.md)
+#   ANTHROPIC_API_KEY          without it, papers are collected but not triaged
+#   SEMANTIC_SCHOLAR_API_KEY   optional: raises the Semantic Scholar rate limit
+# Variable:
+#   PIPELINE_CONTACT           an email for the User-Agent header that arXiv and
+#                              Semantic Scholar see
+name: Pipeline
+
+on:
+  schedule:
+    # Mondays at 06:17 UTC. Off the hour, because GitHub delays jobs queued on the hour.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      stages:
+        description: "Stages to run: all, collect, triage, or collect,triage"
+        required: false
+        default: all
+        type: string
+      limit:
+        description: "At most this many papers per search, and this many triaged (empty means no limit)"
+        required: false
+        default: ""
+        type: string
+      dry_run:
+        description: "Fetch and count, but write no candidates and call no model"
+        required: false
+        default: false
+        type: boolean
+      # No requested_by input: Actions logs can be public, so emails stay out of
+      # them. The admin API stores who asked on the queued run document instead.
+      run_id:
+        description: "Set by the admin API: the pipeline_runs document to fill in. Leave empty."
+        required: false
+        default: ""
+        type: string
+
+permissions: {}
+
+# One pipeline run at a time. A run that's already going is never cancelled.
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    name: Collect and triage
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SEMANTIC_SCHOLAR_API_KEY: ${{ secrets.SEMANTIC_SCHOLAR_API_KEY }}
+      PIPELINE_CONTACT: ${{ vars.PIPELINE_CONTACT }}
+      PIPELINE_RUNNER: github
+      CONTENT_DIR: ${{ github.workspace }}/content
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            shared/pyproject.toml
+            pipeline/pyproject.toml
+
+      - name: Install the shared schema and the pipeline
+        run: pip install -e ./shared -e ./pipeline
+
+      # Without this check the pipeline would fall back to an in-memory
+      # database and throw everything away at the end.
+      - name: Check that the database secret is set
+        run: |
+          if [ -z "$MONGO_URI" ]; then
+            echo "::error::The MONGO_URI secret isn't set, so there's no database to write to."
+            exit 1
+          fi
+
+      # Inputs go through environment variables, never straight into the
+      # script, so a crafted input can't run shell commands.
+      - name: Run the pipeline
+        env:
+          STAGES: ${{ inputs.stages || 'all' }}
+          LIMIT: ${{ inputs.limit }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          RUN_ID: ${{ inputs.run_id }}
+          TRIGGER: ${{ github.event_name == 'schedule' && 'schedule' || 'admin' }}
+        run: |
+          args=(--stage "$STAGES" --trigger "$TRIGGER" --runner github)
+          if [ -n "$LIMIT" ]; then args+=(--limit "$LIMIT"); fi
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ -n "$RUN_ID" ]; then args+=(--run-id "$RUN_ID"); fi
+          python -m sf_pipeline.run "${args[@]}"
+
+  # GitHub turns off scheduled workflows in a public repo after 60 days without
+  # repo activity, and scheduled runs don't count as activity. Re-enabling the
+  # workflows through the API resets that clock, so the weekly run and the
+  # nightly site deploy keep going.
+  keepalive:
+    name: Keep the schedules on
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable the scheduled workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          for workflow in pipeline.yml deploy-site.yml; do
+            if gh api --method PUT "repos/$REPO/actions/workflows/$workflow/enable" --silent; then
+              echo "Re-enabled $workflow"
+            else
+              echo "::warning::Couldn't re-enable $workflow. Its schedule may stop after 60 days without repo activity."
+            fi
+          done

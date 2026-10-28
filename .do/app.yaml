@@ -1,0 +1,82 @@
+# DigitalOcean App Platform spec for the admin API (backend/).
+#
+# Create the app once:   doctl apps create --spec .do/app.yaml
+# After that, every push to main redeploys it.
+#
+# Secret values never go in this file: set MONGO_URI, JWT_SECRET and
+# GITHUB_TOKEN in the dashboard (the app's Settings, then the api component,
+# then Environment Variables). GITHUB_TOKEN is a fine-grained token for this
+# repo with Actions: write; the API uses it for "Run now" (pipeline.yml) and
+# "Publish to site" (deploy-site.yml). If you later update the app with `doctl apps update --spec`,
+# start from `doctl apps spec get <app-id>`, which includes the encrypted
+# secret values, or the update will clear them.
+name: sentient-futures-api
+region: nyc
+
+services:
+  - name: api
+    github:
+      repo: RaghavSriram72/SentientFutures
+      branch: main
+      deploy_on_push: true
+    # The build needs shared/ and pipeline/ as well, so the context is the repo root.
+    source_dir: /
+    dockerfile_path: backend/Dockerfile
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb # 1 shared vCPU, 512 MB: the $5/month size
+    # /api/health pings the database, which can take up to 5 seconds when
+    # Atlas is unreachable, so the timeout leaves room for that.
+    health_check:
+      http_path: /api/health
+      initial_delay_seconds: 20
+      period_seconds: 30
+      timeout_seconds: 10
+      failure_threshold: 3
+
+    envs:
+      - key: APP_ENV
+        scope: RUN_TIME
+        value: production
+      # "Run now" asks GitHub to start .github/workflows/pipeline.yml. The
+      # pipeline's ANTHROPIC_API_KEY is a GitHub Actions secret, not set here.
+      - key: PIPELINE_RUNNER
+        scope: RUN_TIME
+        value: github
+      - key: GITHUB_REPO
+        scope: RUN_TIME
+        value: RaghavSriram72/SentientFutures
+      - key: GITHUB_BRANCH
+        scope: RUN_TIME
+        value: main
+      # Where the admin pages are served from. An origin has no path, so no /SentientFutures.
+      - key: CORS_ORIGINS
+        scope: RUN_TIME
+        value: https://raghavsriram72.github.io
+      # From Google Cloud. Not a secret: the sign-in button shows it to every visitor.
+      - key: GOOGLE_CLIENT_ID
+        scope: RUN_TIME
+        value: ""
+      # Shown by /api/health, so you can tell which commit is live.
+      - key: GIT_SHA
+        scope: RUN_TIME
+        value: ${_self.COMMIT_HASH}
+
+      # Secrets: set the values in the dashboard.
+      - key: MONGO_URI
+        scope: RUN_TIME
+        type: SECRET
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: GITHUB_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+
+ingress:
+  rules:
+    - match:
+        path:
+          prefix: /
+      component:
+        name: api

@@ -1,7 +1,21 @@
 # Builds the static site and publishes it to GitHub Pages.
 #
-# One-time setup: in the repo on GitHub, Settings > Pages > Source must be
-# "GitHub Actions". With "Deploy from a branch" this workflow can't deploy.
+# The site is built from a data folder (.site-data/) that the export step
+# makes from content/ plus what the team approved and published in admin
+# (sources, milestones, blog posts), read from the API's /api/public routes.
+# See shared/sf_shared/export_site.py.
+#
+# It runs on every push to main, every night, and when someone presses
+# "Publish to site" in admin (the API starts it through workflow_dispatch).
+#
+# One-time setup:
+#   - Settings > Pages > Source must be "GitHub Actions". With "Deploy from a
+#     branch" this workflow can't deploy.
+#   - Settings > Secrets and variables > Actions > Variables: set API_URL to
+#     the API's address (e.g. https://sentient-futures-api-xxxxx.ondigitalocean.app).
+#     The export reads published data from it, and the admin pages talk to it.
+#     Without it the site is built from content/ alone, and admin says it
+#     isn't connected to a server.
 name: Deploy site
 
 on:
@@ -10,7 +24,7 @@ on:
   workflow_dispatch:
   schedule:
     # Nightly rebuild, so the timeline's "Now" line (fixed at build time) stays
-    # current. Later it also picks up newly published data from the API.
+    # current and anything approved or published in admin since gets picked up.
     - cron: "17 6 * * *"
 
 permissions:
@@ -42,6 +56,17 @@ jobs:
       - name: Validate content
         run: python -m sf_shared.validate content/
 
+      # content/ plus the API's published sources, milestones and posts, checked
+      # with the same validator. If the API can't be reached or the result
+      # doesn't validate, the deploy stops here and Pages keeps the last good site.
+      - name: Export published data
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          args=(--content content --out .site-data)
+          if [ -n "$API_URL" ]; then args+=(--api "$API_URL"); fi
+          python -m sf_shared.export_site "${args[@]}"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -64,7 +89,8 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_BASE_PATH: /SentientFutures
-          DATA_DIR: ${{ github.workspace }}/content
+          NEXT_PUBLIC_API_URL: ${{ vars.API_URL }}
+          DATA_DIR: ${{ github.workspace }}/.site-data
 
       - uses: actions/upload-pages-artifact@v3
         with:

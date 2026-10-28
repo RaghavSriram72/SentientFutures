@@ -1,4 +1,4 @@
-"""Pydantic models for everything in content/ (and, later, the API export).
+"""Pydantic models for everything in content/ and in the data folder the publish step exports.
 
 These mirror frontend/lib/types.ts field for field. If you change a field here,
 change it there too. A TypeScript `x: T | null` is a required key that may be
@@ -130,7 +130,7 @@ class Forecast(BaseModel):
 
 
 class Estimate(BaseModel):
-    """The team's own range. Drawn as a solid bar, but forecasts stay visible."""
+    """The team's own range. Drawn on the timeline as a solid ribbon, and every forecast stays visible next to it."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -181,7 +181,7 @@ class Milestone(BaseModel):
     would_move_earlier: list[Claim]
     would_move_later: list[Claim]
     artificial_minds_questions: list[Claim]
-    sample: StrictBool = False  # true for the worked examples; shown with a SAMPLE tag
+    sample: StrictBool = False  # true for the worked examples, which the public site leaves out
 
     @model_validator(mode="after")
     def check_milestone_rules(self) -> "Milestone":
@@ -238,6 +238,7 @@ AI_SUGGESTABLE_SOURCE_FIELDS = (
     "kind",
     "technology",
     "problem",
+    "claim_directions",
     "evidence_type",
     "directness",
     "independence",
@@ -516,6 +517,9 @@ class TechnologyPage(BaseModel):
     artificial_minds_assessment: ArtificialMindsAssessment | None = None
     welfare_governance: WelfareGovernance | None = None
     evidence_gap: Claim | None = None  # the primary evidence gap from the synopsis
+    # The central tension in two or three sentences, written by the team. Only
+    # shown when set; nobody else writes it.
+    tension: Claim | None = None
     sample: StrictBool = False
 
     @model_validator(mode="after")

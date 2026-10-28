@@ -3,7 +3,7 @@
 import pytest
 from helpers import model_errors, sample_milestone, sample_source, team_claim, technology_page
 
-from sf_shared.claims import Claim
+from sf_shared.claims import Claim, compact_dump
 from sf_shared.models import Estimate, Forecast, Milestone, PostFrontmatter, ScorecardRow, Source, TechnologyPage
 
 # ---------------------------------------------------------------------------
@@ -272,8 +272,8 @@ def test_unclear_credibility_cannot_be_other():
 
 
 ALLOWED_FIELDS_MESSAGE = (
-    "Use any of: source_type, kind, technology, problem, evidence_type, directness, independence, relevance, "
-    "credibility, credibility_unclear_reason"
+    "Use any of: source_type, kind, technology, problem, claim_directions, evidence_type, directness, independence, "
+    "relevance, credibility, credibility_unclear_reason"
 )
 
 
@@ -407,4 +407,13 @@ def test_post_frontmatter():
         "record.slug: must be lowercase letters, numbers and single hyphens, like bci-medical-approval "
         '(got "About This Blog")',
         'record.date: is not a real calendar date (got "2026-02-30")',
+    ]
+
+
+def test_compact_dump_leaves_out_empty_claim_keys():
+    claim = Claim(text="Ours.", provenance="team")
+    assert compact_dump(claim) == {"text": "Ours.", "provenance": "team"}
+    sourced = Claim(text="Theirs.", provenance="source", source_ids=["s13"], quote="Exact words.")
+    assert compact_dump([sourced]) == [
+        {"text": "Theirs.", "provenance": "source", "source_ids": ["s13"], "quote": "Exact words."}
     ]

@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 
-import { ClaimList, ClaimText } from "@/components/provenance/ClaimText";
+import { TextWithTerm } from "@/components/glossary/Term";
+import { ClaimText } from "@/components/provenance/ClaimText";
 import type { SourceRef } from "@/lib/sources";
 import type {
   ArtificialMindsAssessment,
   Assessment,
   Claim,
   Problem,
+  Provenance,
   Scope,
   WelfareGovernance,
 } from "@/lib/types";
@@ -16,26 +18,41 @@ import styles from "./ScorecardSections.module.css";
 
 // The sections of the team's populated scorecard (scorecard v0.1, sections 1
 // to 6). TechnologyPageView decides which ones a page has and in what order.
+// Every component takes `quiet`, the page's default provenance, so claims of
+// that kind show only their glyph.
 
 type Sources = Record<string, SourceRef>;
 
 interface SheetItem {
   label: string;
   value: ReactNode;
+  wide?: boolean; // spans both columns in a two-column sheet
 }
 
 // A ruled definition list on a paper card, like the spec sheet at the back of
-// a manual. Used for the scope and for welfare and governance.
-function SpecSheet({ title, note, items }: { title: string; note?: string; items: SheetItem[] }) {
+// a manual. Used for the scope and for welfare and governance. With
+// columns={2} the rows pair up side by side on wide screens.
+function SpecSheet({
+  title,
+  note,
+  items,
+  columns = 1,
+}: {
+  title: string;
+  note?: string;
+  items: SheetItem[];
+  columns?: 1 | 2;
+}) {
+  const listClass = columns === 2 ? styles.sheetListTwo : "";
   return (
     <div className={`paper ${styles.sheet}`}>
       <div className={styles.sheetHead}>
         <span>{title}</span>
         {note && <span>{note}</span>}
       </div>
-      <dl className={styles.sheetList}>
+      <dl className={listClass}>
         {items.map((item) => (
-          <div key={item.label} className={styles.sheetRow}>
+          <div key={item.label} className={item.wide ? `${styles.sheetRow} ${styles.sheetRowWide}` : styles.sheetRow}>
             <dt className={styles.sheetLabel}>{item.label}</dt>
             <dd className={styles.sheetValue}>{item.value}</dd>
           </div>
@@ -45,7 +62,7 @@ function SpecSheet({ title, note, items }: { title: string; note?: string; items
   );
 }
 
-function problemText(problem: Problem): string {
+export function problemText(problem: Problem): string {
   if (problem === "alignment") {
     return "Alignment";
   }
@@ -55,17 +72,26 @@ function problemText(problem: Problem): string {
   return "Both alignment and the Intelligence Curse";
 }
 
-export function ScopeSheet({ scope, shortName, sources }: { scope: Scope; shortName: string; sources: Sources }) {
+interface ScopeSheetProps {
+  scope: Scope;
+  shortName: string;
+  sources: Sources;
+  quiet?: Provenance;
+}
+
+export function ScopeSheet({ scope, shortName, sources, quiet }: ScopeSheetProps) {
+  function claim(value: Claim) {
+    return <ClaimText claim={value} sources={sources} variant="compact" quiet={quiet} />;
+  }
   return (
     <SpecSheet
       title={`Scope · ${shortName}`}
-      note="Unrated"
       items={[
-        { label: "Intervention", value: <ClaimText claim={scope.intervention} sources={sources} /> },
-        { label: "Deployment scenario", value: <ClaimText claim={scope.deployment_scenario} sources={sources} /> },
-        { label: "Who it affects", value: <ClaimText claim={scope.affected_groups} sources={sources} /> },
-        { label: "Time horizon", value: <ClaimText claim={scope.time_horizon} sources={sources} /> },
-        { label: "Compared with", value: <ClaimText claim={scope.comparator} sources={sources} /> },
+        { label: "Intervention", value: claim(scope.intervention) },
+        { label: "Deployment scenario", value: claim(scope.deployment_scenario) },
+        { label: "Who it affects", value: claim(scope.affected_groups) },
+        { label: "Time horizon", value: claim(scope.time_horizon) },
+        { label: "Compared with", value: claim(scope.comparator) },
         { label: "Claims to address", value: <p className={styles.plainValue}>{problemText(scope.problem)}</p> },
       ]}
     />
@@ -73,7 +99,7 @@ export function ScopeSheet({ scope, shortName, sources }: { scope: Scope; shortN
 }
 
 // The theory of change as numbered steps joined by a rule.
-export function CausalChain({ steps, sources }: { steps: Claim[]; sources: Sources }) {
+export function CausalChain({ steps, sources, quiet }: { steps: Claim[]; sources: Sources; quiet?: Provenance }) {
   return (
     <ol className={styles.chain}>
       {steps.map((step, index) => (
@@ -82,34 +108,11 @@ export function CausalChain({ steps, sources }: { steps: Claim[]; sources: Sourc
             {index + 1}
           </span>
           <div className={styles.chainClaim}>
-            <ClaimText claim={step} sources={sources} />
+            <ClaimText claim={step} sources={sources} quiet={quiet} />
           </div>
         </li>
       ))}
     </ol>
-  );
-}
-
-// The alternatives and counterarguments, set under the chain they push against.
-export function ChainBreaks({
-  claims,
-  sources,
-  afterChain,
-}: {
-  claims: Claim[];
-  sources: Sources;
-  afterChain: boolean;
-}) {
-  return (
-    <div className={`${styles.breaks} reveal`}>
-      <h3 className={styles.subTitle}>Where the chain could break</h3>
-      <p className={styles.subNote}>
-        {afterChain
-          ? "Alternatives and counterarguments to the steps above."
-          : "Alternatives and counterarguments to the proposal."}
-      </p>
-      <ClaimList claims={claims} sources={sources} />
-    </div>
   );
 }
 
@@ -118,36 +121,63 @@ interface AssessmentViewProps {
   // "The alignment problem it targets" or "The mechanism it claims"
   mechanismLabel: string;
   sources: Sources;
+  quiet?: Provenance;
+  // The scorecard row that gives the reason for this rating. The reason
+  // lives there only, so it isn't printed twice.
+  whyHref: string;
+  whyLabel: string;
+  // Set on the first assessment on the page, so "comparator" is defined
+  // where a reader first meets it.
+  comparatorDefinition?: string;
 }
 
 // One evaluative section (alignment or the Intelligence Curse): what it
-// targets, the scorecard's questions with our answers, the rating and why,
-// and the open question that would settle it.
-export function AssessmentView({ assessment, mechanismLabel, sources }: AssessmentViewProps) {
+// targets, the scorecard's questions with our answers, the rating with a link
+// to its reason, and the open question that would settle it.
+export function AssessmentView({
+  assessment,
+  mechanismLabel,
+  sources,
+  quiet,
+  whyHref,
+  whyLabel,
+  comparatorDefinition,
+}: AssessmentViewProps) {
   return (
     <div className={styles.assessment}>
-      <div className={`${styles.mechanism} reveal`}>
+      <div className={styles.mechanism}>
         <p className={styles.label}>{mechanismLabel}</p>
-        <ClaimText claim={assessment.mechanism} sources={sources} />
+        <ClaimText claim={assessment.mechanism} sources={sources} quiet={quiet} />
       </div>
 
       {assessment.questions.length > 0 && (
         <ol className={styles.qaList}>
           {assessment.questions.map((item, index) => (
-            <li key={index} className={`${styles.qaItem} reveal`}>
+            <li key={index} className={styles.qaItem}>
               <span className={styles.qaMark} aria-hidden="true">
                 Q{index + 1}
               </span>
               <div className={styles.qaBody}>
-                <p className={styles.question}>{item.question}</p>
-                <ClaimText claim={item.answer} sources={sources} />
+                <p className={styles.question}>
+                  {comparatorDefinition ? (
+                    <TextWithTerm
+                      text={item.question}
+                      phrase="comparator"
+                      name="comparator"
+                      definition={comparatorDefinition}
+                    />
+                  ) : (
+                    item.question
+                  )}
+                </p>
+                <ClaimText claim={item.answer} sources={sources} quiet={quiet} />
               </div>
             </li>
           ))}
         </ol>
       )}
 
-      <div className={`paper ${styles.verdict} reveal`}>
+      <div className={`paper ${styles.verdict}`}>
         <dl className={styles.verdictFacts}>
           <div>
             <dt className={styles.label}>Rating</dt>
@@ -162,23 +192,30 @@ export function AssessmentView({ assessment, mechanismLabel, sources }: Assessme
             </dd>
           </div>
         </dl>
-        <div className={styles.verdictReason}>
-          <p className={styles.label}>Why this rating</p>
-          <ClaimText claim={assessment.reason} sources={sources} />
-        </div>
+        <a href={whyHref} className={styles.whyLink}>
+          Why: {whyLabel}
+        </a>
       </div>
 
-      <div className={`${styles.decisive} reveal`}>
+      <div className={styles.decisive}>
         <p className={styles.label}>Decisive open question</p>
         <div className={styles.decisiveClaim}>
-          <ClaimText claim={assessment.decisive_question} sources={sources} />
+          <ClaimText claim={assessment.decisive_question} sources={sources} quiet={quiet} />
         </div>
       </div>
     </div>
   );
 }
 
-export function MindsGrid({ minds, sources }: { minds: ArtificialMindsAssessment; sources: Sources }) {
+export function MindsGrid({
+  minds,
+  sources,
+  quiet,
+}: {
+  minds: ArtificialMindsAssessment;
+  sources: Sources;
+  quiet?: Provenance;
+}) {
   const items = [
     { label: "Consciousness", claim: minds.consciousness },
     { label: "Moral status", claim: minds.moral_status },
@@ -188,10 +225,10 @@ export function MindsGrid({ minds, sources }: { minds: ArtificialMindsAssessment
   return (
     <dl className={styles.minds}>
       {items.map((item) => (
-        <div key={item.label} className={`paper ${styles.mindCard} reveal`}>
+        <div key={item.label} className={`paper ${styles.mindCard}`}>
           <dt className={styles.mindLabel}>{item.label}</dt>
           <dd>
-            <ClaimText claim={item.claim} sources={sources} />
+            <ClaimText claim={item.claim} sources={sources} quiet={quiet} />
           </dd>
         </div>
       ))}
@@ -203,34 +240,40 @@ export function WelfareSheet({
   welfare,
   shortName,
   sources,
+  quiet,
 }: {
   welfare: WelfareGovernance;
   shortName: string;
   sources: Sources;
+  quiet?: Provenance;
 }) {
+  function claim(value: Claim) {
+    return <ClaimText claim={value} sources={sources} variant="compact" quiet={quiet} />;
+  }
   return (
     <SpecSheet
       title={`Welfare and governance · ${shortName}`}
+      columns={2}
       items={[
-        { label: "Who could be harmed", value: <ClaimText claim={welfare.exposed} sources={sources} /> },
-        { label: "Possible harms", value: <ClaimText claim={welfare.harms} sources={sources} /> },
-        { label: "Severity and reversibility", value: <ClaimText claim={welfare.severity} sources={sources} /> },
-        { label: "Detectability and remedies", value: <ClaimText claim={welfare.detectability} sources={sources} /> },
-        { label: "Control, oversight and exit", value: <ClaimText claim={welfare.control} sources={sources} /> },
+        { label: "Who could be harmed", value: claim(welfare.exposed) },
+        { label: "Possible harms", value: claim(welfare.harms) },
+        { label: "Severity and reversibility", value: claim(welfare.severity) },
+        { label: "Detectability and remedies", value: claim(welfare.detectability) },
+        { label: "Control, oversight and exit", value: claim(welfare.control) },
         { label: "Confidence", value: <ConfidenceMeter confidence={welfare.confidence} /> },
-        { label: "Basis", value: <ClaimText claim={welfare.rationale} sources={sources} /> },
+        { label: "Basis", value: claim(welfare.rationale), wide: true },
       ]}
     />
   );
 }
 
-// The primary evidence gap from the synopsis, closing the scorecard section.
-export function EvidenceGap({ claim, sources }: { claim: Claim; sources: Sources }) {
+// The primary evidence gap from the synopsis, set under the scorecard.
+export function EvidenceGap({ claim, sources, quiet }: { claim: Claim; sources: Sources; quiet?: Provenance }) {
   return (
-    <div className={`${styles.gap} reveal`}>
+    <div className={styles.gap}>
       <p className={`${styles.label} ${styles.gapLabel}`}>Main gap in the evidence</p>
       <div className={styles.gapClaim}>
-        <ClaimText claim={claim} sources={sources} />
+        <ClaimText claim={claim} sources={sources} quiet={quiet} />
       </div>
     </div>
   );

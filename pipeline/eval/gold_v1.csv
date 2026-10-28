@@ -1,0 +1,4 @@
+id,title,label,kind,technology,problem,is_near_miss,split
+EXAMPLE-0000.00001,"EXAMPLE ROW, delete me: Using EEG feedback to align reinforcement learning agents",relevant,argument,bci,alignment,false,dev
+EXAMPLE-0000.00002,"EXAMPLE ROW, delete me: A whole-fly connectome simulated at synapse resolution",relevant,milestone_evidence,wbe,,false,holdout
+EXAMPLE-10.0000/example.3,"EXAMPLE ROW, delete me: A faster classifier for motor imagery EEG",not_relevant,,,,true,dev

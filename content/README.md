@@ -1,6 +1,6 @@
 # Filling in the content
 
-This folder is everything the public site shows. The timeline, the source list, the technology pages and the blog are all built from these files, and nothing on the site is typed in anywhere else. If you change a file here, the site changes the next time it's built.
+The public site is built from the files in this folder plus what the team approves and publishes in admin. "Where each thing is edited" below says which is which. When something changes, the site shows it the next time it's built: every night, on every push to `main`, and whenever someone presses "Publish to site" on the admin dashboard.
 
 You don't need to know how to program to edit these files, but you do need to be careful, because the format is strict. It's strict so that a checker (the validator) can read every file and tell you exactly what's wrong and where. This guide covers importing sources from Notion, adding a source, a milestone and a forecast, how the technology pages are laid out, and how to run the checker and read its messages.
 
@@ -14,10 +14,30 @@ You don't need to know how to program to edit these files, but you do need to be
 | `posts/` | Blog posts, one Markdown file each. |
 | `README.md` | This guide. |
 
-Entries with `"sample": true` are placeholders, and the site tags them as samples. There are two kinds:
+## Where each thing is edited
 
-- Worked examples: the BCI and neuromorphic milestones, and the seven sources whose ids start with `sample-`. These are made up and their sources are fictional. Most of their text starts with "Sample." (source summaries start with "Placeholder summary."). The sample sources stay in `sources.json` only because the sample milestones cite them.
-- AI-drafted outlines: the BCI and neuromorphic technology pages. An AI wrote them and nobody on the team has reviewed them yet. Their text doesn't start with "Sample.", but every line carries an "AI-suggested · not yet reviewed" tag.
+| What | Where it's edited | What the file here is for |
+|---|---|---|
+| Technology pages | `technologies.json`, in git | The real thing. The pages stay in git on purpose: they're long, reviewed line by line, and a pull request is the right place to discuss a change to a verdict. |
+| Sources | `sources.json`, in git, for the ones imported from Notion. Papers found by the pipeline or added with "Add a source" in admin are reviewed and approved in admin. | The real thing for the Notion sources. Approved papers are added to them at each publish. |
+| Milestones | In admin (`/admin/milestones/`), once they've been imported into the database | Before the import, the real thing. After it, the starting data and the offline copy that CI and local builds use. |
+| Blog posts | In admin (`/admin/posts/`), once they've been imported | The same as milestones. Files named `sample-*.md` are examples for this guide and are never imported. |
+
+The import is a one-time step for whoever runs the database (in `backend/`, with `MONGO_URI` set to the real database):
+
+```
+flask --app sf_api content import-milestones ../content/milestones.json
+flask --app sf_api content import-posts ../content/posts
+```
+
+After that, edit milestones and posts in admin, not here: an edit to these files no longer reaches the site. To bring the files up to date with the database (so CI and local builds show the same thing), run `flask --app sf_api content export-milestones --out ../content` and commit the result.
+
+Publishing builds a data folder (`.site-data/`) from this folder plus the approved sources, published milestones and published posts in the database, checks it with the same validator, and builds the site from it. If the check fails, nothing is published and the site stays as it was. `docs/pipeline-architecture.md` has the details, including how to try it locally.
+
+Entries with `"sample": true` are placeholders. There are two kinds:
+
+- Worked examples: the BCI and neuromorphic milestones, and the seven sources whose ids start with `sample-`. These are made up and their sources are fictional. Most of their text starts with "Sample." (source summaries start with "Placeholder summary."). The public site never shows them: the timeline, the technology pages and the source database all leave them out. They stay in the files as examples of the format, and the sample sources stay only because the sample milestones cite them. A real milestone or page can't cite a sample source or depend on a sample milestone: the validator and the milestone editor both refuse it, since the link would lead nowhere on the public site.
+- AI-drafted outlines: the BCI and neuromorphic technology pages. An AI wrote them and nobody on the team has reviewed them yet. These are shown, because an empty page would say less. Each one opens with an "AI draft" banner, and every line keeps the dashed AI outline.
 
 The WBE page and the eight WBE milestones are real team content. They come from the team's populated WBE scorecard, so they have `"sample": false` and every sentence is marked `team` (a few milestone lines are `unclear` where we haven't looked yet). The sources with ids `s01` to `s30` are real too. They come from the team's Notion database (see "Importing sources from Notion" below), and their summaries are the team's own.
 
@@ -160,14 +180,16 @@ Sources in the Notion database come in through the import above. Add a source by
 | `credibility` | `strong`, `adequate`, `weak` or `unclear`, also drafts. If `unclear`, set `credibility_unclear_reason` to one of the unclear reasons above, except `other` (a source has nowhere to write the note). |
 | `summary` | A claim in our own words (usually `team`). Don't paste the abstract: we write our own summary for copyright reasons. |
 | `ai_suggested_fields` | A list of the field names an AI filled in, like `["evidence_type"]`, so the site can label them. Use `[]` if a person filled in everything. Allowed: `source_type`, `kind`, `technology`, `problem`, `evidence_type`, `directness`, `independence`, `relevance`, `credibility` and `credibility_unclear_reason`. Don't list `summary`: if an AI wrote it, set the summary's own `provenance` to `ai`. |
-| `added_by` | Who added the source to the Notion database, or `null`. |
+| `added_by` | Who added the source to the Notion database, or `null`. The import credits people by the name the site uses, so Notion's "Aila" comes in as "Vilija". |
 | `reviewed_by`, `reviewed_on` | Who checked this entry, and when (`"2026-10-27"`). Required whenever `ai_suggested_fields` isn't empty. |
 
 The five rubric fields (`evidence_type`, `directness`, `independence`, `relevance` and `credibility`) can each be `null`, which means not rated yet. Leave a rating `null` until someone has read the source and decided. If an AI suggests a rating, list the field in `ai_suggested_fields` and have a person check it.
 
 ## Adding a milestone
 
-A milestone is one step a technology has to pass, like "a high-bandwidth implant is approved for medical use." Each one sits on the timeline as its own track.
+A milestone is one step a technology has to pass, like "a high-bandwidth implant is approved for medical use." Each one is a card on the timeline, placed by its estimated window, or in the "Timing unknown" zone until it has one.
+
+Once the milestones are imported into the database, add and edit them in admin instead (`/admin/milestones/`). The editor saves the same fields described here and runs the same checks when you save. The steps below are for this file before the import, and for the offline copy.
 
 1. Open `milestones.json` and copy the entry closest to what you're adding. Between them, the existing entries cover the main cases:
    - `neuro-sample-alignment-benefit`: a team estimate with no end date, and three forecasts that disagree, one of them "never"
@@ -209,7 +231,7 @@ Two notes on the WBE milestones. The team's scorecard doesn't assign stages yet,
 
 ### The team estimate
 
-`estimate` is the range the team stands behind. When it's set, the timeline draws it as a solid bar, and every forecast stays visible next to it.
+`estimate` is the range the team stands behind. When it's set, the timeline draws it as a solid ribbon, and every forecast stays visible next to it.
 
 ```json
 "estimate": {
@@ -284,13 +306,15 @@ The shapes:
 | "not before 2045" | `2045` | `null` | `false` |
 | "never" | `null` | `null` | `true` |
 
-`earliest` can't be later than `latest`, and a forecast with `never: false` needs at least one year. Years after 2100 are fine: the timeline shows them in an "After 2100" column, with the real year in the panel.
+`earliest` can't be later than `latest`, and a forecast with `never: false` needs at least one year. Years after 2100 are fine: the timeline runs to 2100 and draws later years at its end, and the panel shows the real year.
 
 If a source gives a probability ("50% by 2050"), write the year it gives and put the probability in `claim`: `"50% chance by 2050"`.
 
 ## Writing a blog post
 
-Each post is a Markdown file in `posts/`, with a short header (called frontmatter) between two `---` lines:
+Once the posts are imported into the database, write them in admin (`/admin/posts/`): a post saved as a draft stays off the site, and one marked published goes out at the next publish. The editor checks the same rules as below. A post's slug is its web address, so it can't change once the post has been published.
+
+Before the import, and for the offline copy, each post is a Markdown file in `posts/`, with a short header (called frontmatter) between two `---` lines:
 
 ```markdown
 ---

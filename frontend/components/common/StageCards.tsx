@@ -12,10 +12,11 @@ const STAGE_DETAIL: Record<Stage, string> = {
 
 // The three stages as paper cards, each with its stage color across the top.
 // The name is printed in the stage's ink color, and the number and words carry
-// the meaning, so color is never the only cue.
-export function StageCards() {
+// the meaning, so color is never the only cue. Compact cards are shorter, for
+// pages that list a lot else besides.
+export function StageCards({ compact = false }: { compact?: boolean }) {
   return (
-    <ol className={styles.stages}>
+    <ol className={`${styles.stages} ${compact ? styles.compact : ""}`}>
       {enumValues("Stage").map((info, index) => {
         const stage = info.value as Stage;
         return (

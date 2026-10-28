@@ -1,0 +1,29 @@
+{
+  "total": 3,
+  "data": [
+    {
+      "paperId": "s2ccc333",
+      "title": "Spiking Networks Without a Journal",
+      "authors": [],
+      "year": null,
+      "externalIds": {"ArXiv": "2610.33333"},
+      "url": "https://www.semanticscholar.org/paper/s2ccc333",
+      "abstract": "A preprint only on arXiv.",
+      "venue": "arXiv.org",
+      "publicationTypes": null,
+      "publicationDate": null
+    },
+    {
+      "paperId": "s2ddd444",
+      "title": null,
+      "authors": [],
+      "year": 2026,
+      "externalIds": {},
+      "url": null,
+      "abstract": null,
+      "venue": null,
+      "publicationTypes": null,
+      "publicationDate": null
+    }
+  ]
+}

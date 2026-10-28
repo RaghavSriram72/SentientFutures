@@ -54,7 +54,14 @@
   color: var(--ink-muted);
 }
 
-/* The live dossier, kept to a readable panel width */
+/* The live dossiers, each kept to a readable panel width */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  align-items: start;
+  gap: 2rem;
+}
+
 .live {
   max-width: 600px;
 }

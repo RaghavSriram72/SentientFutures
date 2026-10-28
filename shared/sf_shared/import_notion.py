@@ -42,6 +42,12 @@ TECHNOLOGY_BY_MECHANISM = {
     "neuromorphic": "neuromorphic",
 }
 
+# Notion's "Added by" column uses nicknames. The site credits people by the
+# name they go by on the site, so a nickname maps to that name here.
+CREDITED_NAME_BY_NOTION_NAME = {
+    "aila": "Vilija",
+}
+
 DIRECTION_BY_CLAIM = {
     "ai alignment": "ai_alignment",
     "ai misalignment": "ai_misalignment",
@@ -85,6 +91,14 @@ SURNAME_INITIALS_PATTERN = re.compile(r"[A-Z][\w'-]+, (?:[A-Z]\.)+")
 def clean_text(text: str) -> str:
     """Collapse line breaks and runs of spaces from Notion's export."""
     return re.sub(r"\s+", " ", text).strip()
+
+
+def credited_name(text: str) -> str | None:
+    """The name to credit for Notion's "Added by" value ("Aila" -> "Vilija")."""
+    name = clean_text(text)
+    if not name:
+        return None
+    return CREDITED_NAME_BY_NOTION_NAME.get(name.lower(), name)
 
 
 def clean_summary(text: str) -> str:
@@ -256,7 +270,7 @@ def row_to_source(row: dict[str, str], warnings: list[str]) -> dict | None:
         "credibility_unclear_reason": None,
         "summary": {"text": clean_summary(row["3 sentence summary"]), "provenance": "team"},
         "ai_suggested_fields": [],
-        "added_by": clean_text(row["Added by"]) or None,
+        "added_by": credited_name(row["Added by"]),
         "reviewed_by": None,
         "reviewed_on": None,
         "sample": False,

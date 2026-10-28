@@ -1,0 +1,203 @@
+.page {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 2.75rem);
+  padding-block: clamp(28px, 4vw, 48px) clamp(56px, 8vw, 96px);
+}
+
+.section {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.sectionTitle {
+  margin-bottom: 0.9rem;
+  font-size: var(--text-xl);
+}
+
+.section .sectionTitle {
+  margin-bottom: 0;
+}
+
+/* ---------- Status tiles ---------- */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  list-style: none;
+}
+
+.tile {
+  display: grid;
+  gap: 0.2rem;
+  height: 100%;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  background: var(--paper-2);
+  color: var(--ink-body);
+  text-decoration: none;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-med) var(--ease-out);
+}
+
+.tile:hover {
+  border-color: var(--rule-strong);
+  box-shadow: var(--shadow-card);
+}
+
+/* Pending review is the one that needs people, so it carries the accent */
+.tileQueue {
+  border-color: var(--rule-strong);
+  box-shadow: inset 3px 0 0 var(--grape);
+}
+
+.tileLabel {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tileValue {
+  font-family: var(--font-sans);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.tileQueue .tileValue {
+  color: var(--grape);
+}
+
+.tileHint {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+/* ---------- Run panel and live run ---------- */
+.runGrid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 960px) {
+  .runGrid {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    align-items: start;
+  }
+}
+
+.panel {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: clamp(1.1rem, 3.5vw, 1.75rem);
+}
+
+.panelTitle {
+  font-size: var(--text-xl);
+}
+
+.panelNote {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.runForm {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.runOptions {
+  display: grid;
+  gap: 0.9rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.limitInput {
+  max-width: 10rem;
+}
+
+.liveHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.liveMeta {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.pollError {
+  font-size: var(--text-sm);
+  color: var(--stage-widely-ink);
+}
+
+.errorCount {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--stamp);
+}
+
+.liveLog {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.detailLink {
+  justify-self: start;
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+/* ---------- Publishing the public site ---------- */
+.publish {
+  display: grid;
+  gap: 0.9rem 1.5rem;
+  padding: clamp(1.1rem, 3.5vw, 1.5rem) clamp(1.1rem, 3.5vw, 1.75rem);
+  box-shadow: inset 3px 0 0 var(--grape);
+}
+
+@media (min-width: 760px) {
+  .publish {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+.publishText {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.publishWaiting {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.publishAction {
+  display: flex;
+}
+
+/* Results and errors span the whole panel under the text and the button */
+.publishResult {
+  display: grid;
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+}
+
+.publishResult:empty {
+  display: none;
+}

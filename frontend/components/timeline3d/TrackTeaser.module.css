@@ -1,0 +1,203 @@
+/* The home page teaser: a short window onto the 3D track, and a plain list
+   below 600px. */
+
+.teaser {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.viewport {
+  position: relative;
+  overflow: clip;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-panel);
+  background: var(--paper);
+  box-shadow: var(--shadow-paper);
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+}
+
+.viewport:active {
+  cursor: grabbing;
+}
+
+.viewport:focus-visible {
+  outline: 3px solid var(--grape);
+  outline-offset: 3px;
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  background-color: var(--paper);
+  background-image: var(--grain), linear-gradient(180deg, var(--wash-soft) 0%, var(--paper) 50%, var(--paper-2) 100%);
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.arrow {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.arrow:hover:not([aria-disabled="true"]) {
+  background: var(--wash-soft);
+}
+
+.arrow:focus-visible {
+  outline: 3px solid var(--grape);
+  outline-offset: 2px;
+}
+
+.arrow[aria-disabled="true"] {
+  color: var(--ink-faint);
+  border-color: var(--rule);
+  cursor: default;
+}
+
+.empty {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+/* ---------- The list, for phones ---------- */
+.list {
+  display: none;
+  gap: 1.25rem;
+}
+
+.group {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.groupTitle {
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--rule-strong);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.rows {
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-md);
+  background-color: var(--paper-2);
+  background-image: var(--grain);
+  color: var(--ink-body);
+  text-decoration: none;
+}
+
+.row:hover {
+  border-color: var(--rule-strong);
+}
+
+.row:focus-visible {
+  outline: 3px solid var(--grape);
+  outline-offset: 2px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+}
+
+.stage_possible {
+  background: var(--stage-possible);
+}
+
+.stage_widely {
+  background: var(--stage-widely);
+}
+
+.stage_helping {
+  background: var(--stage-helping);
+}
+
+.rowText {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.rowCode {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.rowName {
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.rowEstimate {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.rowArrow {
+  color: var(--grape);
+}
+
+@media (max-width: 599px) {
+  .viewport,
+  .controls {
+    display: none;
+  }
+
+  .list {
+    display: grid;
+  }
+}

@@ -1,83 +1,19 @@
 import type { ReactNode } from "react";
 
 import { Stamp } from "@/components/common/Stamp";
+import {
+  AchievedDot,
+  FaintRibbonSwatch,
+  LineSwatch,
+  NeverCross,
+  RibbonSwatch,
+  UnknownZoneSwatch,
+} from "@/components/timeline3d/TrackGlyphs";
 
 import styles from "./RuleSpecimens.module.css";
 
-// Small printed-chart drawings of what the timeline draws in each case. They are
-// illustrations, not data, so the SVGs are hidden from screen readers and the
-// caption carries the meaning.
-
-function Whisker({ x1, x2, y }: { x1: number; x2: number; y: number }) {
-  return (
-    <g className={styles.whisker}>
-      <line x1={x1} y1={y} x2={x2} y2={y} />
-      <line x1={x1} y1={y - 4} x2={x1} y2={y + 4} />
-      <line x1={x2} y1={y - 4} x2={x2} y2={y + 4} />
-    </g>
-  );
-}
-
-function Grid() {
-  const ticks: number[] = [];
-  for (let x = 20; x <= 260; x += 40) {
-    ticks.push(x);
-  }
-  return (
-    <g className={styles.grid}>
-      {ticks.map((x) => (
-        <line key={x} x1={x} y1={4} x2={x} y2={52} />
-      ))}
-    </g>
-  );
-}
-
-function TeamRange() {
-  return (
-    <svg viewBox="0 0 280 56" className={styles.svg} aria-hidden="true">
-      <Grid />
-      <rect x={78} y={22} width={124} height={12} rx={6} className={styles.bar} />
-      <Whisker x1={52} x2={150} y={12} />
-      <Whisker x1={120} x2={236} y={45} />
-    </svg>
-  );
-}
-
-function SpanBand() {
-  return (
-    <svg viewBox="0 0 280 56" className={styles.svg} aria-hidden="true">
-      <Grid />
-      <rect x={60} y={10} width={160} height={36} rx={10} className={styles.band} />
-      <Whisker x1={60} x2={170} y={20} />
-      <Whisker x1={96} x2={220} y={36} />
-    </svg>
-  );
-}
-
-function Disagree() {
-  return (
-    <svg viewBox="0 0 280 56" className={styles.svg} aria-hidden="true">
-      <Grid />
-      <Whisker x1={30} x2={92} y={18} />
-      <Whisker x1={188} x2={250} y={38} />
-      <line x1={92} y1={28} x2={188} y2={28} className={styles.gap} />
-    </svg>
-  );
-}
-
-function NoEstimate() {
-  return (
-    <svg viewBox="0 0 280 56" className={styles.svg} aria-hidden="true">
-      <defs>
-        <pattern id="method-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="8" className={styles.hatchLine} />
-        </pattern>
-      </defs>
-      <Grid />
-      <rect x={70} y={16} width={140} height={24} rx={12} fill="url(#method-hatch)" className={styles.noEstimate} />
-    </svg>
-  );
-}
+// What the timeline track draws in each case, using the track's own glyphs and
+// the words from its Key. The glyphs are decoration; the caption carries the meaning.
 
 interface Specimen {
   key: string;
@@ -90,28 +26,56 @@ interface Specimen {
 const SPECIMENS: Specimen[] = [
   {
     key: "team",
-    label: "Team range",
-    text: "The team has set a range and written down its basis, so the timeline draws a solid bar. The bar takes priority over the forecasts, which are still drawn alongside it.",
-    drawing: <TeamRange />,
+    label: "Solid ribbon",
+    text: "The team has set a range and written down why. The solid ribbon takes priority, and any forecasts still show next to it as thin lines.",
+    drawing: <RibbonSwatch />,
   },
   {
     key: "span",
-    label: "Forecasts agree",
-    text: "If there's no team range and there are at least two forecasts with no disagreement between them, a faint band covers their full span, with the forecasts drawn over it.",
-    drawing: <SpanBand />,
+    label: "Faint ribbon",
+    text: "There's no team range, and at least two forecasts roughly agree. A faint ribbon covers the years they span, with each forecast as a thin line over it.",
+    drawing: (
+      <span className={styles.stack}>
+        <FaintRibbonSwatch />
+        <LineSwatch />
+      </span>
+    ),
+  },
+  {
+    key: "line",
+    label: "Thin line",
+    text: "One forecast. The milestone's panel says who made it and when, the window they gave, and the exact quote.",
+    drawing: <LineSwatch />,
   },
   {
     key: "disagree",
-    label: "Forecasts disagree",
-    text: "There's no band. Each forecast is drawn separately, with a stamp that marks the disagreement.",
-    drawing: <Disagree />,
+    label: "Red thin lines",
+    text: "Forecasts that disagree. There's no ribbon at all, just each forecast on its own and the stamp.",
+    drawing: (
+      <span className={styles.stack}>
+        <LineSwatch disagrees />
+        <LineSwatch disagrees />
+      </span>
+    ),
     stamp: true,
   },
   {
-    key: "none",
-    label: "Nothing yet",
-    text: "With no range and no forecasts, the timeline shows a hatched “No estimate yet” label.",
-    drawing: <NoEstimate />,
+    key: "achieved",
+    label: "Dot",
+    text: "The milestone has already happened, and the dot sits at the year it did.",
+    drawing: <AchievedDot />,
+  },
+  {
+    key: "never",
+    label: "Cross in the Never zone",
+    text: "Someone said the milestone will never happen. Their forecast is a cross in the Never zone near the end of the track, so it stays in view next to the forecasts that give years.",
+    drawing: <NeverCross />,
+  },
+  {
+    key: "unknown",
+    label: "Timing unknown zone",
+    text: "No team range and no forecasts yet. The milestone waits in the Timing unknown zone at the end of the track until someone gives it a date.",
+    drawing: <UnknownZoneSwatch />,
   },
 ];
 
@@ -119,17 +83,17 @@ export function RuleSpecimens() {
   return (
     <ul className={styles.list}>
       {SPECIMENS.map((specimen) => (
-        <li key={specimen.key} className={`paper ${styles.item}`}>
-          <figure className={styles.figure}>
-            <div className={styles.plate}>{specimen.drawing}</div>
-            <figcaption className={styles.caption}>
-              <span className={styles.label}>
-                {specimen.label}
-                {specimen.stamp && <Stamp size="sm" />}
-              </span>
-              <span className={styles.text}>{specimen.text}</span>
-            </figcaption>
-          </figure>
+        <li key={specimen.key} className={styles.item}>
+          <div className={styles.plate} aria-hidden="true">
+            {specimen.drawing}
+          </div>
+          <div className={styles.caption}>
+            <span className={styles.label}>
+              {specimen.label}
+              {specimen.stamp && <Stamp size="sm" />}
+            </span>
+            <span className={styles.text}>{specimen.text}</span>
+          </div>
         </li>
       ))}
     </ul>

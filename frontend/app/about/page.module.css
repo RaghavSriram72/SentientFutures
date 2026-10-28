@@ -69,21 +69,6 @@
   color: var(--ink-muted);
 }
 
-/* ---------- Stages band ---------- */
-.band {
-  background: var(--paper-3);
-  border-block: 1px solid var(--rule);
-}
-
-.stagesLink {
-  margin-top: 1.75rem;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
 /* ---------- Is and isn't ---------- */
 .isGrid {
   display: grid;

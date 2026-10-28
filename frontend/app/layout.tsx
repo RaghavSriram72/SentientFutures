@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Instrument_Sans, Instrument_Serif } from "next/font/google";
 
+import { SiteChrome } from "@/components/site/SiteChrome";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { IS_DRAFT, SITE_NAME } from "@/lib/site";
@@ -38,17 +39,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // data-scroll-behavior tells Next that the smooth scrolling in globals.css is
+    // on purpose, so it turns it off while it jumps to the top of a new page.
     <html
       lang="en"
       className={`${instrumentSerif.variable} ${instrumentSans.variable} ${plexMono.variable}`}
+      data-scroll-behavior="smooth"
     >
       <body>
         <a className="skip-link" href="#main">
           Skip to content
         </a>
-        <SiteHeader />
-        <main id="main">{children}</main>
-        <SiteFooter />
+        <SiteChrome header={<SiteHeader />} footer={<SiteFooter />} adminFooter={<SiteFooter showTeamLogin={false} />}>
+          {children}
+        </SiteChrome>
       </body>
     </html>
   );

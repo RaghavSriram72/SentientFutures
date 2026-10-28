@@ -78,7 +78,7 @@ export function NavLinks({ items }: { items: NavItem[] }) {
       </button>
       <ul id="primary-nav" className={`${styles.navList} ${open ? styles.navOpen : ""}`}>
         {items.map((item) => (
-          <li key={item.href}>
+          <li key={item.href} className={item.menuOnly ? styles.menuOnly : undefined}>
             <Link
               href={item.href}
               className={styles.navLink}

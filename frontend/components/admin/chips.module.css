@@ -1,0 +1,141 @@
+/* Chips used across the admin screens. Each one carries its meaning in words,
+   so the tints are a second cue, never the only one. Use with the global .chip. */
+
+/* AI output wears the site's AI mark: a dashed frame and a grape tint */
+.ai:global(.chip) {
+  border: 1px dashed var(--rule-strong);
+  background: var(--grape-tint);
+  color: var(--grape);
+}
+
+/* Flags borrow the ochre "unclear" look: something a person should check */
+.flag:global(.chip) {
+  border-color: color-mix(in srgb, var(--stage-widely) 45%, transparent);
+  background: var(--hatch), var(--paper-2);
+  color: var(--stage-widely-ink);
+}
+
+.plain:global(.chip) {
+  color: var(--ink-muted);
+}
+
+/* ---------- Review status ---------- */
+.status_new:global(.chip) {
+  color: var(--ink-muted);
+}
+
+.status_pending_review:global(.chip) {
+  border-color: var(--rule-strong);
+  background: var(--grape-tint-2);
+  color: var(--grape-deep);
+}
+
+.status_approved:global(.chip) {
+  border-color: color-mix(in srgb, var(--sage) 50%, transparent);
+  background: color-mix(in srgb, var(--sage) 12%, var(--paper-2));
+  color: var(--stage-helping-ink);
+}
+
+.status_rejected:global(.chip) {
+  border-color: color-mix(in srgb, var(--stamp) 35%, transparent);
+  background: var(--stamp-tint);
+  color: var(--stamp);
+}
+
+.status_triaged_out:global(.chip) {
+  background: var(--paper-3);
+  color: var(--ink-faint);
+}
+
+/* ---------- Run status ---------- */
+.run_queued:global(.chip) {
+  color: var(--ink-muted);
+}
+
+.run_running:global(.chip) {
+  border-color: var(--rule-strong);
+  background: var(--grape-tint-2);
+  color: var(--grape-deep);
+}
+
+.run_succeeded:global(.chip) {
+  border-color: color-mix(in srgb, var(--sage) 50%, transparent);
+  background: color-mix(in srgb, var(--sage) 12%, var(--paper-2));
+  color: var(--stage-helping-ink);
+}
+
+.run_failed:global(.chip) {
+  border-color: color-mix(in srgb, var(--stamp) 35%, transparent);
+  background: var(--stamp-tint);
+  color: var(--stamp);
+}
+
+.run_partial:global(.chip) {
+  border-color: color-mix(in srgb, var(--stage-widely) 45%, transparent);
+  background: var(--hatch), var(--paper-2);
+  color: var(--stage-widely-ink);
+}
+
+/* A slow pulse on running runs. The global reduced-motion rule turns it off. */
+.pulse {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1.6s var(--ease-in-out) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ---------- Quote check ---------- */
+.check {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.checkFound {
+  color: var(--stage-helping-ink);
+}
+
+.checkMissing {
+  color: var(--stamp);
+}
+
+.checkUnknown {
+  color: var(--ink-muted);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* ---------- Milestones and posts ---------- */
+.published:global(.chip) {
+  border-color: color-mix(in srgb, var(--sage) 50%, transparent);
+  background: color-mix(in srgb, var(--sage) 12%, var(--paper-2));
+  color: var(--stage-helping-ink);
+}
+
+.draft:global(.chip) {
+  border-style: dashed;
+  color: var(--ink-muted);
+}
+
+.sample:global(.chip) {
+  border-color: color-mix(in srgb, var(--stage-widely) 45%, transparent);
+  background: var(--hatch), var(--paper-2);
+  color: var(--stage-widely-ink);
+}

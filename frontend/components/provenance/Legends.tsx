@@ -21,7 +21,7 @@ export function ProvenanceLegend({ compact = false }: { compact?: boolean }) {
   return (
     <div className={styles.legend} aria-label="What the marks mean">
       {PROVENANCE_ORDER.map((kind) => (
-        <div key={kind} className={`${styles.legendItem} ${styles[`legendItem_${kind}`]}`}>
+        <div key={kind} className={`${styles.legendItem} ${styles[`legendItem_${kind}`] ?? ""}`}>
           <ProvenanceTag kind={kind} plain />
           <p className={styles.legendDesc}>{enumDescription("Provenance", kind)}</p>
         </div>

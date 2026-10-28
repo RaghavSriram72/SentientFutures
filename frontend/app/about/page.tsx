@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ExternalLink } from "@/components/common/ExternalLink";
+import { ARTIFICIAL_MINDS_DEFINITION, INTELLIGENCE_CURSE_DEFINITION } from "@/components/common/keyTerms";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SectionHead } from "@/components/common/SectionHead";
-import { StageCards } from "@/components/common/StageCards";
+import { getPublicMilestones, getTechnologies } from "@/lib/data";
 import { enumDescription } from "@/lib/enums";
+import { DISAGREEMENT_GAP_YEARS } from "@/lib/estimates";
 import { SITE_NAME } from "@/lib/site";
+import type { Milestone, TechnologyPage } from "@/lib/types";
 
 import styles from "./page.module.css";
 
@@ -16,17 +19,65 @@ export const metadata: Metadata = {
     "A Sentient Futures incubator project looking at whether whole brain emulation, brain computer interfaces or neuromorphic AI could help with AI alignment or counter the Intelligence Curse.",
 };
 
-const SITE_IS = [
-  "A page for each proposal on what it claims to solve and how it's supposed to work, with the strongest case for it and against it.",
-  "The team's completed scorecard for whole brain emulation.",
-  "A timeline that draws each milestone as a range of years. Forecasts are listed one by one, and when credible sources disagree, the timeline flags it.",
-  "One of four marks on every research claim: From a source, Our read, AI-suggested or Unclear.",
-];
+// True once every page has both lists filled in. Until then the about page
+// doesn't promise them.
+function everyPageHasForAndAgainst(technologies: TechnologyPage[]): boolean {
+  for (const tech of technologies) {
+    if ((tech.strongest_case ?? []).length === 0 || (tech.strongest_objections ?? []).length === 0) {
+      return false;
+    }
+  }
+  return true;
+}
 
-const SITE_ISNT = [
-  "This is an early draft. Some categories are still being decided, including how we rate a source's relevance and credibility.",
-  "The brain computer interface and neuromorphic AI pages are still AI-written outlines that nobody on the team has reviewed.",
-];
+function countUndated(milestones: Milestone[]): number {
+  let count = 0;
+  for (const milestone of milestones) {
+    if (milestone.estimate === null && milestone.forecasts.length === 0 && milestone.achieved_in === null) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+// What's on the site and what isn't finished, worked out from the data where
+// it can be, so the lists stay true as the team fills things in.
+function siteIs(technologies: TechnologyPage[]): string[] {
+  const pages = everyPageHasForAndAgainst(technologies)
+    ? "A page for each proposal on what it claims to solve and how it's supposed to work, with the strongest case for it and against it."
+    : "A page for each proposal on what it claims to solve and how it's supposed to work. Not every page has its strongest case for and against written yet.";
+  return [
+    pages,
+    "The team's completed scorecard for whole brain emulation.",
+    `A timeline that places each milestone by its estimated window, or in a “Timing unknown” zone until it has one. Forecasts are listed one by one, never averaged. When two of them are more than ${DISAGREEMENT_GAP_YEARS} years apart, or one says it will never happen, the milestone is flagged.`,
+    "A source database of the papers and essays we've collected, each with a summary the team wrote. A weekly search finds new papers, and a person on the team approves every one before it appears.",
+    "One of four marks on every research claim: From a source, Our read, AI-suggested or Unclear.",
+  ];
+}
+
+function siteIsnt(technologies: TechnologyPage[], milestones: Milestone[]): string[] {
+  const lines = [
+    "This is an early draft. Some categories are still being decided, including how we rate a source's relevance and credibility.",
+  ];
+  const drafts: string[] = [];
+  for (const tech of technologies) {
+    if (tech.sample) {
+      drafts.push(tech.name.charAt(0).toLowerCase() + tech.name.slice(1));
+    }
+  }
+  if (drafts.length > 0) {
+    lines.push(
+      `The ${drafts.join(" and ")} ${drafts.length === 1 ? "page is" : "pages are"} still AI-written drafts that nobody on the team has reviewed.`,
+    );
+  }
+  const undated = countUndated(milestones);
+  if (milestones.length > 0 && undated === milestones.length) {
+    lines.push(`None of the ${milestones.length} milestones on the timeline has a date yet.`);
+  } else if (undated > 0) {
+    lines.push(`${undated} of the ${milestones.length} milestones on the timeline don't have a date yet.`);
+  }
+  return lines;
+}
 
 interface Person {
   name: string;
@@ -37,7 +88,7 @@ interface Person {
 const TEAM: Person[] = [
   { name: "Hyacinth Zia", role: "Mentor", detail: "Iliad" },
   { name: "Raghav Sriram", role: "Mentee", detail: "Site and research pipeline" },
-  { name: "Vilija", role: "Mentee", detail: "Research and content" },
+  { name: "Vilija", role: "Mentee", detail: "Research, content and the source database" },
 ];
 
 const ADVISORS: Person[] = [
@@ -57,6 +108,9 @@ function PersonCard({ person }: { person: Person }) {
 }
 
 export default function AboutPage() {
+  const technologies = getTechnologies();
+  const milestones = getPublicMilestones();
+
   return (
     <>
       <PageHeader
@@ -92,70 +146,15 @@ export default function AboutPage() {
             <div className={styles.term}>
               <dt>The Intelligence Curse</dt>
               <dd>
-                The risk that increasingly capable AI reduces the economic and political value of human labor and
-                participation, and that this gradually weakens human agency.{" "}
+                {INTELLIGENCE_CURSE_DEFINITION}{" "}
                 <ExternalLink href="https://intelligence-curse.ai">Background reading</ExternalLink>
               </dd>
             </div>
             <div className={styles.term}>
               <dt>Artificial minds</dt>
-              <dd>
-                If one of these technologies creates a mind, that mind brings its own questions about consciousness,
-                moral status, identity and welfare. Each technology page has a section on them.
-              </dd>
+              <dd>{ARTIFICIAL_MINDS_DEFINITION} Each technology page has a section on them.</dd>
             </div>
           </dl>
-        </div>
-      </section>
-
-      <section className={styles.band} aria-labelledby="stages-heading">
-        <div className="container section">
-          <SectionHead
-            id="stages-heading"
-            eyebrow="Stages"
-            title={
-              <>
-                How we sort milestones into <em>stages</em>
-              </>
-            }
-            intro="A technology can be possible for decades before it's widely available, and it can be widely available without helping at all. So every milestone on our timeline is tagged with exactly one stage."
-          />
-          <StageCards />
-          <p className={styles.stagesLink}>
-            <Link href="/timeline/">See the timeline</Link>
-            <span aria-hidden="true"> · </span>
-            <Link href="/methodology/#stages">How we assign stages</Link>
-          </p>
-        </div>
-      </section>
-
-      <section className="container section" aria-labelledby="is-heading">
-        <SectionHead
-          id="is-heading"
-          eyebrow="Where things stand"
-          title={
-            <>
-              What&rsquo;s here so far, and what&rsquo;s <em>unfinished</em>
-            </>
-          }
-        />
-        <div className={styles.isGrid}>
-          <div className={styles.isCol}>
-            <p className={`eyebrow ${styles.isLabel}`}>On the site</p>
-            <ul className={styles.isList}>
-              {SITE_IS.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
-          <div className={`${styles.isCol} ${styles.isntCol}`}>
-            <p className={`eyebrow ${styles.isLabel}`}>Still in progress</p>
-            <ul className={styles.isList}>
-              {SITE_ISNT.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
         </div>
       </section>
 
@@ -192,6 +191,38 @@ export default function AboutPage() {
           </p>
         </div>
       </section>
+
+      <section className="container section" aria-labelledby="is-heading">
+        <SectionHead
+          id="is-heading"
+          eyebrow="Where things stand"
+          title={
+            <>
+              What&rsquo;s here so far, and what&rsquo;s <em>unfinished</em>
+            </>
+          }
+        />
+        <div className={styles.isGrid}>
+          <div className={styles.isCol}>
+            <p className={`eyebrow ${styles.isLabel}`}>On the site</p>
+            <ul className={styles.isList}>
+              {siteIs(technologies).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+          <div className={`${styles.isCol} ${styles.isntCol}`}>
+            <p className={`eyebrow ${styles.isLabel}`}>Still in progress</p>
+            <ul className={styles.isList}>
+              {siteIsnt(technologies, milestones).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+      </section>
+
     </>
   );
 }

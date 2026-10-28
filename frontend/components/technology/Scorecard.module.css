@@ -417,3 +417,16 @@
   text-transform: uppercase;
   color: var(--ink-body);
 }
+
+/* A row that points to its detail section further up the page */
+.detailLink {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: var(--text-sm);
+}
+
+/* Rows are link targets ("Why: Alignment case row"); leave room for the
+   sticky site header. */
+.row {
+  scroll-margin-top: calc(var(--header-height) + 2rem);
+}

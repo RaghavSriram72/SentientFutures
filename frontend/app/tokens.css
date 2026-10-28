@@ -37,8 +37,9 @@
   /* Form control outlines: 3:1 or better on paper, as WCAG asks of input boundaries */
   --rule-input: #533a71a6;
 
-  /* Stages: fill for bars, ink for text labels. The inks must pass AA on paper
-     and on --grape-tint-2, since the chart's selected track puts them there. */
+  /* Stages: fill for ribbons, dots and chips, ink for text labels. The inks
+     must pass AA on paper and on --grape-tint-2, which tinted chips and
+     selected rows use. */
   --stage-possible: #c9a0dc;
   --stage-possible-ink: #6b3f86;
   --stage-widely: #c48a2e;
@@ -103,4 +104,6 @@
   --text-width: 680px;
   --gutter: clamp(16px, 4vw, 40px);
   --header-height: 64px;
+  /* Space between a page's last section and the footer */
+  --footer-gap: clamp(48px, 8vw, 96px);
 }

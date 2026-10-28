@@ -94,6 +94,16 @@
   color: var(--ink);
 }
 
+/* "S02 (Thiergart 2023)" inside claim text: a link to the source database */
+.registerLink {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.registerCite {
+  color: var(--ink-muted);
+}
+
 .citation {
   margin-top: 0.35rem;
   font-family: var(--font-mono);
@@ -104,6 +114,48 @@
 
 .citation a {
   color: var(--grape);
+}
+
+/* Quiet: the claim matches its section's default kind, so the label goes and
+   the glyph moves into a narrow margin column beside the text. The line
+   style (dashed frame, hatching, quote rule) stays as it is. */
+.quiet {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.65rem;
+}
+
+.quiet > * {
+  grid-column: 2;
+}
+
+/* Only the first row, beside the first line of text; spanning more rows
+   would add empty grid gaps under short claims. */
+.quiet > .quietMark {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  display: inline-flex;
+  padding-top: 0.42em;
+}
+
+.compact.quiet > .quietMark {
+  padding-top: 0.3em;
+}
+
+.mark_source {
+  color: var(--prov-source);
+}
+
+.mark_team {
+  color: var(--prov-team);
+}
+
+.mark_ai {
+  color: var(--prov-ai);
+}
+
+.mark_unclear {
+  color: var(--prov-unclear);
 }
 
 /* Compact variant for panels and tables */
@@ -211,4 +263,21 @@
 
 .stage_actually_helping {
   background: var(--stage-helping);
+}
+
+/* ---------- Section default ---------- */
+.defaultMark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.defaultMark span {
+  color: var(--ink-muted);
 }

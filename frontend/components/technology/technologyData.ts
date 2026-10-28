@@ -43,10 +43,16 @@ export function nextTechnology(id: TechnologyId): TechnologyPage | null {
   return null;
 }
 
+// The description shows up in link previews, away from the page's banner, so
+// an AI-drafted page says so there too.
 export function technologyMetadata(id: TechnologyId): Metadata {
   const technology = requireTechnology(id);
+  const description =
+    technology.sample === true
+      ? `An AI draft the team hasn't reviewed yet. ${technology.intro.text}`
+      : technology.intro.text;
   return {
     title: technology.name,
-    description: technology.intro.text,
+    description,
   };
 }

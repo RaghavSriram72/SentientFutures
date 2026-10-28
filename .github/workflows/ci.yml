@@ -21,10 +21,14 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: shared/pyproject.toml
+          cache-dependency-path: |
+            shared/pyproject.toml
+            pipeline/pyproject.toml
+            backend/pyproject.toml
 
-      - name: Install the shared schema
-        run: pip install -e "shared[dev]"
+      # The pipeline and the API too, so their tests run on every push.
+      - name: Install the shared schema, the pipeline and the API
+        run: pip install -e "shared[dev]" -e pipeline -e backend
 
       - name: Check shared/schema/enums.json matches enums.py
         run: python -m sf_shared.export_schema --check
@@ -32,8 +36,9 @@ jobs:
       - name: Validate content
         run: python -m sf_shared.validate content/
 
-      - name: Run the schema tests
-        run: pytest shared
+      # All offline: arXiv, Semantic Scholar, Claude and Google are faked.
+      - name: Run the schema, pipeline and API tests
+        run: pytest -q shared pipeline/tests backend/tests
 
   frontend:
     name: Frontend

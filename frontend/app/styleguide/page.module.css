@@ -337,3 +337,36 @@
   gap: 2rem;
   padding: 2rem;
 }
+
+/* ---------- Timeline marks ---------- */
+.trackGlyphs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0.75rem 1.5rem;
+  list-style: none;
+}
+
+.trackGlyph {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.trackGlyphPictures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trackGlyphLabel {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.trackLink {
+  margin: 1.25rem 0 2rem;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}

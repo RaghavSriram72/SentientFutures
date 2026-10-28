@@ -262,6 +262,14 @@ hr {
   }
 }
 
+/* A printout never scrolls, so a section still waiting to fade in would
+   print blank. */
+@media print {
+  .reveal {
+    animation: none;
+  }
+}
+
 @keyframes reveal-up {
   from {
     opacity: 0;

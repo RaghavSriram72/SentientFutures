@@ -4,7 +4,7 @@ import { ClaimText } from "@/components/provenance/ClaimText";
 import { ProvenanceGlyph } from "@/components/provenance/ProvenanceTag";
 import { enumLabel, enumValues, RUBRIC_VERSION } from "@/lib/enums";
 import type { SourceRef } from "@/lib/sources";
-import type { CaseRating, Confidence, RiskRating, ScorecardRow, UnclearReason } from "@/lib/types";
+import type { CaseRating, Confidence, Provenance, RiskRating, ScorecardRow, UnclearReason } from "@/lib/types";
 
 import styles from "./Scorecard.module.css";
 
@@ -12,17 +12,28 @@ type Scale = ScorecardRow["scale"];
 type Rating = CaseRating | RiskRating;
 type Severity = NonNullable<ScorecardRow["potential_severity"]>;
 
+// A section elsewhere on the page that covers a row's basis in full.
+export interface ScorecardDetailLink {
+  href: string;
+  label: string;
+}
+
 interface ScorecardProps {
   rows: ScorecardRow[];
   technologyName: string;
   shortName: string;
   sources: Record<string, SourceRef>;
+  // The page's default provenance; claims of this kind show only their glyph.
+  quiet?: Provenance;
+  // Keyed by dimension. A row listed here shows the first sentence of its
+  // basis and a link to the section that covers the rest.
+  detailLinks?: Record<string, ScorecardDetailLink>;
 }
 
 // The scorecard as a printed report card: one ruled row per dimension, with
 // the rating, how confident we are, and the claim the rating rests on.
 // Rows are generic, so the team can add or rename dimensions in content only.
-export function Scorecard({ rows, technologyName, shortName, sources }: ScorecardProps) {
+export function Scorecard({ rows, technologyName, shortName, sources, quiet, detailLinks = {} }: ScorecardProps) {
   return (
     <div className={`paper ${styles.card}`}>
       <div className={styles.cardHead}>
@@ -52,7 +63,13 @@ export function Scorecard({ rows, technologyName, shortName, sources }: Scorecar
         </thead>
         <tbody role="rowgroup">
           {rows.map((row, index) => (
-            <ScorecardTableRow key={index} row={row} sources={sources} />
+            <ScorecardTableRow
+              key={index}
+              row={row}
+              sources={sources}
+              quiet={quiet}
+              detailLink={detailLinks[row.dimension]}
+            />
           ))}
         </tbody>
       </table>
@@ -71,14 +88,39 @@ export function hasSeverityFlag(rows: ScorecardRow[]): boolean {
   return false;
 }
 
-function ScorecardTableRow({ row, sources }: { row: ScorecardRow; sources: Record<string, SourceRef> }) {
+// "Alignment case" -> "scorecard-alignment-case", so other parts of the page
+// can link to one row.
+export function scorecardRowId(dimension: string): string {
+  const slug = dimension
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `scorecard-${slug}`;
+}
+
+// The text up to and including the first full stop that ends a sentence.
+function firstSentence(text: string): string {
+  const match = text.match(/^.*?[.?!](?=\s|$)/);
+  return match ? match[0] : text;
+}
+
+interface ScorecardTableRowProps {
+  row: ScorecardRow;
+  sources: Record<string, SourceRef>;
+  quiet?: Provenance;
+  detailLink?: ScorecardDetailLink;
+}
+
+function ScorecardTableRow({ row, sources, quiet, detailLink }: ScorecardTableRowProps) {
+  // With a detail section, the row keeps one sentence and points to the rest.
+  const basis = detailLink ? { ...row.basis, text: firstSentence(row.basis.text) } : row.basis;
   return (
-    <tr className={styles.row} role="row">
+    <tr className={styles.row} role="row" id={scorecardRowId(row.dimension)}>
       <th className={styles.dimension} scope="row" role="rowheader">
         <span className={styles.dimensionName}>{row.dimension}</span>
         <span className={styles.scale}>{scaleLabel(row)}</span>
       </th>
-      <td className={`${styles.cell} ${styles.ratingCell}`} data-label="Rating" role="cell">
+      <td className={styles.cell} data-label="Rating" role="cell">
         <RatingChip
           scale={row.scale}
           rating={row.rating}
@@ -90,7 +132,12 @@ function ScorecardTableRow({ row, sources }: { row: ScorecardRow; sources: Recor
         <ConfidenceMeter confidence={row.confidence} />
       </td>
       <td className={`${styles.cell} ${styles.basisCell}`} data-label="Basis" role="cell">
-        <ClaimText claim={row.basis} sources={sources} variant="compact" />
+        <ClaimText claim={basis} sources={sources} variant="compact" quiet={quiet} />
+        {detailLink && (
+          <a href={detailLink.href} className={styles.detailLink}>
+            More in {detailLink.label}
+          </a>
+        )}
       </td>
     </tr>
   );

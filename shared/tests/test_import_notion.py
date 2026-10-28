@@ -188,7 +188,8 @@ def test_row_becomes_an_unrated_source():
     assert source["problem"] == "alignment"
     assert source["claim_directions"] == ["ai_alignment"]
     assert source["summary"] == {"text": "The team's own summary.", "provenance": "team"}
-    assert source["added_by"] == "Aila"
+    # Notion uses the nickname; the site credits the name she goes by.
+    assert source["added_by"] == "Vilija"
     assert source["sample"] is False
 
     # The team's database has no rubric ratings, and the import never guesses them.

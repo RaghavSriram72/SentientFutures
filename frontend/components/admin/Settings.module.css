@@ -1,0 +1,109 @@
+.form {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+/* ---------- Searches ---------- */
+.queries {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+}
+
+.query {
+  padding: clamp(0.9rem, 3vw, 1.25rem);
+}
+
+/* A search that's off is still editable, just quieter */
+.queryOff {
+  background-image: none;
+  background-color: var(--paper-3);
+  box-shadow: none;
+}
+
+.queryBody {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.queryHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.queryToggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.9rem;
+}
+
+.offNote {
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+}
+
+.queryText {
+  min-height: 4.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.collectorRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+/* ---------- Limits and model ---------- */
+.limitsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem 1.5rem;
+}
+
+.numberInput {
+  max-width: 10rem;
+}
+
+/* ---------- Saving ---------- */
+.saveBar {
+  display: grid;
+  gap: 0.9rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+}
+
+.problemList {
+  display: grid;
+  gap: 0.3rem;
+  padding-left: 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+/* Where a removed search was, with its Undo */
+.removed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}

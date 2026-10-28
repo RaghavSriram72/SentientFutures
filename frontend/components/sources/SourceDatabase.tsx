@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { enumValues } from "@/lib/enums";
 import { sourceRefsById } from "@/lib/sources";
 import type { Source } from "@/lib/types";
 
-import { CatalogCard } from "./CatalogCard";
 import styles from "./SourceDatabase.module.css";
+import { SourceRow } from "./SourceRow";
 
 const ALL = "all";
 // Select values for the empty cases, which have no enum value of their own.
@@ -90,15 +90,77 @@ function countMatching(sources: Source[], matches: (source: Source) => boolean):
   return count;
 }
 
+interface FilterOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+// The options for one filter, with how many sources each would show. Options
+// that would show nothing are left out, so the list never offers "Hybrid (0)".
+function optionsWithCounts(
+  sources: Source[],
+  values: { value: string; label: string }[],
+  matches: (source: Source, value: string) => boolean,
+): FilterOption[] {
+  const options: FilterOption[] = [];
+  for (const info of values) {
+    const count = countMatching(sources, (source) => matches(source, info.value));
+    if (count > 0) {
+      options.push({ value: info.value, label: info.label, count });
+    }
+  }
+  return options;
+}
+
+// Opens the row a link points at, like /sources/#s02 from an evidence
+// register. The browser scrolls to it; this makes sure it's open when it gets there.
+function openRowFromHash() {
+  const id = decodeURIComponent(window.location.hash.slice(1));
+  if (id === "") {
+    return;
+  }
+  const row = document.getElementById(id);
+  if (row instanceof HTMLDetailsElement && !row.open) {
+    row.open = true;
+    row.scrollIntoView({ block: "start" });
+  }
+}
+
+interface SourceDatabaseProps {
+  sources: Source[];
+  // Passed on to each row: see CatalogCard's CardOptions.
+  sharedAddedBy?: string | null;
+  hideUnrated?: boolean;
+}
+
 // The searchable source list. Gets every source to show as a prop, already in
 // order, and filters in the browser; there are few enough that no index is needed.
-export function SourceDatabase({ sources }: { sources: Source[] }) {
+export function SourceDatabase({ sources, sharedAddedBy = null, hideUnrated = false }: SourceDatabaseProps) {
   const [query, setQuery] = useState("");
   const [technology, setTechnology] = useState(ALL);
   const [direction, setDirection] = useState(ALL);
   const [problem, setProblem] = useState(ALL);
   // So a summary that cites other sources keeps its citation links.
   const sourceRefs = sourceRefsById(sources);
+
+  useEffect(() => {
+    openRowFromHash();
+    window.addEventListener("hashchange", openRowFromHash);
+    return () => window.removeEventListener("hashchange", openRowFromHash);
+  }, []);
+
+  const technologyOptions = optionsWithCounts(
+    sources,
+    [...enumValues("Technology"), { value: GENERAL_BACKGROUND, label: "General background" }],
+    matchesTechnology,
+  );
+  const directionOptions = optionsWithCounts(sources, enumValues("ClaimDirection"), matchesDirection);
+  const problemOptions = optionsWithCounts(
+    sources,
+    [...enumValues("Problem"), { value: NEITHER, label: "Neither" }],
+    matchesProblem,
+  );
 
   const words = splitQuery(query);
   const visible: Source[] = [];
@@ -160,14 +222,11 @@ export function SourceDatabase({ sources }: { sources: Source[] }) {
               onChange={(event) => setTechnology(event.target.value)}
             >
               <option value={ALL}>All technologies</option>
-              {enumValues("Technology").map((info) => (
-                <option key={info.value} value={info.value}>
-                  {info.label} ({countMatching(sources, (source) => matchesTechnology(source, info.value))})
+              {technologyOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({option.count})
                 </option>
               ))}
-              <option value={GENERAL_BACKGROUND}>
-                General background ({countMatching(sources, (source) => matchesTechnology(source, GENERAL_BACKGROUND))})
-              </option>
             </select>
           </div>
         </div>
@@ -184,9 +243,9 @@ export function SourceDatabase({ sources }: { sources: Source[] }) {
               onChange={(event) => setDirection(event.target.value)}
             >
               <option value={ALL}>All directions</option>
-              {enumValues("ClaimDirection").map((info) => (
-                <option key={info.value} value={info.value}>
-                  {info.label} ({countMatching(sources, (source) => matchesDirection(source, info.value))})
+              {directionOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({option.count})
                 </option>
               ))}
             </select>
@@ -205,14 +264,11 @@ export function SourceDatabase({ sources }: { sources: Source[] }) {
               onChange={(event) => setProblem(event.target.value)}
             >
               <option value={ALL}>All problems</option>
-              {enumValues("Problem").map((info) => (
-                <option key={info.value} value={info.value}>
-                  {info.label} ({countMatching(sources, (source) => matchesProblem(source, info.value))})
+              {problemOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({option.count})
                 </option>
               ))}
-              <option value={NEITHER}>
-                Neither ({countMatching(sources, (source) => matchesProblem(source, NEITHER))})
-              </option>
             </select>
           </div>
         </div>
@@ -236,10 +292,15 @@ export function SourceDatabase({ sources }: { sources: Source[] }) {
           Matching sources
         </h2>
         {visible.length > 0 ? (
-          <ul className={styles.grid}>
+          <ul className={styles.list}>
             {visible.map((source) => (
               <li key={source.id}>
-                <CatalogCard source={source} sources={sourceRefs} />
+                <SourceRow
+                  source={source}
+                  sources={sourceRefs}
+                  sharedAddedBy={sharedAddedBy}
+                  hideUnrated={hideUnrated}
+                />
               </li>
             ))}
           </ul>

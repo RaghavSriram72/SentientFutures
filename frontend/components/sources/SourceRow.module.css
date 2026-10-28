@@ -1,0 +1,163 @@
+/* One source per ruled line, like an index card drawer. Open, the row turns
+   into a paper card with the full entry. */
+.row {
+  border-bottom: 1px solid var(--rule);
+  scroll-margin-top: calc(var(--header-height) + 1.5rem);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.row[open] {
+  margin-block: 0.5rem;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-card);
+  background-color: var(--paper-2);
+  background-image: var(--grain);
+  box-shadow: var(--shadow-paper);
+}
+
+/* Linked to from elsewhere, e.g. /sources/#s02 from the evidence register */
+.row:target {
+  outline: 2px solid var(--grape);
+  outline-offset: 2px;
+  border-radius: var(--radius-card);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    "id main chevron"
+    ". tags tags";
+  align-items: start;
+  gap: 0.4rem 0.75rem;
+  padding: 0.85rem 0.75rem;
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  list-style: none;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:hover {
+  background: var(--grape-tint);
+}
+
+.row[open] > .summary:hover {
+  background: transparent;
+}
+
+.summary:focus-visible {
+  outline: 2px solid var(--grape);
+  outline-offset: -2px;
+}
+
+@media (min-width: 900px) {
+  .summary {
+    grid-template-columns: 3rem minmax(0, 1fr) minmax(0, 20rem) 1rem;
+    grid-template-areas: "id main tags chevron";
+    gap: 0.75rem 1.25rem;
+    padding: 0.9rem 1rem;
+  }
+}
+
+/* The team's register id ("S02") */
+.id {
+  grid-area: id;
+  justify-self: start;
+  margin-top: 0.2rem;
+  padding: 0.1em 0.45em;
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  color: var(--grape);
+}
+
+.id:empty {
+  display: none;
+}
+
+.main {
+  grid-area: main;
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.byline {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.tags {
+  grid-area: tags;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+@media (min-width: 900px) {
+  .tags {
+    justify-content: flex-end;
+    padding-top: 0.15rem;
+  }
+}
+
+.tags :global(.chip) {
+  font-size: 0.625rem;
+}
+
+.tech {
+  color: var(--ink-body);
+}
+
+/* An AI-suggested technology tag: dashed, like every other AI mark */
+.techAi {
+  border-style: dashed;
+  border-color: var(--rule-strong);
+  background: var(--grape-tint);
+  color: var(--grape);
+}
+
+/* A chevron drawn with borders that turns when the row opens */
+.chevron {
+  grid-area: chevron;
+  justify-self: end;
+  width: 8px;
+  height: 8px;
+  margin-top: 0.55rem;
+  border-right: 1.5px solid var(--grape);
+  border-bottom: 1.5px solid var(--grape);
+  transform: rotate(45deg);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.row[open] .chevron {
+  transform: rotate(-135deg);
+  margin-top: 0.75rem;
+}
+
+/* The full entry, indented under the title */
+.body {
+  padding: 0 0.75rem 1rem;
+}
+
+@media (min-width: 900px) {
+  .body {
+    padding: 0 3.25rem 1.1rem calc(1rem + 3rem + 1.25rem);
+  }
+}

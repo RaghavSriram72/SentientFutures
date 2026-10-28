@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from helpers import POST_TEXT, REAL_CONTENT, milestone_index, read_json, run, write_json
 
-from sf_shared.validate import main, validate_content
+from sf_shared.validate import em_dash_line_numbers, em_dash_paths, main, validate_content
 
 FIRST = "milestones[0] (bci-sample-medical-approval)"
 
@@ -51,8 +51,8 @@ def test_cli_warns_about_unreviewed_sample_claims(content_dir: Path, capsys: pyt
     assert main(["validate", str(content_dir)]) == 0  # a warning doesn't fail the check
     lines = capsys.readouterr().out.strip().splitlines()
     assert lines == [
-        "Warning: 2 AI-suggested claims in sample records have no reviewer. They show as not yet reviewed "
-        "and must be reviewed before the sample flag comes off.",
+        "Warning: 2 AI-suggested claims in sample records have no reviewer. The site shows them as "
+        "unchecked, and they must be reviewed before the sample flag comes off.",
         ok_line(content_dir),
     ]
 
@@ -128,8 +128,8 @@ def test_ai_claim_without_reviewer(content_dir: Path):
     report = validate_content(content_dir)
     assert report.errors == []  # a sample record may skip review...
     assert report.warnings == [  # ...but it gets counted
-        "Warning: 1 AI-suggested claim in a sample record has no reviewer. It shows as not yet reviewed "
-        "and must be reviewed before the sample flag comes off."
+        "Warning: 1 AI-suggested claim in a sample record has no reviewer. The site shows it as unchecked, "
+        "and it must be reviewed before the sample flag comes off."
     ]
 
     milestones[0]["sample"] = False
@@ -194,6 +194,49 @@ def test_dangling_source_ids_are_detected(content_dir: Path):
         f'{FIRST}.main_bottleneck.source_ids[0]: no source with id "typo-report" in sources.json',
         f'{FIRST}.source_ids[2]: no source with id "another-missing-one" in sources.json',
         f'{FIRST}.forecasts[0].source_id: no source with id "no-such-source" in sources.json',
+    ]
+
+
+def sample_source_claim() -> dict:
+    return {
+        "text": "Cites a fictional source.",
+        "provenance": "source",
+        "source_ids": ["sample-roadmap-report"],
+        "quote": "A made-up line.",
+    }
+
+
+def test_a_real_milestone_cant_link_to_samples(content_dir: Path):
+    path = content_dir / "milestones.json"
+    milestones = read_json(path)
+    index = milestone_index(milestones, "wbe-reliability")
+    milestones[index]["depends_on"] = ["bci-sample-agency"]
+    milestones[index]["source_ids"] = ["sample-roadmap-report"]
+    milestones[index]["summary"] = sample_source_claim()
+    write_json(path, milestones)
+
+    label = f"milestones[{index}] (wbe-reliability)"
+    assert run(content_dir) == [
+        f'{label}.depends_on[0]: "bci-sample-agency" is a sample milestone. The public site leaves samples '
+        "out, so a real milestone can only depend on real ones",
+        f'{label}.source_ids[0]: "sample-roadmap-report" is a sample source. The public site leaves samples '
+        "out, so a real record has to cite a real source",
+        f'{label}.summary.source_ids[0]: "sample-roadmap-report" is a sample source. The public site leaves '
+        "samples out, so a real record has to cite a real source",
+    ]
+
+
+def test_a_real_technology_page_cant_cite_a_sample_source(content_dir: Path):
+    path = content_dir / "technologies.json"
+    pages = read_json(path)
+    pages[0]["sample"] = False
+    pages[0]["intro"] = sample_source_claim()
+    pages[1]["intro"] = sample_source_claim()  # still a sample page, so this one is fine
+    write_json(path, pages)
+
+    assert run(content_dir) == [
+        'technologies[0] (wbe).intro.source_ids[0]: "sample-roadmap-report" is a sample source. The public '
+        "site leaves samples out, so a real record has to cite a real source",
     ]
 
 
@@ -365,3 +408,14 @@ def test_post_em_dash_is_detected(content_dir: Path):
     assert run(content_dir) == [
         f"{path} line 9: has an em dash. Use a period, comma, colon or parentheses instead"
     ]
+
+
+# ---------- The em dash helpers the API uses ----------
+
+
+def test_em_dash_line_numbers_and_paths():
+    dash = chr(0x2014)
+    assert em_dash_line_numbers(f"fine\nnot {dash} fine\nalso \\u2014 escaped") == [2, 3]
+    value = {"summary": {"text": f"a {dash} b"}, "would_move_later": [{"text": "ok"}, {"text": dash}]}
+    assert em_dash_paths(value, "milestone") == ["milestone.summary.text", "milestone.would_move_later[1].text"]
+    assert em_dash_paths({"text": "no dashes - here"}) == []

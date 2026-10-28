@@ -1,0 +1,102 @@
+/* Layout shared by the run, review and settings pages */
+.page {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 2.5rem);
+  padding-block: clamp(24px, 4vw, 44px) clamp(56px, 8vw, 96px);
+}
+
+.section {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.sectionTitle {
+  font-size: var(--text-xl);
+}
+
+.card {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: clamp(1.1rem, 3.5vw, 1.75rem);
+}
+
+.cardTitle {
+  font-size: var(--text-xl);
+}
+
+.muted {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Label and value pairs ---------- */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.fact {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.65rem 0.85rem 0.65rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.factLabel {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.factValue {
+  font-size: var(--text-sm);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Errors ---------- */
+.errorList {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem 0.8rem 2.25rem;
+  border: 1px solid color-mix(in srgb, var(--stamp) 30%, transparent);
+  border-left: 3px solid var(--stamp);
+  border-radius: var(--radius-md);
+  background: var(--stamp-tint);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--ink-body);
+}
+
+.errorList li {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Tucked-away technical facts ---------- */
+.technical summary {
+  width: fit-content;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--grape);
+  cursor: pointer;
+}
+
+.technical[open] summary {
+  margin-bottom: 0.6rem;
+}

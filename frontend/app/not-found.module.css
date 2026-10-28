@@ -1,7 +1,15 @@
+/* The wash runs right down to the footer, with no empty band in between,
+   even when the page is shorter than the screen and <main> stretches. */
+main:has(> .wrap) {
+  display: flex;
+  flex-direction: column;
+}
+
 .wrap {
+  flex: 1;
+  margin-bottom: calc(-1 * var(--footer-gap));
   background-color: var(--paper);
   background-image: var(--grain), var(--wash);
-  border-bottom: 1px solid var(--rule);
 }
 
 .inner {

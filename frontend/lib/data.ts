@@ -1,6 +1,9 @@
 // Build-time data loading. Only import this from server components (pages and
-// layouts without "use client"). It reads JSON from DATA_DIR, which is content/
-// in demo mode and the downloaded API export later. The shape is the same.
+// layouts without "use client"). It reads DATA_DIR, which defaults to content/.
+// The deploy points it at .site-data/, the folder the publish step writes
+// (python -m sf_shared.export_site): content/ plus the sources, milestones and
+// posts the team approved or published in admin. Both folders have the same
+// layout (milestones.json, sources.json, technologies.json, posts/*.md).
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
@@ -40,6 +43,18 @@ export function getMilestones(): Milestone[] {
     cachedMilestones = readJson<Milestone[]>("milestones.json");
   }
   return cachedMilestones;
+}
+
+// The milestones readers see. Sample milestones are fictional worked examples
+// for the content guide and tests; the public site never shows or counts them.
+export function getPublicMilestones(): Milestone[] {
+  const visible: Milestone[] = [];
+  for (const milestone of getMilestones()) {
+    if (!milestone.sample) {
+      visible.push(milestone);
+    }
+  }
+  return visible;
 }
 
 export function getSources(): Source[] {

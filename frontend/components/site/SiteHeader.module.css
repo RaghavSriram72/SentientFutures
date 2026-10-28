@@ -101,6 +101,11 @@
   background: var(--grape-tint-2);
 }
 
+/* Methodology and Contact: in the phone menu only */
+.menuOnly {
+  display: none;
+}
+
 .menuButton {
   display: none;
   align-items: center;
@@ -144,7 +149,8 @@
   top: 4.5px;
 }
 
-@media (max-width: 960px) {
+/* Below this the seven links no longer fit on one line, so they fold into Menu */
+@media (max-width: 1023px) {
   .menuButton {
     display: inline-flex;
   }
@@ -166,6 +172,17 @@
 
   .navOpen {
     display: flex;
+  }
+
+  .menuOnly {
+    display: block;
+  }
+
+  /* A hairline between the main pages and the menu-only ones */
+  li:not(.menuOnly) + .menuOnly {
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid var(--rule-soft);
   }
 
   .navLink {

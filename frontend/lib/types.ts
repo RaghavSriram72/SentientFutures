@@ -71,7 +71,7 @@ export interface Forecast {
   never: boolean;
 }
 
-// The team's own range. When present it is drawn as a solid bar, and it wins
+// The team's own range. When present it is drawn as a solid ribbon, and it wins
 // over the forecast span, but forecasts and any disagreement stay visible.
 export interface Estimate {
   earliest: number;
@@ -234,6 +234,7 @@ export interface TechnologyPage {
   artificial_minds_assessment?: ArtificialMindsAssessment | null;
   welfare_governance?: WelfareGovernance | null;
   evidence_gap?: Claim | null;
+  tension?: Claim | null; // team-written; the page shows it only when set
   sample?: boolean;
 }
 

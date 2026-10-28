@@ -1,0 +1,17 @@
+# A local MongoDB, for when you want data to survive a restart.
+#
+#     docker compose up -d
+#     MONGO_URI=mongodb://localhost:27017 flask --app sf_api run --port 5050 --debug
+#
+# Without it, the API and pipeline use an in-memory database (mongomock).
+# Production uses MongoDB Atlas instead.
+services:
+  mongo:
+    image: mongo:8.0
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

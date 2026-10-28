@@ -1,0 +1,190 @@
+.page {
+  display: grid;
+  gap: 1.25rem;
+  padding-block: clamp(20px, 3vw, 36px) clamp(56px, 8vw, 96px);
+}
+
+.muted {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+/* ---------- Status tabs: links styled as index tabs on a hairline ---------- */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  list-style: none;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tab {
+  display: inline-block;
+  margin-bottom: -1px;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.tab:hover {
+  color: var(--grape);
+  background: var(--grape-tint);
+}
+
+.tab[aria-current="page"] {
+  border-color: var(--rule);
+  border-bottom-color: var(--paper);
+  background: var(--paper);
+  color: var(--grape);
+  font-weight: 600;
+}
+
+.tabCount {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--paper-3);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.tab[aria-current="page"] .tabCount {
+  background: var(--grape-tint);
+  color: var(--grape);
+}
+
+/* ---------- Filters ---------- */
+/* A wrapping row: the selects keep their width, the search takes the rest.
+   Each field is packed at the top, so the labels line up and the search's
+   hint under its box never pushes the selects down. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.8rem 1rem;
+}
+
+.filters > * {
+  flex: 1 1 100%;
+}
+
+@media (min-width: 760px) {
+  .filters > * {
+    flex: 0 1 12rem;
+  }
+
+  .filters > .searchField {
+    flex: 1 1 20rem;
+  }
+}
+
+.searchRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.searchRow input {
+  flex: 1 1 auto;
+}
+
+/* ---------- Results ---------- */
+.results {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.list {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+}
+
+.row {
+  position: relative;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1.1rem 1rem;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-md);
+  background: var(--paper-2);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-med) var(--ease-out);
+}
+
+.row:hover {
+  border-color: var(--rule-strong);
+  box-shadow: var(--shadow-card);
+}
+
+/* A keyboard focus ring for the whole card, since the link covers it */
+.row:has(.rowLink:focus-visible) {
+  outline: 2px solid var(--grape);
+  outline-offset: 2px;
+}
+
+.rowMeta {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.rowTitle {
+  font-size: 1.3125rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.rowLink {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.rowLink:focus-visible {
+  outline: none;
+}
+
+.rowLink::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+}
+
+.rowAuthors {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.empty {
+  display: grid;
+  justify-items: start;
+  gap: 0.4rem;
+  padding: 1.5rem 1.25rem;
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius-md);
+  color: var(--ink-muted);
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  padding-top: 1.25rem;
+}

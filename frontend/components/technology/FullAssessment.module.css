@@ -1,0 +1,96 @@
+.contents {
+  max-width: var(--text-width);
+  margin-bottom: 1.25rem;
+  color: var(--ink-muted);
+}
+
+.summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1.1rem 0.7rem 1.25rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  background: var(--paper-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--grape);
+  cursor: pointer;
+  list-style: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:hover {
+  border-color: var(--grape);
+  background: var(--grape-tint);
+}
+
+.summary:focus-visible {
+  outline: 2px solid var(--grape);
+  outline-offset: 3px;
+}
+
+.openLabel {
+  display: none;
+}
+
+.details[open] .openLabel {
+  display: inline;
+}
+
+.details[open] .closedLabel {
+  display: none;
+}
+
+/* A plus that turns into a minus */
+.toggle {
+  position: relative;
+  width: 12px;
+  height: 12px;
+}
+
+.toggle::before,
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: 12px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.toggle::after {
+  transform: rotate(90deg);
+}
+
+.details[open] .toggle::after {
+  transform: rotate(0deg);
+}
+
+.body {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3rem);
+  padding-top: clamp(1.75rem, 3vw, 2.5rem);
+}
+
+.part {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  scroll-margin-top: calc(var(--header-height) + 2rem);
+}
+
+.partTitle {
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule-soft);
+  font-size: var(--text-xl);
+}

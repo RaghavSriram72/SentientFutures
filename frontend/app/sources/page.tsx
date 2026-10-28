@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/common/PageHeader";
-import { ProvenanceLegend } from "@/components/provenance/Legends";
+import { MarksHelp } from "@/components/provenance/MarksHelp";
 import { DirectionGlyph } from "@/components/sources/ClaimDirectionChip";
 import { SourceDatabase } from "@/components/sources/SourceDatabase";
 import { getSources } from "@/lib/data";
-import { RUBRIC_VERSION } from "@/lib/enums";
 import { realSources, sortByRegisterId } from "@/lib/sources";
 import type { Source } from "@/lib/types";
 
@@ -46,24 +45,59 @@ function countUnrated(sources: Source[]): number {
   return count;
 }
 
-// The note under the key. Its counts come from the data, so it stays true as
-// the team rates sources.
-function scoutingNote(total: number, scouted: number, unrated: number): string {
-  const parts: string[] = [];
-  if (scouted === total) {
-    parts.push(
-      "These come from the team's scouting database, where each source is tagged by technology, problem and which way it argues.",
-    );
-  } else if (scouted > 0) {
-    parts.push(
-      `${scouted} of these come from the team's scouting database, where each source is tagged by technology, problem and which way it argues.`,
-    );
+// The person who added most of the sources, and whether that's all of them.
+// The header says it once, and a row only names who added it when it's someone else.
+function mostCommonAdder(sources: Source[]): { name: string | null; isEveryone: boolean } {
+  const counts = new Map<string, number>();
+  for (const source of sources) {
+    if (source.added_by) {
+      counts.set(source.added_by, (counts.get(source.added_by) ?? 0) + 1);
+    }
   }
-  const rubric = "evidence type, directness, independence, relevance and credibility";
+  let name: string | null = null;
+  let best = 0;
+  for (const [adder, count] of counts) {
+    if (count > best) {
+      name = adder;
+      best = count;
+    }
+  }
+  // Only worth stating once if it covers most of the list.
+  if (name === null || best * 2 <= sources.length) {
+    return { name: null, isEveryone: false };
+  }
+  return { name, isEveryone: best === sources.length };
+}
+
+// The one sentence at the top: what's here, what hasn't been done to it yet,
+// and who added it. Its counts come from the data, so it stays true as the
+// team rates and adds sources.
+function headerSentence(sources: Source[], adder: { name: string | null; isEveryone: boolean }): string {
+  const total = sources.length;
+  const scouted = countScouted(sources);
+  const unrated = countUnrated(sources);
+  const parts: string[] = [];
+
+  let first = `${total} ${total === 1 ? "source" : "sources"}`;
+  if (scouted === total && total > 1) {
+    first += ", all from the team's scouting database";
+  } else if (scouted === total) {
+    first += " from the team's scouting database";
+  } else if (scouted > 0) {
+    first += `, ${scouted} of them from the team's scouting database`;
+  }
+  parts.push(`${first}.`);
+
   if (unrated === total) {
-    parts.push(`None has been rated on the rubric yet: ${rubric}.`);
+    parts.push(total === 1 ? "It isn't rated on the rubric yet." : "None is rated on the rubric yet.");
   } else if (unrated > 0) {
-    parts.push(`${unrated} haven't been rated on the rubric yet: ${rubric}.`);
+    parts.push(`${unrated} ${unrated === 1 ? "isn't" : "aren't"} rated on the rubric yet.`);
+  }
+
+  if (adder.name && adder.isEveryone) {
+    parts.push(`All added by ${adder.name}.`);
+  } else if (adder.name) {
+    parts.push(`Added by ${adder.name} unless noted.`);
   }
   return parts.join(" ");
 }
@@ -74,7 +108,8 @@ export default function SourcesPage() {
   // fictional samples stay in the file for the sample milestones that cite
   // them, but they aren't listed here.
   const sources = sortByRegisterId(realSources(getSources()));
-  const note = scoutingNote(sources.length, countScouted(sources), countUnrated(sources));
+  const adder = mostCommonAdder(sources);
+  const noneRated = countUnrated(sources) === sources.length;
 
   return (
     <>
@@ -85,32 +120,20 @@ export default function SourcesPage() {
             What we&rsquo;ve <em>read</em> so far
           </>
         }
-        lede="Each card has the team's summary of the source and its tags. The tags use the named categories defined on the methodology page."
-      >
-        <span className="chip">
-          {sources.length} {sources.length === 1 ? "source" : "sources"}
-        </span>
-        <span className="chip">Rubric v{RUBRIC_VERSION}</span>
-      </PageHeader>
+        lede={headerSentence(sources, adder)}
+      />
 
       <div className={`container ${styles.body}`}>
-        <aside className={styles.key} aria-label="How to read these cards">
-          <div className={styles.keyMarks}>
-            <p className="eyebrow">The marks</p>
-            <ProvenanceLegend compact />
-          </div>
-          <p className={styles.keyNote}>
-            Categories marked <span className={styles.draftWord}>draft</span> are still being decided. A dashed chip
-            means an AI suggested that value and a person checked it. Under Claim direction,{" "}
-            <DirectionGlyph tone="for" label="a plus sign" /> means the source argues the approach could help, and{" "}
-            <DirectionGlyph tone="against" label="a minus sign" /> means it argues the approach won&rsquo;t help or
-            could make things worse. <Link href="/methodology/#credibility">How we rate sources</Link>
+        <div className={styles.help}>
+          <MarksHelp />
+          <p className={styles.helpNote}>
+            <DirectionGlyph tone="for" label="A plus sign" /> means the source argues the approach could help, and{" "}
+            <DirectionGlyph tone="against" label="a minus sign" /> that it won&rsquo;t help or could make things
+            worse. <Link href="/methodology/#credibility">How we rate sources</Link>
           </p>
-        </aside>
+        </div>
 
-        {note !== "" && <p className={styles.scoutNote}>{note}</p>}
-
-        <SourceDatabase sources={sources} />
+        <SourceDatabase sources={sources} sharedAddedBy={adder.name} hideUnrated={noneRated} />
       </div>
     </>
   );

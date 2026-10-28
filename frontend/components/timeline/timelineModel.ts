@@ -1,18 +1,16 @@
-// Groups milestones into technology bands, gives each one its display code
-// ("WBE-01") and sorts the tracks. Shared by the chart, the list, the panel and
-// the home page preview, so all of them agree. Pure functions, no React.
+// Groups milestones by technology, gives each one its display code ("WBE-01")
+// and sorts them. Shared by the 3D track, the home page teaser, the list, the
+// dossier and the technology pages, so all of them agree. Pure functions, no React.
 import { enumLabel } from "@/lib/enums";
 import {
   computeMilestoneView,
-  countLabel,
   earliestRelevantYear,
-  formatWindow,
   type ForecastView,
   type MilestoneView,
 } from "@/lib/estimates";
-import type { Milestone, Technology } from "@/lib/types";
+import type { Milestone, Stage, Technology } from "@/lib/types";
 
-// Band order on the timeline. Hybrid only shows up when there is a hybrid milestone.
+// Group order on the timeline. Hybrid only shows up when there is a hybrid milestone.
 export const TECHNOLOGY_ORDER: Technology[] = ["wbe", "bci", "neuromorphic", "hybrid"];
 
 // Prefix for the display code. Codes are computed, never stored.
@@ -22,6 +20,19 @@ const CODE_PREFIX: Record<Technology, string> = {
   neuromorphic: "NEURO",
   hybrid: "HYBRID",
 };
+
+// The short key the CSS uses for each stage's colors (stage_possible and so on).
+export type StageKey = "possible" | "widely" | "helping";
+
+export function stageKey(stage: Stage): StageKey {
+  if (stage === "widely_available") {
+    return "widely";
+  }
+  if (stage === "actually_helping") {
+    return "helping";
+  }
+  return "possible";
+}
 
 export interface TimelineItem {
   milestone: Milestone;
@@ -114,9 +125,9 @@ export function dependents(milestoneId: string, groups: TimelineGroup[]): Timeli
   return found;
 }
 
-// Forecasts in window order, earliest first and "never" last. The chart puts
-// each on its own lane in this order, so the whiskers cascade down the track,
-// and the list and the dossier ledger use the same order.
+// Forecasts in window order, earliest first and "never" last. The track draws
+// each forecast's thin line in this order, and the list and the dossier ledger
+// use the same order.
 export function sortForecastsByWindow(forecasts: ForecastView[]): ForecastView[] {
   const sorted = forecasts.slice();
   sorted.sort((a, b) => windowStart(a) - windowStart(b));
@@ -130,53 +141,76 @@ function windowStart(forecast: ForecastView): number {
   return forecast.earliest ?? forecast.latest ?? Number.POSITIVE_INFINITY;
 }
 
-// A one-line description of the estimate, shared by the list, the panel and aria labels.
+// True when a milestone has something the track can put on the dates: the
+// year it was reached, a team range or at least one forecast.
+export function hasEstimate(item: TimelineItem): boolean {
+  return item.view.barMode !== "none";
+}
+
+// All the years the forecasts allow, as one phrase: "2028 to 2032",
+// "2032 to never", "2035 onward", "by 2045" or "never". Nothing is averaged;
+// this is the outer edge of every window, for a one-line summary only.
+export function forecastRangeText(view: MilestoneView): string {
+  let earliest: number | null = null;
+  let latest: number | null = null;
+  let openLeft = false;
+  let openRight = false;
+  let anyNever = false;
+  let anyDated = false;
+  for (const forecast of view.forecasts) {
+    if (forecast.never) {
+      anyNever = true;
+      continue;
+    }
+    anyDated = true;
+    if (forecast.earliest === null) {
+      openLeft = true;
+    }
+    if (forecast.latest === null) {
+      openRight = true;
+    }
+    const low = forecast.earliest ?? forecast.latest;
+    const high = forecast.latest ?? forecast.earliest;
+    if (low !== null && (earliest === null || low < earliest)) {
+      earliest = low;
+    }
+    if (high !== null && (latest === null || high > latest)) {
+      latest = high;
+    }
+  }
+  if (!anyDated) {
+    return anyNever ? "never" : "no years given";
+  }
+  if (anyNever) {
+    return openLeft ? `by ${latest} to never` : `${earliest} to never`;
+  }
+  if (openRight) {
+    return openLeft ? "open at both ends" : `${earliest} onward`;
+  }
+  if (openLeft) {
+    return `by ${latest}`;
+  }
+  return rangeText(earliest, latest);
+}
+
+// A one-line description of the estimate, shared by the cards, the list, the
+// technology pages and aria labels.
 export function estimateSummary(item: TimelineItem): string {
   const { view, milestone } = item;
   if (view.barMode === "achieved") {
     return `Achieved in ${view.achievedIn}`;
   }
   if (view.barMode === "team" && milestone.estimate) {
-    return `Our range: ${rangeText(milestone.estimate.earliest, milestone.estimate.latest)}`;
+    return `Team range ${rangeText(milestone.estimate.earliest, milestone.estimate.latest)}`;
   }
   if (view.barMode === "span" && view.bar) {
     return `Forecasts span ${rangeText(view.bar.start, view.bar.end)}`;
   }
   if (view.barMode === "whiskers") {
-    return "Individual forecasts only";
+    const count = view.forecastCount === 1 ? "1 forecast" : `${view.forecastCount} forecasts`;
+    return `${count}, ${forecastRangeText(view)}`;
   }
   return "No estimate yet";
-}
-
-// "2 forecasts from 2 sources: Example Engineer gives 2028 to 2030; Example Skeptic says never"
-export function forecastsSummary(view: MilestoneView): string {
-  const windows: string[] = [];
-  for (const forecast of sortForecastsByWindow(view.forecasts)) {
-    const verb = forecast.never ? "says" : "gives";
-    const expired = forecast.isExpired ? ", expired" : "";
-    windows.push(`${forecast.forecaster} ${verb} ${formatWindow(forecast)}${expired}`);
-  }
-  return `${countLabel(view)}: ${windows.join("; ")}`;
-}
-
-// What a screen reader hears for one chart track. It covers everything the marks show.
-export function trackAriaLabel(item: TimelineItem): string {
-  const { milestone, view } = item;
-  const parts: string[] = [];
-  parts.push(`${item.code}, ${milestone.name}`);
-  parts.push(`Stage: ${enumLabel("Stage", milestone.stage)}`);
-  parts.push(estimateSummary(item));
-  if (view.forecastCount >= 1) {
-    parts.push(forecastsSummary(view));
-  }
-  if (view.disagreement.flagged) {
-    const by = view.disagreement.decidedBy === "team" ? "flagged by the team" : "flagged by our rule";
-    parts.push(`Sources disagree, ${by}`);
-  }
-  if (milestone.sample) {
-    parts.push("Sample milestone");
-  }
-  return `${parts.join(". ")}.`;
 }
 
 // "2030 to 2038", "2035 onward", "until 2045"

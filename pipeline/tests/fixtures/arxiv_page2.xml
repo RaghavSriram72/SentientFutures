@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <title type="html">ArXiv Query: test</title>
+  <id>http://arxiv.org/api/test</id>
+  <updated>2026-10-27T00:00:00-04:00</updated>
+  <opensearch:totalResults>3</opensearch:totalResults>
+  <opensearch:startIndex>2</opensearch:startIndex>
+  <opensearch:itemsPerPage>2</opensearch:itemsPerPage>
+  <entry>
+    <id>http://arxiv.org/abs/hep-th/9901001v3</id>
+    <updated>2026-10-15T12:00:00Z</updated>
+    <published>2026-10-15T08:00:00Z</published>
+    <title>An Old-Style Identifier</title>
+    <summary>Checks that old arXiv ids parse.</summary>
+    <author><name>Old Timer</name></author>
+  </entry>
+</feed>

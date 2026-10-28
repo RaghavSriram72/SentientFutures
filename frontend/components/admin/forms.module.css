@@ -1,0 +1,163 @@
+/* Form controls shared by every admin screen. Outlines use --rule-input so
+   they meet the 3:1 contrast WCAG asks of input boundaries. */
+.field {
+  display: grid;
+  /* Packed at the top: in a grid row, a field next to one with a longer hint
+     would otherwise spread its label and input apart to fill the height. */
+  align-content: start;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.hint {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--rule-input);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.select {
+  padding-right: 2rem;
+}
+
+.textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.input:disabled,
+.select:disabled,
+.textarea:disabled {
+  background: var(--paper-3);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.invalid {
+  border-color: var(--stamp);
+  box-shadow: 0 0 0 1px var(--stamp);
+}
+
+.error {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--stamp);
+}
+
+.fieldset {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: 0.35rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.checkList {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+}
+
+.checkRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--ink-body);
+  cursor: pointer;
+}
+
+.checkbox {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.12rem;
+  accent-color: var(--grape);
+  cursor: pointer;
+}
+
+.checkbox:disabled,
+.checkbox:disabled + span {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Buttons: the global .btn styles plus a proper disabled state */
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.smallButton {
+  padding: 0.4em 0.9em;
+  font-size: var(--text-xs);
+}
+
+/* A quiet text button, for "Remove" and similar */
+.linkButton {
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--grape);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.linkButton:hover {
+  text-decoration-color: currentColor;
+}
+
+.linkButton:disabled {
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.dangerButton:global(.btn) {
+  color: var(--stamp);
+  border-color: color-mix(in srgb, var(--stamp) 45%, transparent);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}

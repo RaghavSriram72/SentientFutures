@@ -1,0 +1,38 @@
+.versionHead {
+  display: grid;
+  gap: 0.35rem;
+}
+
+/* Prompt versions are hashes, so they read best in monospace */
+.versionName {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  overflow-wrap: anywhere;
+}
+
+.block {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.blockTitle {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+/* Row labels can be long, so they wrap instead of widening the table */
+.rowLabel {
+  font-weight: 500;
+}
+
+.changes {
+  display: grid;
+  gap: 0.25rem;
+  list-style: none;
+}
+
+.changeCount {
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
