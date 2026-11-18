@@ -74,6 +74,8 @@ def ensure_indexes(db) -> None:
     create_index_once(sources, [("review_status", 1), ("found_at", 1)], name="queue_order")
     create_index_once(db["ai_assessments"], "source_id", name="by_source")
     create_index_once(db["reviews"], "source_id", name="by_source")
+    # Who added a rejected paper again, read with the paper's other records.
+    create_index_once(db["re_adds"], "source_id", name="by_source")
     create_index_once(db["pipeline_runs"], [("started_at", -1)], name="newest_first")
 
     # The milestone and post editors (editor_models.py).

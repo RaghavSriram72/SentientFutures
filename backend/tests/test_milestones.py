@@ -180,6 +180,18 @@ def test_saving_bumps_the_version_and_adds_a_revision(client, headers):
     assert revisions[1]["milestone"]["name"] == "Milestone wbe-first"
 
 
+def test_the_high_level_fidelity_category_saves_and_comes_back(client, headers):
+    # The newest category: the API accepts it as soon as it runs the new shared package.
+    response = save(client, headers, "wbe-first", {"category": "high_level_fidelity"})
+
+    assert response.status_code == 200, response.get_json()
+    assert response.get_json()["milestone"]["category"] == "high_level_fidelity"
+    assert get(client, headers, "wbe-first")["category"] == "high_level_fidelity"
+    public = client.get("/api/public/milestones").get_json()["milestones"]
+    assert public[0]["id"] == "wbe-first"
+    assert public[0]["category"] == "high_level_fidelity"
+
+
 def test_saving_from_an_old_version_is_409(client, headers):
     assert save(client, headers, "wbe-first", {"name": "First edit"}).status_code == 200
 
@@ -211,8 +223,26 @@ def test_a_dependency_cycle_is_refused(client, headers):
     # wbe-second already depends on wbe-first.
     response = save(client, headers, "wbe-first", {"depends_on": ["wbe-second"]})
     assert response.status_code == 422
-    assert "dependency cycle" in error(response)["details"][0]
-    assert "wbe-first" in error(response)["details"][0]
+    assert error(response)["details"] == [
+        'milestone.depends_on: That makes a loop: this milestone depends on "Milestone wbe-second", '
+        "which depends on this one. Remove one of these links."
+    ]
+
+
+def test_a_longer_loop_names_each_step_from_this_milestone(client, db, headers):
+    # wbe-second depends on wbe-first, so wbe-first -> wbe-third -> wbe-second -> wbe-first.
+    third = valid_milestone("wbe-third", depends_on=["wbe-second"])
+    assert client.post("/api/milestones", json={"milestone": third, "published": True}, headers=headers).status_code == 201
+    # A milestone with no name (the model needs one, but a stored record might not) goes by its id.
+    db["milestones"].update_one({"_id": "wbe-second"}, {"$set": {"name": ""}})
+
+    response = save(client, headers, "wbe-first", {"depends_on": ["wbe-third"]})
+
+    assert response.status_code == 422
+    assert error(response)["details"] == [
+        'milestone.depends_on: That makes a loop: this milestone depends on "Milestone wbe-third", '
+        'which depends on "wbe-second", which depends on this one. Remove one of these links.'
+    ]
 
 
 def test_every_source_id_must_be_in_the_catalog(client, headers):
@@ -268,7 +298,10 @@ def test_a_published_milestone_cant_depend_on_a_draft(client, headers):
 
     published = save(client, headers, "wbe-first", {"depends_on": ["wbe-draft"]}, published=True)
     assert published.status_code == 422
-    assert "isn't published yet" in error(published)["details"][0]
+    assert error(published)["details"][0] == (
+        'milestone.depends_on[0]: "Milestone wbe-draft" isn\'t published yet. '
+        "Publish it first, or keep this milestone as a draft."
+    )
 
     as_draft = save(client, headers, "wbe-first", {"depends_on": ["wbe-draft"]}, published=False)
     # wbe-second (published) depends on wbe-first, so wbe-first can't become a draft either.

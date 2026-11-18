@@ -110,6 +110,8 @@ export function formatDuration(start: string | null | undefined, end: string | n
 }
 
 // Triage costs fractions of a cent per paper, so small amounts keep more digits.
+// The run log's cost uses the same rules (cost_text in pipeline/sf_pipeline/text.py),
+// so a change to one belongs in the other too.
 export function formatCost(usd: number): string {
   if (usd === 0) {
     return "$0.00";
@@ -158,11 +160,27 @@ function asKind(value: string | null): SourceKind | "" {
   return "";
 }
 
-// Whether the kind filter means anything in this tab. It filters on the kind
-// the AI gave, and papers in New haven't been triaged, so there it would
-// always match nothing.
+// Whether the kind filter means anything in this tab. Outside Approved and
+// Rejected it filters on the kind the AI gave, and papers in New haven't been
+// triaged, so there it would always match nothing.
 export function kindFilterApplies(status: ReviewStatus): boolean {
   return status !== "new";
+}
+
+// In Approved and Rejected the kind filter reads the decision's kind (or the
+// AI's, when the decision gave none), so it finds hand-added papers too.
+export function kindFilterReadsDecision(status: ReviewStatus): boolean {
+  return status === "approved" || status === "rejected";
+}
+
+// Whether the queue offers the kind filter in this tab. While the AI is off,
+// the AI's kind is no use in Pending review and Triaged out, so it's hidden.
+// triageOff is null while that isn't known yet, and there it's hidden too.
+export function kindFilterShown(status: ReviewStatus, triageOff: boolean | null): boolean {
+  if (!kindFilterApplies(status)) {
+    return false;
+  }
+  return kindFilterReadsDecision(status) || triageOff === false;
 }
 
 // Queue filters from a query string. Anything unknown falls back to the

@@ -1,6 +1,7 @@
 """Every category used on the site, in one place.
 
 Changing a category is a one-line edit here plus a RUBRIC_VERSION bump.
+A new milestone category also needs a place in MILESTONE_TYPES.
 `python -m sf_shared.export_schema` writes these to shared/schema/enums.json,
 which the frontend reads for labels and descriptions.
 
@@ -8,8 +9,9 @@ Values are lowercase snake_case. Labels and descriptions live in ENUM_INFO below
 """
 
 from enum import StrEnum
+from typing import NamedTuple
 
-RUBRIC_VERSION = "0.1-draft"
+RUBRIC_VERSION = "0.2-draft"
 
 
 class Technology(StrEnum):
@@ -32,14 +34,20 @@ class Stage(StrEnum):
 
 
 class MilestoneCategory(StrEnum):
-    RELIABILITY_ROBUSTNESS = "reliability_robustness"
+    """In type order (see MILESTONE_TYPES below), so every list built from it groups the same way."""
+
+    # Technical
     TECHNICAL_CAPABILITY = "technical_capability"
-    SAFETY_WELFARE_ASSURANCE = "safety_welfare_assurance"
+    HIGH_LEVEL_FIDELITY = "high_level_fidelity"
+    RELIABILITY_ROBUSTNESS = "reliability_robustness"
+    # Deployment
     SCALABLE_PRODUCTION = "scalable_production"
     ECONOMIC_VIABILITY = "economic_viability"
+    EQUITABLE_ACCESS = "equitable_access"
+    # Welfare and governance
+    SAFETY_WELFARE_ASSURANCE = "safety_welfare_assurance"
     LEGAL_REGULATORY = "legal_regulatory"
     INSTITUTIONAL_LEGITIMACY = "institutional_legitimacy"
-    EQUITABLE_ACCESS = "equitable_access"
 
 
 class MilestoneStatus(StrEnum):
@@ -160,7 +168,7 @@ ENUM_INFO = {
         "draft": False,
         "values": {
             "wbe": ("Whole brain emulation", "Scanning a brain and running it as software."),
-            "bci": ("Brain computer interfaces", "Devices that read from or write to the nervous system."),
+            "bci": ("Brain-computer interfaces", "Devices that read from or write to the nervous system."),
             "neuromorphic": ("Neuromorphic AI", "AI that borrows its architecture or learning rules from brains."),
             "hybrid": ("Hybrid", "Proposals that combine more than one of the above."),
         },
@@ -187,14 +195,22 @@ ENUM_INFO = {
     "MilestoneCategory": {
         "draft": False,
         "values": {
-            "reliability_robustness": ("Reliability and robustness", "Works consistently outside the lab."),
-            "technical_capability": ("Technical capability", "The technology can do the main thing it's meant to do."),
-            "safety_welfare_assurance": ("Safety and welfare assurance", "We can check that it's safe, including for any minds involved."),
+            "technical_capability": ("Technical capability", "We can create and operate it."),
+            "high_level_fidelity": (
+                "High-level fidelity",
+                "Preserves the relevant cognitive, behavioral, memory, personality, preference and decision-making "
+                "properties of the original person.",
+            ),
+            "reliability_robustness": ("Reliability and robustness", "Behaves consistently across time and conditions."),
             "scalable_production": ("Scalable manufacture, compute or data", "Can be produced or run at the scale needed."),
-            "economic_viability": ("Economic viability", "Affordable enough that people will pay for it."),
+            "economic_viability": (
+                "Economic viability",
+                "Can be operated at the cost and scale required for the proposed use.",
+            ),
+            "equitable_access": ("Equitable or broad access", "Available beyond a small privileged group."),
+            "safety_welfare_assurance": ("Safety and welfare assurance", "We can check that it's safe, including for any minds involved."),
             "legal_regulatory": ("Legal and regulatory permission", "Allowed by the relevant law and regulators."),
             "institutional_legitimacy": ("Institutional capacity and public legitimacy", "Institutions can run it and the public accepts it."),
-            "equitable_access": ("Equitable or broad access", "Available beyond a small privileged group."),
         },
     },
     "MilestoneStatus": {
@@ -370,10 +386,7 @@ ENUM_INFO = {
         "values": {
             "source": ("From a source", "Taken straight from a cited source, with the exact quote."),
             "team": ("Our read", "The team's own interpretation."),
-            "ai": (
-                "AI-suggested",
-                "Suggested by an AI model. The tag names the person who checked it, or says it hasn't been checked yet.",
-            ),
+            "ai": ("AI-suggested", "Suggested by an AI model. The tag says whether a person has checked it."),
             "unclear": ("Unclear", "We don't know, and the tag gives the reason."),
         },
     },
@@ -400,3 +413,95 @@ ALL_ENUMS = {
     "TimeHorizon": TimeHorizon,
     "Provenance": Provenance,
 }
+
+
+# ---------- Milestone types ----------
+# Not in ALL_ENUMS: no record stores a type, so it never becomes a Pydantic
+# field. export_schema writes MILESTONE_TYPES to enums.json as its own list.
+
+
+class MilestoneType(StrEnum):
+    """The three kinds of milestone the timeline tells apart. A milestone's type
+    comes from its category and is never stored."""
+
+    TECHNICAL = "technical"
+    DEPLOYMENT = "deployment"
+    WELFARE_GOVERNANCE = "welfare_governance"
+
+
+class MilestoneTypeInfo(NamedTuple):
+    label: str
+    categories: tuple[MilestoneCategory, ...]
+
+
+# Every MilestoneCategory is in exactly one list (export_schema and validate
+# check it). Adding a category or moving one between types is a rubric change:
+# bump RUBRIC_VERSION. Moving a milestone to another category is a content
+# change, made in admin.
+MILESTONE_TYPES: dict[MilestoneType, MilestoneTypeInfo] = {
+    MilestoneType.TECHNICAL: MilestoneTypeInfo(
+        label="Technical",
+        categories=(
+            MilestoneCategory.TECHNICAL_CAPABILITY,
+            MilestoneCategory.HIGH_LEVEL_FIDELITY,
+            MilestoneCategory.RELIABILITY_ROBUSTNESS,
+        ),
+    ),
+    MilestoneType.DEPLOYMENT: MilestoneTypeInfo(
+        label="Deployment",
+        categories=(
+            MilestoneCategory.SCALABLE_PRODUCTION,
+            MilestoneCategory.ECONOMIC_VIABILITY,
+            MilestoneCategory.EQUITABLE_ACCESS,
+        ),
+    ),
+    MilestoneType.WELFARE_GOVERNANCE: MilestoneTypeInfo(
+        label="Welfare and governance",
+        categories=(
+            MilestoneCategory.SAFETY_WELFARE_ASSURANCE,
+            MilestoneCategory.LEGAL_REGULATORY,
+            MilestoneCategory.INSTITUTIONAL_LEGITIMACY,
+        ),
+    ),
+}
+
+
+def milestone_type_of(category: MilestoneCategory) -> MilestoneType:
+    """The type a category belongs to, e.g. legal_regulatory -> welfare_governance."""
+    for milestone_type, info in MILESTONE_TYPES.items():
+        if category in info.categories:
+            return milestone_type
+    raise KeyError(f"{category} has no milestone type. Add it to MILESTONE_TYPES in enums.py")
+
+
+def milestone_type_problems() -> list[str]:
+    """Everything wrong with MILESTONE_TYPES, one line per problem. Empty when
+    every category is in exactly one type and every type has categories."""
+    problems: list[str] = []
+
+    for milestone_type in MilestoneType:
+        if milestone_type not in MILESTONE_TYPES:
+            problems.append(f"MilestoneType.{milestone_type.name} has no entry in MILESTONE_TYPES")
+
+    first_type_of_category: dict[str, str] = {}
+    for milestone_type, info in MILESTONE_TYPES.items():
+        if len(info.categories) == 0:
+            problems.append(f"MILESTONE_TYPES[{milestone_type}] has no categories")
+        for category in info.categories:
+            if category not in first_type_of_category:
+                first_type_of_category[category] = milestone_type
+            elif first_type_of_category[category] == milestone_type:
+                problems.append(
+                    f'category "{category}" is listed twice in {milestone_type}. '
+                    "Each category belongs to exactly one type"
+                )
+            else:
+                problems.append(
+                    f'category "{category}" is in both {first_type_of_category[category]} and {milestone_type}. '
+                    "Each category belongs to exactly one type"
+                )
+
+    for category in MilestoneCategory:
+        if category not in first_type_of_category:
+            problems.append(f'category "{category}" has no milestone type. Add it to one of MILESTONE_TYPES')
+    return problems

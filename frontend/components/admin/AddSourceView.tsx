@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type Ref } from "react";
 
 import type { DuplicateSource, NewSourceRequest } from "@/lib/adminTypes";
 import { addSource, duplicateFrom, fieldErrorsFrom, toApiError, type ApiError } from "@/lib/api";
@@ -15,7 +15,9 @@ import detail from "./Detail.module.css";
 import forms from "./forms.module.css";
 import { ApiErrorNotice, Notice } from "./Notice";
 import styles from "./Editor.module.css";
+import { arxivIdFromLink, doiFromLink, isWebLink, namesItsPaper } from "./sourceLinks";
 import { useUnsavedWork } from "./unsavedWork";
+import { useClearAfterSignIn } from "./useClearAfterSignIn";
 
 // Text while editing, so the year can be empty or half typed.
 interface SourceDraft {
@@ -65,12 +67,24 @@ const FIELD_IDS: { key: string; id: string }[] = [
 const FIRST_YEAR = 1800;
 const LAST_YEAR = 2100;
 
-function focusFirstError(errors: Errors): void {
+const LINK_INCOMPLETE = "The link looks incomplete. Copy it from your browser's address bar.";
+// How the API starts its message for a link it can't read (is_web_link).
+const API_LINK_INCOMPLETE = "looks incomplete";
+
+// The input of the first field with a problem, in page order.
+function firstErrorId(errors: Errors): string | null {
   for (const field of FIELD_IDS) {
     if (errors[field.key]) {
-      document.getElementById(field.id)?.focus();
-      return;
+      return field.id;
     }
+  }
+  return null;
+}
+
+function focusFirstError(errors: Errors): void {
+  const id = firstErrorId(errors);
+  if (id !== null) {
+    document.getElementById(id)?.focus();
   }
 }
 
@@ -84,6 +98,15 @@ function authorList(text: string): string[] {
   return names;
 }
 
+function sameDraft(a: SourceDraft, b: SourceDraft): boolean {
+  for (const key of Object.keys(a) as (keyof SourceDraft)[]) {
+    if (a[key] !== b[key]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // Checks what the API would refuse anyway, so the problem shows next to its field.
 function check(draft: SourceDraft): Errors {
   const errors: Errors = {};
@@ -92,6 +115,8 @@ function check(draft: SourceDraft): Errors {
     errors.url = "Add a link to the paper.";
   } else if (!url.startsWith("https://") && !url.startsWith("http://")) {
     errors.url = "The link has to start with https:// or http://.";
+  } else if (!isWebLink(url) || !namesItsPaper(url)) {
+    errors.url = LINK_INCOMPLETE;
   }
   if (draft.title.trim() === "") {
     errors.title = "Add the paper's title.";
@@ -148,8 +173,44 @@ export function AddSourceView() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<ApiError | null>(null);
   const [duplicate, setDuplicate] = useState<DuplicateSource | null>(null);
+  // The draft the API called a duplicate. It can't be added as it is.
+  const [duplicateDraft, setDuplicateDraft] = useState<SourceDraft | null>(null);
+  // What the link last filled into the DOI and arXiv id fields. A new link
+  // replaces its own fill, but never a DOI or id someone typed.
+  const filledFromLink = useRef({ doi: "", arxivId: "" });
+  // A field to move focus to once saving is over. Every input is disabled
+  // while saving, so a problem the API finds can't take focus right away.
+  const focusAfterSave = useRef<string | null>(null);
+  // The button is disabled while adding, so focus would drop to the page.
+  // When the paper isn't added, focus goes to the title of the notice that
+  // says why. (When it is, the review page that opens focuses its heading.)
+  const resultRef = useRef<HTMLParagraphElement>(null);
+  const focusResultAfterSave = useRef(false);
 
+  // A draft the API already has can't be added, so the notice's link to that
+  // paper goes there without asking. Changing the draft makes it worth asking
+  // again. Back, the other links and closing the tab still ask, because a
+  // typed abstract or note may be worth copying first.
+  const isDuplicate = duplicate !== null && duplicateDraft !== null && sameDraft(draft, duplicateDraft);
   useUnsavedWork(hasText(draft) && !saved);
+
+  // A 401 means the session ended before the paper was added. The page stays
+  // open under the sign-in card, so once someone signs in again that error
+  // is out of date and goes, and the form is ready to try again.
+  useClearAfterSignIn(saveError, () => setSaveError(null));
+
+  useEffect(() => {
+    if (saving) {
+      return;
+    }
+    if (focusAfterSave.current !== null) {
+      document.getElementById(focusAfterSave.current)?.focus();
+    } else if (focusResultAfterSave.current) {
+      resultRef.current?.focus();
+    }
+    focusAfterSave.current = null;
+    focusResultAfterSave.current = false;
+  }, [saving]);
 
   function update(patch: Partial<SourceDraft>, clears: string | null = null) {
     setDraft((previous) => ({ ...previous, ...patch }));
@@ -162,28 +223,59 @@ export function AddSourceView() {
     }
   }
 
+  // The DOI and arXiv id the link gives, for the fields the API would fill
+  // from it anyway, so the person sees them before adding. Returns only the
+  // fields that change.
+  function idsFromLink(current: SourceDraft): Partial<SourceDraft> {
+    const url = current.url.trim();
+    const filled = filledFromLink.current;
+    const patch: Partial<SourceDraft> = {};
+    if (current.doi.trim() === "" || current.doi === filled.doi) {
+      const doi = doiFromLink(url);
+      if (doi !== current.doi) {
+        patch.doi = doi;
+      }
+      filled.doi = doi;
+    }
+    if (current.arxivId.trim() === "" || current.arxivId === filled.arxivId) {
+      const arxivId = arxivIdFromLink(url);
+      if (arxivId !== current.arxivId) {
+        patch.arxivId = arxivId;
+      }
+      filled.arxivId = arxivId;
+    }
+    return patch;
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const found = check(draft);
+    // Enter in the link field submits without leaving it, so fill here too.
+    const filledDraft = { ...draft, ...idsFromLink(draft) };
+    setDraft(filledDraft);
+    const found = check(filledDraft);
     setErrors(found);
     setOtherProblems([]);
     setSaveError(null);
     setDuplicate(null);
+    setDuplicateDraft(null);
     if (Object.keys(found).length > 0) {
       focusFirstError(found);
       return;
     }
 
     setSaving(true);
+    focusResultAfterSave.current = true;
     try {
-      const id = await addSource(toRequest(draft));
+      const id = await addSource(toRequest(filledDraft));
       setSaved(true);
-      router.push(reviewHref(id, { status: "pending_review", kind: "", flag: "", q: "" }));
+      // added=1 has the review page confirm it ("Added to the review queue.").
+      router.push(`${reviewHref(id, { status: "pending_review", kind: "", flag: "", q: "" })}&added=1`);
     } catch (caught) {
       const apiError = toApiError(caught);
       const match = duplicateFrom(apiError);
       if (match) {
         setDuplicate(match);
+        setDuplicateDraft(filledDraft);
       } else {
         placeApiErrors(apiError);
       }
@@ -197,7 +289,11 @@ export function AddSourceView() {
     const unplaced: string[] = [];
     for (const item of fieldErrorsFrom(apiError)) {
       const known = FIELD_IDS.some((field) => field.key === item.path);
-      if (known) {
+      if (item.path === "url" && item.message.startsWith(API_LINK_INCOMPLETE)) {
+        // A link the check above let through but the API reads differently.
+        // It gets the same sentence the check would have shown.
+        mapped.url = LINK_INCOMPLETE;
+      } else if (known) {
         mapped[item.path] = item.message;
       } else {
         unplaced.push(item.path ? `${item.path}: ${item.message}` : item.message);
@@ -206,7 +302,7 @@ export function AddSourceView() {
     setErrors(mapped);
     setOtherProblems(unplaced);
     if (Object.keys(mapped).length > 0) {
-      focusFirstError(mapped);
+      focusAfterSave.current = firstErrorId(mapped);
     } else {
       setSaveError(apiError);
     }
@@ -264,6 +360,7 @@ export function AddSourceView() {
               className={`${forms.input} ${errors.url ? forms.invalid : ""}`}
               value={draft.url}
               onChange={(event) => update({ url: event.target.value }, "url")}
+              onBlur={() => update(idsFromLink(draft))}
               spellCheck={false}
             />
             <p id="source-url-hint" className={forms.hint}>
@@ -417,9 +514,9 @@ export function AddSourceView() {
             {errorFor("note", "source-note")}
           </div>
 
-          {duplicate && <DuplicateNotice duplicate={duplicate} />}
+          {duplicate && <DuplicateNotice duplicate={duplicate} leaveWithoutAsking={isDuplicate} titleRef={resultRef} />}
           {otherProblems.length > 0 && (
-            <Notice tone="error" title="The source wasn't added.">
+            <Notice tone="error" title="The source wasn't added." titleRef={resultRef}>
               <ul className={styles.problemList}>
                 {otherProblems.map((problem) => (
                   <li key={problem}>{problem}</li>
@@ -427,7 +524,7 @@ export function AddSourceView() {
               </ul>
             </Notice>
           )}
-          {saveError && <ApiErrorNotice error={saveError} title="The source wasn't added" />}
+          {saveError && <ApiErrorNotice error={saveError} title="The source wasn't added" titleRef={resultRef} />}
 
           <div className={forms.actions}>
             <button type="submit" className={`btn btn-primary ${forms.button}`} disabled={saving}>
@@ -443,26 +540,41 @@ export function AddSourceView() {
 const MATCH_TEXT: Record<string, string> = {
   doi: "It has the same DOI",
   arxiv_id: "It has the same arXiv id",
+  url: "It has the same link",
   title: "It has the same title",
 };
 
-function DuplicateNotice({ duplicate }: { duplicate: DuplicateSource }) {
+interface DuplicateNoticeProps {
+  duplicate: DuplicateSource;
+  // True while the form still holds the duplicate draft, so its link skips
+  // the unsaved-work question (leavesWithoutAsking in unsavedWork.ts).
+  leaveWithoutAsking: boolean;
+  titleRef: Ref<HTMLParagraphElement>;
+}
+
+function DuplicateNotice({ duplicate, leaveWithoutAsking, titleRef }: DuplicateNoticeProps) {
   const why = duplicate.match ? MATCH_TEXT[duplicate.match] : undefined;
+  const leaveMark = leaveWithoutAsking ? "true" : undefined;
   if (duplicate.in_content) {
     return (
-      <Notice tone="warning" title="The site already cites this paper.">
+      <Notice tone="warning" title="The site already cites this paper." titleRef={titleRef}>
         <p>
           {why ? `${why} as a source on the public site. ` : ""}
-          <Link href={`/sources/#${duplicate.existing_id}`}>See it on the Sources page</Link>
+          <Link href={`/sources/#${duplicate.existing_id}`} data-leave-without-asking={leaveMark}>
+            See it on the Sources page
+          </Link>
         </p>
       </Notice>
     );
   }
   return (
-    <Notice tone="warning" title="This paper is already in admin.">
+    <Notice tone="warning" title="This paper is already in admin." titleRef={titleRef}>
       <p>
         {why ? `${why} as a paper someone added or the pipeline found. ` : ""}
-        <Link href={reviewHref(duplicate.existing_id, { status: "pending_review", kind: "", flag: "", q: "" })}>
+        <Link
+          href={reviewHref(duplicate.existing_id, { status: "pending_review", kind: "", flag: "", q: "" })}
+          data-leave-without-asking={leaveMark}
+        >
           Open that paper
         </Link>
       </p>

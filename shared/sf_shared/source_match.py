@@ -9,31 +9,35 @@ Three places use this and must agree:
     the publish step (export_site.py)         skips API sources that repeat one in
                                               content/sources.json
 
-Records match on DOI, then arXiv id, then normalized title (with the same year
-when both have one). Sample sources are made up, so they never match anything.
+Records match on DOI, then arXiv id, then link (normalize.url_key: the same
+page however it's written, never a bare home page), then normalized title
+(with the same year when both have one). Only the main url is compared, not
+other_urls, which can point at related work. Sample sources are made up, so
+they never match anything.
 
 Standard library only (through normalize.py), so the publish step can use it.
 """
 
 from dataclasses import dataclass, field
 
-from sf_shared.normalize import normalize_arxiv_id, normalize_doi, title_key
+from sf_shared.normalize import normalize_arxiv_id, normalize_doi, title_key, url_key
 
 
 @dataclass(frozen=True)
 class SourceMatch:
     id: str  # the id of the record it matched
-    field: str  # what matched: "doi", "arxiv_id" or "title"
+    field: str  # what matched: "doi", "arxiv_id", "url" or "title"
 
 
 @dataclass
 class SourceIndex:
     by_doi: dict[str, str] = field(default_factory=dict)
     by_arxiv_id: dict[str, str] = field(default_factory=dict)
+    by_url: dict[str, str] = field(default_factory=dict)  # url_key -> id
     by_title: dict[str, list[tuple[int | None, str]]] = field(default_factory=dict)  # title_key -> [(year, id)]
 
     def add(self, source: dict) -> None:
-        """Add one record (a dict with id, doi, arxiv_id, title, year). Samples are skipped."""
+        """Add one record (a dict with id, doi, arxiv_id, url, title, year). Samples are skipped."""
         if source.get("sample"):
             return
         source_id = str(source.get("id", ""))
@@ -43,6 +47,9 @@ class SourceIndex:
             self.by_doi[doi] = source_id
         if arxiv_id is not None and arxiv_id not in self.by_arxiv_id:
             self.by_arxiv_id[arxiv_id] = source_id
+        link = url_key(source.get("url"))
+        if link is not None and link not in self.by_url:
+            self.by_url[link] = source_id
         title = source.get("title")
         if isinstance(title, str):
             key = title_key(title)
@@ -59,6 +66,9 @@ class SourceIndex:
         arxiv_id = normalize_arxiv_id(source.get("arxiv_id"))
         if arxiv_id is not None and arxiv_id in self.by_arxiv_id:
             return SourceMatch(id=self.by_arxiv_id[arxiv_id], field="arxiv_id")
+        link = url_key(source.get("url"))
+        if link is not None and link in self.by_url:
+            return SourceMatch(id=self.by_url[link], field="url")
         title = source.get("title")
         if not isinstance(title, str):
             return None

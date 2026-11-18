@@ -378,13 +378,27 @@
   background: var(--stage-color);
 }
 
+/* Far rows draw smaller, so the full timeline and the teaser set a minimum
+   size for each row's small lines on the floor (--text-floor-0 to 2). */
+.card[data-row="0"] {
+  --text-floor: var(--text-floor-0, 0px);
+}
+
+.card[data-row="1"] {
+  --text-floor: var(--text-floor-1, 0px);
+}
+
+.card[data-row="2"] {
+  --text-floor: var(--text-floor-2, 0px);
+}
+
 .cardTop {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 8px;
   font-family: var(--font-mono);
-  font-size: var(--card-top);
+  font-size: max(var(--card-top), var(--text-floor, 0px));
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -426,8 +440,32 @@
   color: var(--ink);
 }
 
+/* The foot: a hairline, then the milestone's type and the stage line */
+.cardFoot {
+  display: grid;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+/* The type, at the stage line's size and row minimum. TypeMark's plain
+   variant sets it in ink at weight 600. */
+.cardType {
+  font-size: max(var(--card-meta), var(--text-floor, 0px));
+  line-height: 1.3;
+}
+
+/* Its name wraps to two lines at most. TypeMark has no class for its name,
+   so this picks the child that isn't the glyph, whatever their order. */
+.cardType > :not(svg) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
 .cardMeta {
-  font-size: var(--card-meta);
+  font-size: max(var(--card-meta), var(--text-floor, 0px));
   line-height: 1.35;
   color: var(--ink-muted);
 }

@@ -1,6 +1,8 @@
 // The admin pages' only way to talk to the Flask API. Every call goes through
 // request(), which adds the Bearer token, turns error bodies into ApiError, and
 // signs the person out when the API says the token is no longer good (401).
+import { REJECT_REASONS } from "@/components/admin/labels";
+
 import type {
   AdminPost,
   AdminUser,
@@ -30,6 +32,9 @@ import type {
   QueueItem,
   QueueItemDetail,
   QueuePage,
+  ReAdd,
+  ReAddedDetail,
+  RejectReason,
   Review,
   ReviewField,
   ReviewRequest,
@@ -242,6 +247,9 @@ function toRun(raw: unknown): PipelineRun {
   const record = asRecord(raw);
   return {
     ...(record as unknown as PipelineRun),
+    // The name reads better than the email. Runs started before the API
+    // stored it, or from the schedule or command line, only have the email.
+    requested_by: stringOrNull(record.requested_by_name) ?? stringOrNull(record.requested_by),
     stages: arrayOrEmpty(record.stages),
     options: asRecord(record.options),
     counts: { ...emptyCounts(), ...asRecord(record.counts) },
@@ -466,6 +474,17 @@ export function queueSearchParams(filters: QueueFilters): URLSearchParams {
 // The API's page size, and the most it allows in one request.
 export const QUEUE_PAGE_SIZE = 50;
 
+// A queue row's reject_reason. null for an approval or no decision, and for
+// a reason the review form doesn't offer.
+function rejectReasonOrNull(value: unknown): RejectReason | null {
+  for (const reason of REJECT_REASONS) {
+    if (reason === value) {
+      return reason;
+    }
+  }
+  return null;
+}
+
 // One page of the queue, oldest first. `offset` skips that many matches.
 export async function getQueue(filters: QueueFilters, offset = 0): Promise<QueuePage> {
   const params = queueSearchParams(filters);
@@ -476,14 +495,38 @@ export async function getQueue(filters: QueueFilters, offset = 0): Promise<Queue
   const payload = await request("GET", `/api/queue?${params.toString()}`);
   const items: QueueItem[] = [];
   for (const raw of listFrom(payload, ["items"])) {
-    // Each row is {candidate, assessment}.
+    // Each row is {candidate, assessment, reject_reason}.
     const record = asRecord(raw);
-    items.push({ source: toCandidate(record.candidate), assessment: toAssessment(record.assessment ?? null) });
+    items.push({
+      source: toCandidate(record.candidate),
+      assessment: toAssessment(record.assessment ?? null),
+      reject_reason: rejectReasonOrNull(record.reject_reason),
+    });
   }
   const record = asRecord(payload);
   const total = record.total;
   const counts = record.counts && typeof record.counts === "object" ? (record.counts as QueuePage["counts"]) : null;
   return { items, total: typeof total === "number" ? total : offset + items.length, counts };
+}
+
+const RE_ADDED_DETAILS: ReAddedDetail[] = ["url", "title", "year"];
+
+function toReAdd(raw: unknown): ReAdd {
+  const record = asRecord(raw);
+  const changed: ReAddedDetail[] = [];
+  for (const detail of RE_ADDED_DETAILS) {
+    if (arrayOrEmpty(record.changed).includes(detail)) {
+      changed.push(detail);
+    }
+  }
+  const email = String(record.added_by ?? "");
+  return {
+    id: String(record.id ?? ""),
+    added_by: email,
+    added_by_name: stringOrNull(record.added_by_name) ?? email,
+    added_at: String(record.added_at ?? ""),
+    changed,
+  };
 }
 
 // The body of GET /queue/<id>. current_assessment is taken as the API sends
@@ -499,11 +542,16 @@ export function queueItemDetailFrom(payload: unknown): QueueItemDetail {
       assessments.push(assessment);
     }
   }
+  const reAdds: ReAdd[] = [];
+  for (const raw of arrayOrEmpty(record.re_adds)) {
+    reAdds.push(toReAdd(raw));
+  }
   return {
     source: toCandidate(record.candidate),
     current_assessment: toAssessment(record.current_assessment ?? null),
     assessments,
     reviews: arrayOrEmpty<Review>(record.reviews),
+    re_adds: reAdds,
   };
 }
 
@@ -786,7 +834,7 @@ export function toMilestone(raw: unknown): Milestone {
 // under the pseudo-users "seed" and "import".
 function editorName(email: unknown, name: unknown): string | null {
   if (email === "seed") {
-    return "the starting content";
+    return "the first import";
   }
   if (email === "import") {
     return "an import from content/";
@@ -954,6 +1002,7 @@ export async function getPublishStatus(): Promise<PublishStatus> {
       milestones: countFrom(waiting, ["milestones", "milestones_saved"]),
       posts: countFrom(waiting, ["posts", "posts_saved"]),
     },
+    command: stringOrNull(record.command),
   };
 }
 

@@ -34,6 +34,7 @@ import { ReviewForm } from "./ReviewForm";
 import { currentAssessment, evidenceFor, paperLinks, reviewsNewestFirst } from "./reviewModel";
 import { confirmLeaving } from "./unsavedWork";
 import { useApiData } from "./useApiData";
+import { useClearAfterSignIn } from "./useClearAfterSignIn";
 
 // /admin/review/?id=<source id>&status=...  The queue filters ride along in the
 // query string, so after a decision the next paper comes from the same list.
@@ -57,8 +58,17 @@ export function ReviewView() {
     );
   }
   // A fresh screen per paper, so no half-filled form carries over.
-  // ?again=1 opens the form straight away, to change a decision.
-  return <ReviewScreen key={id} id={id} filters={filters} startReviewing={params.get("again") === "1"} />;
+  // ?again=1 opens the form straight away, to change a decision. ?added=1
+  // means the paper was just added from "Add a source".
+  return (
+    <ReviewScreen
+      key={id}
+      id={id}
+      filters={filters}
+      startReviewing={params.get("again") === "1"}
+      justAdded={params.get("added") === "1"}
+    />
+  );
 }
 
 type AfterDecision =
@@ -93,9 +103,10 @@ interface ReviewScreenProps {
   id: string;
   filters: QueueFilters;
   startReviewing: boolean;
+  justAdded: boolean;
 }
 
-function ReviewScreen({ id, filters, startReviewing }: ReviewScreenProps) {
+function ReviewScreen({ id, filters, startReviewing, justAdded }: ReviewScreenProps) {
   const router = useRouter();
   const detail = useApiData(`queue-item:${id}`, () => getQueueItem(id));
   const [after, setAfter] = useState<AfterDecision | null>(null);
@@ -105,7 +116,20 @@ function ReviewScreen({ id, filters, startReviewing }: ReviewScreenProps) {
   // Set by "Load the latest" after a 409. The form then stays open with what
   // was typed, even if someone else decided the paper in the meantime.
   const [keepForm, setKeepForm] = useState(false);
+  // Set by "Keep current decision" to the id of the decision the form started
+  // from. The form is hidden then, not unmounted, so "Review it again" brings
+  // back what was typed. That only lasts while it's still the paper's
+  // decision: a form that started from an older one (someone changed the
+  // decision while it was open) is dropped, so the next form starts from the
+  // decision the notice describes.
+  const [draftKeptFor, setDraftKeptFor] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // "Keep current decision", "Review it again" and "Change that decision" go
+  // away once pressed, so focus moves to what takes their place: the title of
+  // the notice that says who decided, or the form's first heading.
+  const decidedByRef = useRef<HTMLParagraphElement>(null);
+  const formHeadingRef = useRef<HTMLHeadingElement>(null);
+  const focusAfterSwitch = useRef<"decidedBy" | "form" | null>(null);
   const loaded = detail.data !== null;
   const approved = detail.data !== null && detail.data.source.review_status === "approved";
   // Why an approved paper is missing from the public site, if it is. Only
@@ -119,6 +143,15 @@ function ReviewScreen({ id, filters, startReviewing }: ReviewScreenProps) {
       headingRef.current?.focus();
     }
   }, [loaded]);
+
+  useEffect(() => {
+    if (focusAfterSwitch.current === "decidedBy") {
+      decidedByRef.current?.focus();
+    } else if (focusAfterSwitch.current === "form") {
+      formHeadingRef.current?.focus();
+    }
+    focusAfterSwitch.current = null;
+  }, [reviewAgain, after]);
 
   async function goToNextPaper(decision: Decision) {
     setAfter({ state: "finding", decision });
@@ -141,6 +174,17 @@ function ReviewScreen({ id, filters, startReviewing }: ReviewScreenProps) {
       setAfter({ state: "error", decision, error: toApiError(error) });
     }
   }
+
+  // A 401 while finding the next paper means the session ended after the
+  // decision was saved. Once someone signs in again, "Your session ended." is
+  // out of date, so this looks for the next paper one more time. If that
+  // fails too, the notice shows the new error instead.
+  const nextPaperError = after !== null && after.state === "error" ? after.error : null;
+  useClearAfterSignIn(nextPaperError, () => {
+    if (after !== null && after.state === "error") {
+      void goToNextPaper(after.decision);
+    }
+  });
 
   const backLink = (
     <Link href={queueHref(filters)} onClick={confirmLeaving}>
@@ -203,6 +247,7 @@ function ReviewScreen({ id, filters, startReviewing }: ReviewScreenProps) {
   // paper is already decided, including one someone made while the form was open.
   const replacing = showForm && alreadyDecided ? decidedBy : null;
   const decidedWhileOpen = keepForm && !reviewAgain && decidedBy !== null;
+  const draftStillFits = draftKeptFor !== null && decidedBy !== null && decidedBy.id === draftKeptFor;
   const exportProblems = publishProblems.data ? (publishProblems.data[source.id] ?? []) : [];
 
   function loadLatest() {
@@ -210,11 +255,41 @@ function ReviewScreen({ id, filters, startReviewing }: ReviewScreenProps) {
     detail.reload();
   }
 
+  // "Change that decision" after the last paper in a tab: the same paper,
+  // with the form open again to replace the decision just saved.
+  function changeLastDecision() {
+    focusAfterSwitch.current = "form";
+    setAfter(null);
+    setReviewAgain(true);
+  }
+
+  // "Review it again": the form opens over the decision, holding whatever was
+  // typed before "Keep current decision".
+  function openFormAgain() {
+    focusAfterSwitch.current = "form";
+    setReviewAgain(true);
+  }
+
+  // "Keep current decision": the form closes and the decision stays as it is.
+  function keepDecision(startedFrom: string | null) {
+    focusAfterSwitch.current = "decidedBy";
+    setReviewAgain(false);
+    // Kept open by "Load the latest" too, after a 409.
+    setKeepForm(false);
+    setDraftKeptFor(startedFrom);
+    if (startReviewing) {
+      // Without ?again=1, so a reload or Back doesn't open the form again.
+      router.replace(reviewHref(id, filters), { scroll: false });
+    }
+  }
+
   function onSubmitted(decision: Decision, problems: string[]) {
     // Whatever comes next, reload the paper so its status, abstract and record
     // match what was saved, even when the screen stays on it.
     detail.reload();
     setKeepForm(false);
+    // What was typed is saved now, so there's no draft left to keep.
+    setDraftKeptFor(null);
     // A changed decision stays on this paper, so the record shows both
     // reviews. "Next paper" only makes sense when working a queue.
     if (replacing !== null) {
@@ -239,6 +314,8 @@ function ReviewScreen({ id, filters, startReviewing }: ReviewScreenProps) {
         headingRef={headingRef}
       />
       <div className={`container ${styles.page}`}>
+        {/* The confirmation for "Add to the review queue", until someone decides the paper. */}
+        {justAdded && after === null && !alreadyDecided && <Notice tone="success" title="Added to the review queue." />}
         {previous && after === null && (
           <Notice
             tone="success"
@@ -255,23 +332,24 @@ function ReviewScreen({ id, filters, startReviewing }: ReviewScreenProps) {
           byHand={source.origin === "manual"}
           assessment={assessment}
           hasOtherAssessments={detail.data.assessments.length > 0}
-          formShown={showForm && after === null}
         />
 
         {after ? (
-          <AfterDecisionPanel after={after} filters={filters} onNext={() => void goToNextPaper(after.decision)} />
+          <AfterDecisionPanel
+            after={after}
+            filters={filters}
+            onNext={() => void goToNextPaper(after.decision)}
+            onChangeDecision={changeLastDecision}
+          />
         ) : (
           <>
             {decidedBy && !showForm && (
               <Notice
                 tone="info"
                 title={`${reviewerName(decidedBy)} ${DECISION_VERB[decidedBy.decision]} this on ${formatDay(decidedBy.created_at)}.`}
+                titleRef={decidedByRef}
                 action={
-                  <button
-                    type="button"
-                    className={`btn btn-secondary ${forms.smallButton}`}
-                    onClick={() => setReviewAgain(true)}
-                  >
+                  <button type="button" className={`btn btn-secondary ${forms.smallButton}`} onClick={openFormAgain}>
                     Review it again
                   </button>
                 }
@@ -311,15 +389,21 @@ function ReviewScreen({ id, filters, startReviewing }: ReviewScreenProps) {
                 skippedByExport={exportProblems.length > 0}
               />
             )}
-            {showForm && (
-              <ReviewForm
-                source={source}
-                assessment={assessment}
-                replacing={replacing}
-                refresh={{ loading: detail.loading, error: detail.error }}
-                onLoadLatest={loadLatest}
-                onSubmitted={onSubmitted}
-              />
+            {/* Hidden rather than unmounted after "Keep current decision", so what was typed stays (see draftKeptFor). */}
+            {(showForm || draftStillFits) && (
+              <div className={styles.formHolder} hidden={!showForm}>
+                <ReviewForm
+                  source={source}
+                  assessment={assessment}
+                  replacing={replacing}
+                  refresh={{ loading: detail.loading, error: detail.error }}
+                  onLoadLatest={loadLatest}
+                  onSubmitted={onSubmitted}
+                  // Re-reviewing a decided paper: a way back to it without leaving the page.
+                  onKeepDecision={replacing !== null && reviewAgain ? keepDecision : undefined}
+                  headingRef={formHeadingRef}
+                />
+              </div>
             )}
           </>
         )}
@@ -344,9 +428,11 @@ interface AfterDecisionPanelProps {
   after: AfterDecision;
   filters: QueueFilters;
   onNext: () => void;
+  // Reopens the form on this paper, to replace the decision just saved.
+  onChangeDecision: () => void;
 }
 
-function AfterDecisionPanel({ after, filters, onNext }: AfterDecisionPanelProps) {
+function AfterDecisionPanel({ after, filters, onNext, onChangeDecision }: AfterDecisionPanelProps) {
   const done = DECISION_DONE[after.decision];
   // The form that had focus is gone, so focus moves to the result.
   const titleRef = useRef<HTMLParagraphElement>(null);
@@ -400,6 +486,12 @@ function AfterDecisionPanel({ after, filters, onNext }: AfterDecisionPanelProps)
   }
   if (after.state === "last") {
     const tab = REVIEW_STATUS_LABELS[filters.status];
+    // The same undo the "Saved" notice on the next paper offers.
+    const changeButton = (
+      <button type="button" className={`${forms.linkButton} ${styles.changeLink}`} onClick={onChangeDecision}>
+        Change that decision
+      </button>
+    );
     if (hasQueueFilters(filters)) {
       // Only the last one the filters let through. There may be more in the tab.
       const what = filters.kind === "" && filters.flag === "" ? "your search" : "your filters";
@@ -408,6 +500,7 @@ function AfterDecisionPanel({ after, filters, onNext }: AfterDecisionPanelProps)
           tone="success"
           title={`${done} That was the last paper in ${tab} matching ${what}.`}
           titleRef={titleRef}
+          action={changeButton}
         >
           <p>
             <Link href={queueHref({ status: filters.status, kind: "", flag: "", q: "" })}>
@@ -419,7 +512,12 @@ function AfterDecisionPanel({ after, filters, onNext }: AfterDecisionPanelProps)
       );
     }
     return (
-      <Notice tone="success" title={`${done} That was the last paper in ${tab}.`} titleRef={titleRef}>
+      <Notice
+        tone="success"
+        title={`${done} That was the last paper in ${tab}.`}
+        titleRef={titleRef}
+        action={changeButton}
+      >
         <p>
           <Link href={queueHref(filters)}>Back to the queue</Link> or <Link href="/admin/">the dashboard</Link>.
         </p>
@@ -463,7 +561,7 @@ function PaperDetails({ source }: { source: Candidate }) {
       {links.length > 0 && (
         <ul className={styles.links}>
           {links.map((link) => (
-            <li key={link.href}>
+            <li key={link.label}>
               <ExternalLink href={link.href}>{link.label}</ExternalLink>
             </li>
           ))}
@@ -543,8 +641,9 @@ function PaperDetails({ source }: { source: Candidate }) {
 }
 
 function missingAbstractText(source: Candidate): string {
-  if (source.origin === "manual" && source.review_status === "pending_review") {
-    return "No abstract was added with this paper. Open it to read more.";
+  // Flagged when it came without one, so nothing was ever deleted.
+  if (source.flags.includes("no_abstract")) {
+    return "No abstract came with this paper. Open it to read more.";
   }
   if (source.review_status === "approved" || source.review_status === "rejected") {
     return "The abstract was deleted after the decision, for copyright. Open the paper to read it.";
@@ -562,18 +661,13 @@ interface AiTriageSummaryProps {
   assessment: AiAssessment | null;
   // Whether the record holds any assessment at all, current or not.
   hasOtherAssessments: boolean;
-  // Whether the review form (and its field table) is on the screen.
-  formShown: boolean;
 }
 
 // What the AI made of the paper overall: relevant or not, and anything it linked.
-function AiTriageSummary({ byHand = false, assessment, hasOtherAssessments, formShown }: AiTriageSummaryProps) {
+// With no AI answer, the review form's own note says to fill in each field.
+function AiTriageSummary({ byHand = false, assessment, hasOtherAssessments }: AiTriageSummaryProps) {
   if (byHand && !assessment && !hasOtherAssessments) {
-    return (
-      <Notice tone="info" title="Added by hand, so the AI hasn't read it.">
-        {formShown && <p>The table below only has your column.</p>}
-      </Notice>
-    );
+    return <Notice tone="info" title="Added by hand, so the AI hasn't read it." />;
   }
   if (!assessment && hasOtherAssessments) {
     // A run can save an assessment and stop before attaching it to the paper,
@@ -585,16 +679,11 @@ function AiTriageSummary({ byHand = false, assessment, hasOtherAssessments, form
           or when someone decides the paper while a run is reading it. The answer is in the record at the bottom of the
           page.
         </p>
-        {formShown && <p>The table below only has your column.</p>}
       </Notice>
     );
   }
   if (!assessment) {
-    return (
-      <Notice tone="info" title="The AI hasn't triaged this paper.">
-        {formShown && <p>There&rsquo;s nothing to compare against, so the table below only has your column.</p>}
-      </Notice>
-    );
+    return <Notice tone="info" title="The AI hasn't triaged this paper." />;
   }
 
   const meta = `${assessment.model} · prompt ${assessment.prompt_version} · ${formatDateTime(assessment.created_at)} · ${formatCost(assessment.cost_usd)}`;

@@ -31,6 +31,8 @@ def test_the_pipeline_fills_in_the_run_the_api_created(client, db, headers, monk
     assert db["pipeline_runs"].count_documents({}) == 1
     assert run["status"] in ("succeeded", "partial"), run["errors"]
     assert run["requested_by"] == "rae@example.com"
+    # The pipeline keeps the name the API stored beside the email.
+    assert run["requested_by_name"] == "Rae Reviewer"
     assert run["trigger"] == "admin"
     assert len(run["log"]) > 1
 

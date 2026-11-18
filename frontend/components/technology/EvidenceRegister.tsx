@@ -139,8 +139,9 @@ function RegisterRow({ row, sources, quiet }: { row: EvidenceRow; sources: Regis
 }
 
 // Each id links to its card in the source database when the source is there.
-// An id the database doesn't have yet stays a plain chip.
-function IdList({ ids, sources }: { ids: string[]; sources: RegisterSources }) {
+// An id the database doesn't have yet stays a plain chip. The rating cards
+// use it too, so a register line's ids look the same in both places.
+export function IdList({ ids, sources }: { ids: string[]; sources: RegisterSources }) {
   if (ids.length === 0) {
     return <span className={styles.none}>None in our current sources</span>;
   }

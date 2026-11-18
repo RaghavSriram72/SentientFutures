@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SECONDARY_NAV, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
+import { FooterLinks } from "./FooterLinks";
 import styles from "./SiteFooter.module.css";
 
 // One line: the site's name, then the pages the header leaves to the menu.
@@ -16,11 +17,7 @@ export function SiteFooter({ showTeamLogin = true }: { showTeamLogin?: boolean }
         </p>
         <nav aria-label="Footer">
           <ul className={styles.links}>
-            {SECONDARY_NAV.map((item) => (
-              <li key={item.href}>
-                <Link href={item.href}>{item.label}</Link>
-              </li>
-            ))}
+            <FooterLinks items={SECONDARY_NAV} />
             {showTeamLogin && (
               <li>
                 <Link href="/admin/">Team login</Link>

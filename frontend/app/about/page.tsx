@@ -7,8 +7,6 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { SectionHead } from "@/components/common/SectionHead";
 import { getPublicMilestones, getTechnologies } from "@/lib/data";
 import { enumDescription } from "@/lib/enums";
-import { DISAGREEMENT_GAP_YEARS } from "@/lib/estimates";
-import { SITE_NAME } from "@/lib/site";
 import type { Milestone, TechnologyPage } from "@/lib/types";
 
 import styles from "./page.module.css";
@@ -16,7 +14,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "A Sentient Futures incubator project looking at whether whole brain emulation, brain computer interfaces or neuromorphic AI could help with AI alignment or counter the Intelligence Curse.",
+    "A Sentient Futures incubator project looking at whether whole brain emulation, brain-computer interfaces or neuromorphic AI could help with AI alignment or counter the Intelligence Curse.",
 };
 
 // True once every page has both lists filled in. Until then the about page
@@ -40,19 +38,55 @@ function countUndated(milestones: Milestone[]): number {
   return count;
 }
 
-// What's on the site and what isn't finished, worked out from the data where
-// it can be, so the lists stay true as the team fills things in.
-function siteIs(technologies: TechnologyPage[]): string[] {
-  const pages = everyPageHasForAndAgainst(technologies)
-    ? "A page for each proposal on what it claims to solve and how it's supposed to work, with the strongest case for it and against it."
-    : "A page for each proposal on what it claims to solve and how it's supposed to work. Not every page has its strongest case for and against written yet.";
+// One piece of a line in the "On the site" list: plain text, or the text of
+// a link to the part of the site it names.
+interface LinePart {
+  text: string;
+  href?: string;
+}
+
+// "Pages on <wbe>, <bci> and <neuromorphic>: ...", with each name linking to its page.
+function pagesLine(technologies: TechnologyPage[]): LinePart[] {
+  const parts: LinePart[] = [{ text: "Pages on " }];
+  for (let index = 0; index < technologies.length; index++) {
+    const tech = technologies[index];
+    if (index > 0) {
+      parts.push({ text: index === technologies.length - 1 ? " and " : ", " });
+    }
+    parts.push({ text: tech.name.charAt(0).toLowerCase() + tech.name.slice(1), href: `/${tech.id}/` });
+  }
+  parts.push({
+    text: everyPageHasForAndAgainst(technologies)
+      ? ": what each claims to solve, how it's meant to work, and the strongest case for and against it."
+      : ": what each claims to solve and how it's meant to work. Not every page has its case for and against yet.",
+  });
+  return parts;
+}
+
+// What's on the site, one line per part of it, each linking there. The rules
+// behind them are on the methodology page, so they aren't repeated here.
+// The scorecard links to /wbe/ and not /wbe/#scorecard, because that anchor
+// sits inside the collapsed Full assessment.
+function siteIs(technologies: TechnologyPage[]): LinePart[][] {
   return [
-    pages,
-    "The team's completed scorecard for whole brain emulation.",
-    `A timeline that places each milestone by its estimated window, or in a “Timing unknown” zone until it has one. Forecasts are listed one by one, never averaged. When two of them are more than ${DISAGREEMENT_GAP_YEARS} years apart, or one says it will never happen, the milestone is flagged.`,
-    "A source database of the papers and essays we've collected, each with a summary the team wrote. A weekly search finds new papers, and a person on the team approves every one before it appears.",
-    "One of four marks on every research claim: From a source, Our read, AI-suggested or Unclear.",
+    pagesLine(technologies),
+    [{ text: "The team's completed scorecard for whole brain emulation", href: "/wbe/" }, { text: "." }],
+    [{ text: "A timeline", href: "/timeline/" }, { text: " that places each milestone by its estimated window." }],
+    [
+      { text: "A source database", href: "/sources/" },
+      { text: " of the papers and essays we've collected, each with a summary the team wrote." },
+    ],
+    [{ text: "The methodology", href: "/methodology/" }, { text: ", which explains the marks, ratings and timeline rules." }],
   ];
+}
+
+// The text of a line, for its key.
+function lineText(line: LinePart[]): string {
+  let text = "";
+  for (const part of line) {
+    text += part.text;
+  }
+  return text;
 }
 
 function siteIsnt(technologies: TechnologyPage[], milestones: Milestone[]): string[] {
@@ -120,7 +154,7 @@ export default function AboutPage() {
             The <em>question</em> we&rsquo;re working on
           </>
         }
-        lede={`${SITE_NAME} covers three ideas: whole brain emulation, brain computer interfaces and neuromorphic AI. People have suggested each one as a way to help with AI alignment or to counter the Intelligence Curse. We want to know how well those suggestions hold up, which means working out how each idea is meant to work, what it depends on, and what the strongest objections are.`}
+        lede="For each of three brain technologies, we look at how it's meant to work, what it depends on and the strongest objections to it."
       />
 
       <section className="container section" aria-labelledby="question-heading">
@@ -131,9 +165,9 @@ export default function AboutPage() {
             </p>
             <blockquote className={styles.questionText}>
               <p>
-                How strong is the case that whole brain emulation, brain computer interfaces or neuromorphic AI could
-                address AI alignment or the Intelligence Curse? And what new welfare and governance problems would each
-                bring, including for any artificial minds made along the way?
+                How strong is the case that whole brain emulation, brain-computer interfaces or neuromorphic AI could
+                help with AI alignment or the Intelligence Curse? And what new welfare and governance problems would
+                each bring, including for any artificial minds made along the way?
               </p>
             </blockquote>
           </figure>
@@ -207,7 +241,17 @@ export default function AboutPage() {
             <p className={`eyebrow ${styles.isLabel}`}>On the site</p>
             <ul className={styles.isList}>
               {siteIs(technologies).map((line) => (
-                <li key={line}>{line}</li>
+                <li key={lineText(line)}>
+                  {line.map((part, index) =>
+                    part.href ? (
+                      <Link key={index} href={part.href}>
+                        {part.text}
+                      </Link>
+                    ) : (
+                      <span key={index}>{part.text}</span>
+                    ),
+                  )}
+                </li>
               ))}
             </ul>
           </div>

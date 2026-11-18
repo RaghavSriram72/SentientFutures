@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode, Ref } from "react";
 
 import { API_URL, type ApiError } from "@/lib/api";
@@ -9,7 +10,7 @@ type Tone = "info" | "warning" | "error" | "success";
 
 interface NoticeProps {
   tone: Tone;
-  title?: string;
+  title?: ReactNode;
   children?: ReactNode;
   action?: ReactNode;
   // Lets a page move focus to the title when the notice replaces what had focus.
@@ -28,6 +29,23 @@ export function Notice({ tone, title, children, action, titleRef }: NoticeProps)
       {children && <div className={styles.body}>{children}</div>}
       {action && <div className={styles.action}>{action}</div>}
     </div>
+  );
+}
+
+// The editors' "Saved." messages, with "next publish" as a link to the
+// dashboard, where publishing happens. A message without it stays as it is.
+export function withPublishLink(message: string): ReactNode {
+  const phrase = "next publish";
+  const at = message.indexOf(phrase);
+  if (at === -1) {
+    return message;
+  }
+  return (
+    <>
+      {message.slice(0, at)}
+      <Link href="/admin/">{phrase}</Link>
+      {message.slice(at + phrase.length)}
+    </>
   );
 }
 
@@ -83,9 +101,11 @@ interface ApiErrorNoticeProps {
   // What was being attempted, e.g. "Couldn't load the queue".
   title: string;
   onRetry?: () => void;
+  // As on Notice: for moving focus to the title after a failed save.
+  titleRef?: Ref<HTMLParagraphElement>;
 }
 
-export function ApiErrorNotice({ error, title, onRetry }: ApiErrorNoticeProps) {
+export function ApiErrorNotice({ error, title, onRetry, titleRef }: ApiErrorNoticeProps) {
   const retry = onRetry ? (
     <button type="button" className={`btn btn-secondary ${forms.smallButton}`} onClick={onRetry}>
       Try again
@@ -94,13 +114,13 @@ export function ApiErrorNotice({ error, title, onRetry }: ApiErrorNoticeProps) {
 
   if (error.isNetworkError) {
     return (
-      <Notice tone="error" title={`${title}. ${error.message}`} action={retry}>
+      <Notice tone="error" title={`${title}. ${error.message}`} action={retry} titleRef={titleRef}>
         {error.code === "network_error" ? <ApiStartHelp /> : <p>The API at {API_URL} may be busy. Try again in a moment.</p>}
       </Notice>
     );
   }
   return (
-    <Notice tone="error" title={title} action={retry}>
+    <Notice tone="error" title={title} action={retry} titleRef={titleRef}>
       <p>{error.message}</p>
       <ErrorCode error={error} />
     </Notice>

@@ -3,9 +3,10 @@
 // floor (ribbons, forecast lines, crosses), and the cards that stand on it.
 import type { FocusEvent, MouseEvent, ReactNode } from "react";
 
-import { estimateSummary, stageKey } from "@/components/timeline/timelineModel";
-import { enumLabel } from "@/lib/enums";
-import type { Technology } from "@/lib/types";
+import { TypeMark } from "@/components/common/TypeMark";
+import { estimateSummary, hasEstimate, stageKey, stageTag, typeTag } from "@/components/timeline/timelineModel";
+import { enumLabel, milestoneTypeOf } from "@/lib/enums";
+import type { Stage, Technology } from "@/lib/types";
 
 import { AXIS_DEPTH, CARD_WIDTH, FLOOR_DEPTH, LAST_YEAR, ROW_COUNT, rowY, type Tick, type TrackItem, type TrackLayout } from "./trackLayout";
 import styles from "./TrackParts.module.css";
@@ -61,10 +62,25 @@ export function TechGlyph({ technology, className }: { technology: Technology; c
   );
 }
 
-// What a screen reader hears for a card.
-export function cardLabel(trackItem: TrackItem, needs: number): string {
+// The stage as a card names it: "Stage 2: Widely available", or the bare
+// "Widely available" on the home teaser's small cards (see TrackCard).
+function cardStage(stage: Stage, numbered: boolean): string {
+  return numbered ? stageTag(stage) : enumLabel("Stage", stage);
+}
+
+// What a screen reader hears for a card, in the order the card shows it:
+// "WBE-03, <name>. Type: Welfare and governance. Stage 1: Possible. No date
+// yet." It always includes the estimate, even "No date yet", because the
+// hatched Timing unknown zone that says so on screen can't be seen.
+export function cardLabel(trackItem: TrackItem, needs: number, numberedStage = true): string {
   const { item } = trackItem;
-  const parts = [`${item.code}, ${item.milestone.name}`, enumLabel("Stage", item.milestone.stage), estimateSummary(item)];
+  const parts = [`${item.code}, ${item.milestone.name}`];
+  // With a stale enums.json there is no type, and the label leaves it out.
+  const type = typeTag(item.milestone.category);
+  if (type !== null) {
+    parts.push(type);
+  }
+  parts.push(cardStage(item.milestone.stage, numberedStage), estimateSummary(item));
   if (item.view.disagreement.flagged) {
     parts.push("Sources disagree");
   }
@@ -89,7 +105,7 @@ export function Standing({ x, y, children, className }: { x: number; y: number; 
 // close to the one before that the numbers would touch (squeezed decades).
 const MIN_LABEL_GAP = 120;
 
-function yearLabels(layout: TrackLayout): Tick[] {
+export function yearLabels(layout: TrackLayout): Tick[] {
   const labels: Tick[] = [];
   for (const tick of layout.ticks) {
     if (Math.abs(tick.x - layout.nowX) <= 90) {
@@ -277,6 +293,13 @@ interface TrackCardProps {
   // "large" uses bigger type, for places that draw the world small (the
   // teaser and phones).
   variant?: "regular" | "large";
+  // "Stage 2: Widely available" (true), or the bare stage name. The home
+  // teaser's cards are small enough that the prefix wraps their meta onto a
+  // third line, and the numbered stage legend sits right above them.
+  numberedStage?: boolean;
+  // False while something covers the card (the dossier sheet on a phone), so
+  // Tab skips it. It can still be clicked or tapped where it shows.
+  tabbable?: boolean;
   onActivate: (id: string, event: MouseEvent<HTMLElement>) => void;
   onFocusCard?: (id: string, event: FocusEvent<HTMLElement>) => void;
   onBlurCard?: (id: string) => void;
@@ -292,6 +315,8 @@ export function TrackCard({
   needs = 0,
   href,
   variant = "regular",
+  numberedStage = true,
+  tabbable = true,
   onActivate,
   onFocusCard,
   onBlurCard,
@@ -300,6 +325,8 @@ export function TrackCard({
   const { item, placement } = trackItem;
   const { milestone, view } = item;
   const key = stageKey(milestone.stage);
+  // null only with a stale enums.json, and then the card shows no type line
+  const type = milestoneTypeOf(milestone.category);
   const y = rowY(trackItem.row);
 
   const classes = [
@@ -326,10 +353,22 @@ export function TrackCard({
         )}
       </span>
       <span className={styles.cardName}>{milestone.name}</span>
-      <span className={styles.cardMeta}>
-        <span className={styles[`stageInk_${key}`]}>{enumLabel("Stage", milestone.stage)}</span>
-        {" · "}
-        {estimateSummary(item)}
+      {/* The foot: the milestone's type, then its stage line. Cards stand on
+          their bottom edges, so the feet line up across a row. The card's
+          aria-label already says the type, so the mark doesn't repeat it. */}
+      <span className={styles.cardFoot}>
+        {type && <TypeMark type={type} variant="plain" announce={false} className={styles.cardType} />}
+        <span className={styles.cardMeta}>
+          <span className={styles[`stageInk_${key}`]}>{cardStage(milestone.stage, numberedStage)}</span>
+          {/* A card with no estimate stands in the Timing unknown zone, which
+              already says so, so the meta leaves "No date yet" out. */}
+          {hasEstimate(item) && (
+            <>
+              {" · "}
+              {estimateSummary(item)}
+            </>
+          )}
+        </span>
       </span>
       {view.disagreement.flagged && <span className={styles.stamp}>Sources disagree</span>}
     </>
@@ -341,7 +380,8 @@ export function TrackCard({
     "data-up": up ? "true" : "false",
     className: classes,
     style: { width: CARD_WIDTH, transitionDelay: up ? `${delay}ms` : "0ms" },
-    "aria-label": cardLabel(trackItem, needs),
+    tabIndex: tabbable ? undefined : -1,
+    "aria-label": cardLabel(trackItem, needs, numberedStage),
     onClick: (event: MouseEvent<HTMLElement>) => onActivate(milestone.id, event),
     onFocus: onFocusCard ? (event: FocusEvent<HTMLElement>) => onFocusCard(milestone.id, event) : undefined,
     onBlur: onBlurCard ? () => onBlurCard(milestone.id) : undefined,

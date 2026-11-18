@@ -10,7 +10,7 @@ import { AdminPageHead } from "./AdminPageHead";
 import { formatCount, isRunActive, queueStatusHref } from "./adminFormat";
 import styles from "./Dashboard.module.css";
 import forms from "./forms.module.css";
-import { DASHBOARD_STATUSES, REVIEW_STATUS_HINTS, REVIEW_STATUS_LABELS } from "./labels";
+import { DASHBOARD_STATUSES, NEW_HINT_TRIAGE_OFF, REVIEW_STATUS_HINTS, REVIEW_STATUS_LABELS } from "./labels";
 import { LiveRun } from "./LiveRun";
 import { ApiErrorNotice, Notice, SHOW_SETUP_HINTS } from "./Notice";
 import { PublishPanel } from "./PublishPanel";
@@ -35,18 +35,23 @@ export function DashboardView() {
     runIsGoing = status.data.running || (latestRun !== null && isRunActive(latestRun));
   }
 
-  // While a run goes, keep the tiles current: collect adds papers as it goes.
-  // Each answer schedules the next request, like the live run panel.
+  // While a run goes, keep the tiles and the Recent runs table current:
+  // collect adds papers as it goes. Each status answer schedules the next
+  // request, like the live run panel.
   const statusData = status.data;
   const statusError = status.error;
   const reloadStatus = status.reload;
+  const reloadRuns = runs.reload;
   useEffect(() => {
     if (!runIsGoing) {
       return;
     }
-    const timer = window.setTimeout(reloadStatus, POLL_INTERVAL_MS);
+    const timer = window.setTimeout(() => {
+      reloadStatus();
+      reloadRuns();
+    }, POLL_INTERVAL_MS);
     return () => window.clearTimeout(timer);
-  }, [runIsGoing, statusData, statusError, reloadStatus]);
+  }, [runIsGoing, statusData, statusError, reloadStatus, reloadRuns]);
 
   function refreshAll() {
     status.reload();
@@ -70,7 +75,7 @@ export function DashboardView() {
             Source <em>pipeline</em>
           </>
         }
-        lede="The pipeline collects new papers and the AI sorts them. Approved papers appear on the public site after the next publish."
+        lede="The pipeline collects new papers and the AI sorts them. Publishing here puts approved papers, posts and milestones on the public site."
         actions={
           <button type="button" className={`btn btn-secondary ${forms.smallButton}`} onClick={refreshAll}>
             Refresh
@@ -149,8 +154,12 @@ function TriageOffNotice() {
   );
 }
 
-// One tile per review status, each a link to that tab of the queue.
+// One tile per review status, each a link to that tab of the queue. The
+// tiles where papers wait for a person are highlighted: Pending review, and
+// New too while the AI is off. With the AI on, or when the API can't tell
+// (null), only Pending review.
 function StatusCounts({ status }: { status: PipelineStatus | null }) {
+  const triageOff = status !== null && status.triage_configured === false;
   return (
     <section aria-labelledby="counts-heading">
       <h2 id="counts-heading" className={styles.sectionTitle}>
@@ -159,7 +168,8 @@ function StatusCounts({ status }: { status: PipelineStatus | null }) {
       <ul className={styles.tiles}>
         {DASHBOARD_STATUSES.map((reviewStatus) => {
           const count = status ? (status.counts[reviewStatus] ?? 0) : null;
-          const isQueue = reviewStatus === "pending_review";
+          const isQueue = reviewStatus === "pending_review" || (triageOff && reviewStatus === "new");
+          const hint = triageOff && reviewStatus === "new" ? NEW_HINT_TRIAGE_OFF : REVIEW_STATUS_HINTS[reviewStatus];
           return (
             <li key={reviewStatus}>
               <Link
@@ -168,7 +178,7 @@ function StatusCounts({ status }: { status: PipelineStatus | null }) {
               >
                 <span className={styles.tileLabel}>{REVIEW_STATUS_LABELS[reviewStatus]}</span>
                 <span className={styles.tileValue}>{count === null ? "…" : formatCount(count)}</span>
-                <span className={styles.tileHint}>{REVIEW_STATUS_HINTS[reviewStatus]}</span>
+                <span className={styles.tileHint}>{hint}</span>
               </Link>
             </li>
           );

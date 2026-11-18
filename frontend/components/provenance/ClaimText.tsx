@@ -18,6 +18,9 @@ interface ClaimTextProps {
   // claim of this kind shows only its glyph in the margin, with no text label.
   // Claims of any other kind are the exceptions and keep their full tag.
   quiet?: Provenance;
+  // Leaves out the "See ..." line, for a claim whose sources are already
+  // listed close by (the dossier's status, next to its Sources list).
+  hideCitation?: boolean;
 }
 
 // True when the claim matches the section's default, so its label can go.
@@ -36,11 +39,11 @@ function isQuiet(claim: Claim, quiet: Provenance | undefined): boolean {
 // Renders one claim with its provenance mark:
 //   source  -> the text, then the exact quote with a hanging rule and a citation
 //   team    -> an "Our read" margin tag
-//   ai      -> a dashed outline and "AI-suggested · checked by X"
+//   ai      -> a dashed rule down its left side and "AI-suggested · checked by X"
 //   unclear -> hatching and the stated reason
 // With `quiet`, a claim of the default kind keeps its glyph and line style
 // but drops the text label.
-export function ClaimText({ claim, sources = {}, variant = "block", quiet }: ClaimTextProps) {
+export function ClaimText({ claim, sources = {}, variant = "block", quiet, hideCitation = false }: ClaimTextProps) {
   const kindClass = styles[`claim_${claim.provenance}`];
   const variantClass = variant === "compact" ? styles.compact : "";
   const quietClaim = isQuiet(claim, quiet);
@@ -51,6 +54,16 @@ export function ClaimText({ claim, sources = {}, variant = "block", quiet }: Cla
     const source = sources[id];
     if (source) {
       citedSources.push(source);
+    }
+  }
+
+  // The "See ..." line skips a source the text already names by its register
+  // id ("S02 (Thiergart 2023)" links to it), so it isn't cited twice in a row.
+  const namedInText = registerIdsIn(claim.text);
+  const seeAlso: SourceRef[] = [];
+  for (const source of citedSources) {
+    if (!source.register_id || !namedInText.includes(source.register_id)) {
+      seeAlso.push(source);
     }
   }
 
@@ -90,10 +103,10 @@ export function ClaimText({ claim, sources = {}, variant = "block", quiet }: Cla
         </blockquote>
       )}
 
-      {claim.provenance !== "source" && citedSources.length > 0 && (
+      {claim.provenance !== "source" && !hideCitation && seeAlso.length > 0 && (
         <p className={styles.citation}>
           See{" "}
-          {citedSources.map((source, index) => (
+          {seeAlso.map((source, index) => (
             <span key={source.id}>
               {index > 0 && "; "}
               <ExternalLink href={source.url}>{shortCitation(source)}</ExternalLink>
@@ -107,6 +120,15 @@ export function ClaimText({ claim, sources = {}, variant = "block", quiet }: Cla
 
 // The team's evidence register ids ("S02", "S13") as they appear in claim text.
 const REGISTER_ID = /\b(S\d{2,3})\b/g;
+
+// Every register id the text mentions, such as ["S02", "S13"].
+function registerIdsIn(text: string): string[] {
+  const ids: string[] = [];
+  for (const match of text.matchAll(REGISTER_ID)) {
+    ids.push(match[1]);
+  }
+  return ids;
+}
 
 // The claim's text, with each register id that matches a source turned into a
 // link to that source in the source database, followed by its short citation:

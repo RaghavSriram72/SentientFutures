@@ -3,14 +3,21 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import type { AiAssessment, QueueItemDetail, Review, ReviewFinal } from "@/lib/adminTypes";
+import type { AiAssessment, QueueItemDetail, ReAdd, Review, ReviewFinal } from "@/lib/adminTypes";
 import { enumLabel, type EnumName } from "@/lib/enums";
 
 import { formatCost, formatCount, formatDateTime, runHref } from "./adminFormat";
 import { QuoteCheck } from "./Chips";
 import { FIELD_LABELS, REJECT_REASON_LABELS, RELEVANT_LABELS, REVIEW_FIELDS, FIELD_ENUMS } from "./labels";
 import styles from "./Review.module.css";
-import { aiFieldValues, assessmentsNewestFirst, evidenceFor, reviewsNewestFirst, RUBRIC_FIELDS } from "./reviewModel";
+import {
+  aiFieldValues,
+  assessmentsNewestFirst,
+  decisionRecordNewestFirst,
+  evidenceFor,
+  reAddChangesText,
+  RUBRIC_FIELDS,
+} from "./reviewModel";
 
 function labelsFor(enumName: EnumName, values: string[], empty: string): string {
   if (values.length === 0) {
@@ -47,10 +54,16 @@ function finalValues(final: ReviewFinal, field: (typeof REVIEW_FIELDS)[number]):
   return final.claim_directions;
 }
 
-// Everything kept about a paper: each human decision and each AI call, exactly
-// as saved. These records are never edited, so this is the audit trail.
-export function AuditTrail({ detail, currentAssessmentId }: { detail: QueueItemDetail; currentAssessmentId: string | null }) {
-  const reviews = reviewsNewestFirst(detail);
+interface AuditTrailProps {
+  detail: QueueItemDetail;
+  currentAssessmentId: string | null;
+}
+
+// Everything kept about a paper: each human decision, each time a rejected
+// paper was added again, and each AI call, exactly as saved. These records
+// are never edited, so this is the audit trail.
+export function AuditTrail({ detail, currentAssessmentId }: AuditTrailProps) {
+  const decisions = decisionRecordNewestFirst(detail.reviews, detail.re_adds);
   const assessments = assessmentsNewestFirst(detail);
 
   return (
@@ -64,15 +77,30 @@ export function AuditTrail({ detail, currentAssessmentId }: { detail: QueueItemD
       </p>
 
       <h3 className={styles.recordHeading}>Decisions</h3>
-      {reviews.length === 0 ? (
+      {decisions.length === 0 ? (
         <p className={styles.muted}>No decisions yet.</p>
       ) : (
         <ol className={styles.recordList}>
-          {reviews.map((review) => (
-            <li key={review.id}>
-              <ReviewRecord review={review} current={review.id === detail.source.current_review_id} />
-            </li>
-          ))}
+          {decisions.map((item, index) => {
+            if (item.kind === "re_add") {
+              return (
+                <li key={item.reAdd.id}>
+                  <ReAddRecord reAdd={item.reAdd} />
+                </li>
+              );
+            }
+            // The list is newest first, so what came next is the line above.
+            const next = index > 0 ? decisions[index - 1] : null;
+            return (
+              <li key={item.review.id}>
+                <ReviewRecord
+                  review={item.review}
+                  current={item.review.id === detail.source.current_review_id}
+                  addedAgainAfter={next !== null && next.kind === "re_add"}
+                />
+              </li>
+            );
+          })}
         </ol>
       )}
 
@@ -101,17 +129,31 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-// current: this is the decision the paper's status comes from. Older ones were replaced.
-function ReviewRecord({ review, current }: { review: Review; current: boolean }) {
+interface ReviewRecordProps {
+  review: Review;
+  // This is the decision the paper's status comes from.
+  current: boolean;
+  // Someone added the paper again after this decision, which put it back in
+  // Pending review. Otherwise a later decision replaced it.
+  addedAgainAfter: boolean;
+}
+
+function ReviewRecord({ review, current, addedAgainAfter }: ReviewRecordProps) {
   const verb = review.decision === "approve" ? "Approved" : "Rejected";
   const reason = review.reject_reason ? ` · ${REJECT_REASON_LABELS[review.reject_reason]}` : "";
+  let standing = " · replaced";
+  if (current) {
+    standing = " · the current decision";
+  } else if (addedAgainAfter) {
+    standing = " · before it was added again";
+  }
 
   return (
     <details className={styles.record}>
       <summary className={styles.recordSummary}>
         {verb} by {review.reviewer_name} · {formatDateTime(review.created_at)}
         {reason}
-        {current ? " · the current decision" : " · replaced"}
+        {standing}
       </summary>
       <dl className={styles.recordBody}>
         {REVIEW_FIELDS.map((field) => (
@@ -143,6 +185,18 @@ function ReviewRecord({ review, current }: { review: Review; current: boolean })
         </Row>
       </dl>
     </details>
+  );
+}
+
+// A rejected paper someone added again, with corrected details. There's
+// nothing more to show, so it's one line rather than a box that opens.
+function ReAddRecord({ reAdd }: { reAdd: ReAdd }) {
+  const changes = reAddChangesText(reAdd.changed);
+  return (
+    <p className={`${styles.record} ${styles.recordEvent}`}>
+      Added again by {reAdd.added_by_name} · {formatDateTime(reAdd.added_at)}
+      {changes && ` · ${changes}`}
+    </p>
   );
 }
 

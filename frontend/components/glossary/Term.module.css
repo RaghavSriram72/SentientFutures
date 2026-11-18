@@ -29,7 +29,10 @@
   position: absolute;
   z-index: 20;
   top: calc(100% + 0.4rem);
-  left: 0;
+  /* TermDock sets the shift, which slides a tip that would run off the
+     screen, or out of a box that clips it, back into view: a negative shift
+     moves it left, a positive one right. */
+  left: var(--term-shift, 0px);
   width: max-content;
   max-width: min(18rem, calc(100vw - 48px));
   padding: 0.6rem 0.75rem;
@@ -48,7 +51,80 @@
   color: var(--ink-body);
 }
 
+/* The tip sits a little below its word. This invisible strip fills that gap
+   (and the tip's 1px border), so the pointer can move from the word onto the
+   tip without the tip closing on the way (WCAG 1.4.13). */
+.tip::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  bottom: 100%;
+  height: calc(0.4rem + 1px);
+}
+
+/* A tip lined up with its word's right edge, so it opens leftward. Near the
+   left edge of a narrow window TermDock's shift moves it right, the same way
+   round as on .tip. Docked tips (below) still span the screen: that rule
+   comes later and wins. */
+.tipEnd {
+  left: auto;
+  right: calc(0px - var(--term-shift, 0px));
+}
+
+/* TermDock sets data-linger for a moment after the pointer leaves a term
+   that wraps onto two lines, with its tip under its word. The tip sits under
+   the second line, so moving down from the first crosses other text on the
+   way, and the tip closed before the pointer got there (WCAG 1.4.13). */
 .term:hover .tip,
+.term[data-linger] .tip,
 .word:focus + .tip {
   display: block;
+}
+
+/* TermDock sets this when the reader presses Escape, or when a docked tip's
+   word scrolls out of sight, so the tip stops covering the text around it.
+   It comes after the rule above so it wins while the word is still hovered
+   or focused. */
+.term[data-dismissed] .tip {
+  display: none;
+}
+
+/* On phones a tip anchored to its word can run off the right edge, or be cut
+   by a parent with overflow: hidden. Dock it to the bottom of the screen
+   instead, and keep the tapped word marked so the reader knows which term it
+   belongs to. 720px covers phones held sideways up to about 680px wide, where
+   a word near the right edge still pushed its tip off screen. Wider phones
+   held sideways are too short for a tip under the word, so a short touch
+   screen docks too. The tip keeps a readable line length when it docks on a
+   wide screen. Only touch screens dock: in a narrow window with a mouse, a
+   docked tip was too far from its word to move the pointer onto (WCAG
+   1.4.13), so the tip stays under its word and TermDock keeps it on screen. */
+@media (pointer: coarse) and (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
+  .tip {
+    position: fixed;
+    top: auto;
+    left: 16px;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: 36rem;
+    margin-inline: auto;
+  }
+
+  /* A docked tip is nowhere near its word, so it has no gap to fill. */
+  .tip::before {
+    content: none;
+  }
+
+  .word:focus {
+    text-decoration-color: var(--grape);
+  }
+
+  /* TermDock sets this. A word low on the screen would sit under its own
+     docked tip, so that tip docks at the top instead, just under the header. */
+  .term[data-dock="top"] .tip {
+    top: var(--term-dock-top);
+    bottom: auto;
+  }
 }

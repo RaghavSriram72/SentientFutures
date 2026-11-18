@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import type { CatalogSource, MilestoneRecord, MilestoneRevision } from "@/lib/adminTypes";
 import {
@@ -21,7 +21,6 @@ import { enumDescription, enumLabel, enumValues } from "@/lib/enums";
 import type {
   Claim,
   Confidence,
-  Milestone,
   MilestoneCategory,
   MilestoneStatus,
   Stage,
@@ -40,23 +39,31 @@ import { ForecastEditor, YearInput } from "./ForecastEditor";
 import forms from "./forms.module.css";
 import { milestoneEditHref } from "./MilestoneList";
 import {
-  blankClaim,
   blankMilestone,
+  categoryGroups,
   fieldId,
   focusField,
+  inFormOrder,
   messagesAt,
   milestoneProblems,
+  optionsInNoGroup,
   pathLabel,
+  previewMilestones,
+  problemsStillOpen,
+  teamRangePatch,
   toDraft,
   toMilestone,
+  type ChoiceGroup,
+  type ChoiceOption,
   type MilestoneDraft,
   type MilestoneErrors,
 } from "./milestoneModel";
 import { MilestonePreview } from "./MilestonePreview";
-import { ApiErrorNotice, Notice } from "./Notice";
+import { ApiErrorNotice, Notice, withPublishLink } from "./Notice";
 import { MultiPicker, sourceOptions, type PickerOption } from "./Pickers";
 import { useUnsavedWork } from "./unsavedWork";
 import { useApiData } from "./useApiData";
+import { useClearAfterSignIn } from "./useClearAfterSignIn";
 import { useWideScreen } from "./useWideScreen";
 
 // /admin/milestones/edit/?id=<id>, or no id for a new milestone.
@@ -114,23 +121,31 @@ function MilestoneScreen({ id }: { id: string }) {
     );
   }
 
-  const others: Milestone[] = [];
+  // Every other milestone, for the depends-on picker.
+  const others: MilestoneRecord[] = [];
   for (const item of all.data ?? []) {
     if (item.milestone.id !== id) {
-      others.push(item.milestone);
+      others.push(item);
     }
   }
 
   // "Load their version" after a conflict brings a newer version, which
-  // remounts the form with it.
+  // remounts the form with it. The "Saved" from the first save was about
+  // this tab's version, so the new form starts without it.
+  function loadTheirs() {
+    flash.clear();
+    record.reload();
+  }
+
   return (
     <MilestoneForm
       key={record.data ? record.data.version : "new"}
       initial={record.data}
       others={others}
+      records={all.data ?? []}
       catalog={catalog.data ?? []}
-      flash={flash}
-      onReload={record.reload}
+      flash={flash.message}
+      onReload={loadTheirs}
     />
   );
 }
@@ -146,14 +161,26 @@ function savedMessage(draft: MilestoneDraft): string {
   return "Saved as a draft. It stays off the site until it's published.";
 }
 
-// Other milestones as picker options, grouped by technology.
-function milestoneOptions(others: Milestone[]): PickerOption[] {
+// Other milestones as picker options, grouped by technology. The API refuses
+// a real milestone that depends on a sample, so a real one isn't offered
+// samples. (One already chosen stays, so its name shows next to Remove.)
+// Unpublished milestones say so, since a published one can't depend on them.
+function milestoneOptions(others: MilestoneRecord[], editingSample: boolean, chosen: string[]): PickerOption[] {
   const options: PickerOption[] = [];
-  for (const milestone of others) {
-    const sample = milestone.sample ? " (sample)" : "";
+  for (const record of others) {
+    const milestone = record.milestone;
+    if (milestone.sample && !editingSample && !chosen.includes(milestone.id)) {
+      continue;
+    }
+    let note = "";
+    if (milestone.sample) {
+      note = " (sample)";
+    } else if (!record.published) {
+      note = " (draft)";
+    }
     options.push({
       value: milestone.id,
-      label: `${milestone.name || milestone.id}${sample}`,
+      label: `${milestone.name || milestone.id}${note}`,
       group: enumLabel("Technology", milestone.technology),
     });
   }
@@ -170,13 +197,15 @@ function estimateKey(draft: MilestoneDraft): string {
 interface MilestoneFormProps {
   // null for a new milestone.
   initial: MilestoneRecord | null;
-  others: Milestone[];
+  others: MilestoneRecord[];
+  // Every milestone, for the preview to number this one among (previewMilestones).
+  records: MilestoneRecord[];
   catalog: CatalogSource[];
   flash: string | null;
   onReload: () => void;
 }
 
-function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneFormProps) {
+function MilestoneForm({ initial, others, records, catalog, flash, onReload }: MilestoneFormProps) {
   const router = useRouter();
   const session = getSession();
   const editorName = session ? session.user.display_name || session.user.email : "";
@@ -191,19 +220,115 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
   const [savedEstimate, setSavedEstimate] = useState<string>(() => estimateKey(draft));
   // A new milestone's id follows its name until someone edits the id.
   const [idEdited, setIdEdited] = useState(initial !== null);
-  const [errors, setErrors] = useState<MilestoneErrors>({});
+  // The problems the last save attempt found, and the draft (as JSON) it checked.
+  const [checked, setChecked] = useState<{ draft: string; errors: MilestoneErrors }>({ draft: "", errors: {} });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<ApiError | null>(null);
   const [message, setMessage] = useState<string | null>(flash);
+  // True while the message is the one the page opened with after the first
+  // save. The page starts at the top then, so it shows there instead of in
+  // the save row at the bottom.
+  const [messageAtTop, setMessageAtTop] = useState(flash !== null);
+  // The version "Copy into the form" brought back, until it's saved or discarded.
+  const [copiedFrom, setCopiedFrom] = useState<number | null>(null);
+  // True after "Discard changes", until the next edit. The save row stays at
+  // the bottom of the screen meanwhile, as it does after a save, so "No
+  // unsaved changes." shows where "Discard changes" was.
+  const [discarded, setDiscarded] = useState(false);
   const revisions = useApiData(record ? `milestone-revisions:${record.milestone.id}:${record.version}` : null, () =>
     getMilestoneRevisions(record ? record.milestone.id : ""),
   );
+  // A field to move focus to once saving is over. Every input is disabled
+  // while saving, so a problem the API finds can't take focus right away.
+  const focusAfterSave = useRef<string | null>(null);
+  // The Save button is disabled while saving, and stays disabled once the
+  // form matches what's saved, so focus would drop to the page. It goes to
+  // the title of whichever notice says how the save went instead: saved, a
+  // conflict, or an error.
+  const resultRef = useRef<HTMLParagraphElement>(null);
+  const focusResultAfterSave = useRef(false);
+  // The "Saved" at the top of the form, after the first save.
+  const flashRef = useRef<HTMLParagraphElement>(null);
+  // Holds focus while "Load their version" swaps the form (loadTheirs).
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  // "Discard changes" goes away with the changes, so focus would drop to the
+  // page. It moves to the "No unsaved changes." that takes its place.
+  const noChangesRef = useRef<HTMLSpanElement>(null);
+  const focusAfterDiscard = useRef(false);
+  // The conflict and error notices, which sit at the end of the long form.
+  const noticesRef = useRef<HTMLDivElement>(null);
+  const saveRowRef = useRef<HTMLDivElement>(null);
+  // A save that ended the session leaves "Your session ended." on screen.
+  // Once someone signs in again over the form, it goes.
+  useClearAfterSignIn(saveError, () => setSaveError(null));
 
-  const dirty = JSON.stringify(draft) !== baseline;
+  const draftJson = JSON.stringify(draft);
+  const dirty = draftJson !== baseline;
   useUnsavedWork(dirty);
+  if (copiedFrom !== null && !dirty) {
+    // The form matches what's saved: the copy changed nothing, or every
+    // difference was undone by hand. Adjusting state while rendering, as
+    // React's docs suggest, so a later edit doesn't bring the notice back.
+    setCopiedFrom(null);
+  }
   const savedFirst = savedFirstFrom(saveError);
   const sources = sourceOptions(catalog);
   const isNew = record === null;
+
+  // Once the form changes after a save attempt, only the problems it still has
+  // stay on screen, and none once it's back to what's saved.
+  let errors: MilestoneErrors = checked.errors;
+  if (!dirty && !isNew) {
+    errors = {};
+  } else if (draftJson !== checked.draft) {
+    errors = problemsStillOpen(checked.errors, draft);
+  }
+
+  function setErrors(found: MilestoneErrors) {
+    setChecked({ draft: draftJson, errors: found });
+  }
+
+  useEffect(() => {
+    if (saving) {
+      return;
+    }
+    if (focusAfterSave.current !== null) {
+      focusField(focusAfterSave.current);
+    } else if (focusResultAfterSave.current) {
+      // "Saved" is in the save row, stuck to the bottom of the screen, and a
+      // failed save's notice is brought into view by the noticesRef effect.
+      // A plain focus() would scroll the page toward the stuck row's place
+      // at the end of the form.
+      resultRef.current?.focus({ preventScroll: true });
+    }
+    focusAfterSave.current = null;
+    focusResultAfterSave.current = false;
+  }, [saving]);
+
+  // A new milestone's first save opens it at its own address, in a fresh
+  // form, with "Saved" at the top. Focus starts there.
+  useEffect(() => {
+    if (flash !== null) {
+      flashRef.current?.focus();
+    }
+  }, [flash]);
+
+  useEffect(() => {
+    if (!dirty && focusAfterDiscard.current) {
+      // Also in the stuck save row, so already on screen. No scrolling, for
+      // the same reason as "Saved" after a save.
+      noChangesRef.current?.focus({ preventScroll: true });
+    }
+    focusAfterDiscard.current = false;
+  }, [dirty]);
+
+  // Save is always in reach at the bottom of the screen, so a save that fails
+  // with a notice (a conflict, the API being down) brings the notice into view.
+  useEffect(() => {
+    if (!saving && saveError !== null) {
+      noticesRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [saving, saveError]);
 
   function update(patch: Partial<MilestoneDraft>) {
     setDraft((previous) => {
@@ -214,6 +339,7 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
       return next;
     });
     setMessage(null);
+    setDiscarded(false);
   }
 
   function claimProps(path: string) {
@@ -221,16 +347,18 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
   }
 
   function placeApiErrors(apiError: ApiError) {
-    const mapped: MilestoneErrors = {};
+    const found: MilestoneErrors = {};
     for (const item of fieldErrorsFrom(apiError)) {
       const path = withoutPrefix(item.path, "milestone");
       // Two problems on one field read as one sentence each.
-      mapped[path] = mapped[path] ? `${mapped[path]} ${item.message}` : item.message;
+      found[path] = found[path] ? `${found[path]} ${item.message}` : item.message;
     }
+    // The API lists problems in its own order; the form lists them top to bottom.
+    const mapped = inFormOrder(found);
     setErrors(mapped);
     const first = Object.keys(mapped)[0];
     if (first !== undefined) {
-      focusField(first);
+      focusAfterSave.current = first;
     } else {
       setSaveError(apiError);
     }
@@ -241,6 +369,7 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
     setErrors(found);
     setSaveError(null);
     setMessage(null);
+    setMessageAtTop(false);
     const first = Object.keys(found)[0];
     if (first !== undefined) {
       focusField(first);
@@ -253,6 +382,7 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
       today: todayIso(),
     });
     setSaving(true);
+    focusResultAfterSave.current = true;
     try {
       if (record === null) {
         await createMilestone(milestone, draft.published);
@@ -279,12 +409,13 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
       setBaseline(JSON.stringify(next));
       setSavedEstimate(estimateKey(next));
       setErrors({});
+      setCopiedFrom(null);
       setMessage(savedMessage(next));
     } catch (caught) {
       const apiError = toApiError(caught);
       if (apiError.status === 409 && apiError.code === "id_taken") {
         setErrors({ id: "Another milestone already has this id. Pick another." });
-        focusField("id");
+        focusAfterSave.current = "id";
       } else if (apiError.status === 409 || apiError.status === 422 || apiError.status === 400) {
         if (apiError.code === "version_conflict") {
           setSaveError(apiError);
@@ -297,6 +428,14 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
     } finally {
       setSaving(false);
     }
+  }
+
+  // "Load their version" after a conflict. Their version comes in a fresh
+  // form, and the button goes with the old one, so focus waits on the
+  // heading, which hands it on to the new form's (AdminPageHead).
+  function loadTheirs() {
+    headingRef.current?.focus();
+    onReload();
   }
 
   // "Save mine over it" after a conflict: save against the newest version.
@@ -316,6 +455,10 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
     setDraft(JSON.parse(baseline) as MilestoneDraft);
     setErrors({});
     setSaveError(null);
+    setMessage(null);
+    setCopiedFrom(null);
+    setDiscarded(true);
+    focusAfterDiscard.current = true;
   }
 
   function copyRevision(revision: MilestoneRevision) {
@@ -324,7 +467,9 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
     }
     setDraft(toDraft(revision.milestone, revision.published));
     setErrors({});
-    setMessage(`Version ${revision.version} is in the form. Save to make it the current one.`);
+    setMessage(null);
+    setDiscarded(false);
+    setCopiedFrom(revision.version);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -337,19 +482,23 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
   }
 
   function setHasEstimate(on: boolean) {
-    if (on) {
-      update({ estimate: { earliest: null, latest: null, basis: blankClaim(), set_by: "", set_on: "" } });
-    } else {
-      update({ estimate: null, confidence: null });
-    }
+    update(teamRangePatch(on));
   }
 
   const problems = Object.entries(errors);
   const wide = useWideScreen();
+  // The form is long, so while there's something to save (or a save just
+  // finished, or changes were just discarded) the save row stays at the bottom
+  // of the screen until the form ends.
+  const stickySave = dirty || isNew || (message !== null && !messageAtTop) || discarded;
+  useSaveRowHeight(saveRowRef, stickySave);
+  // What the timeline shows, with this milestone in its place, so the
+  // preview's codes match the timeline's.
+  const timeline = previewMilestones(records, record ? record.milestone.id : "", draft.sample === true);
   const preview = (
     <MilestonePreview
       milestone={toMilestone(draft, { estimateChanged: false, editor: editorName, today: todayIso() })}
-      others={others}
+      others={timeline}
       catalog={catalog}
       nowYear={nowYear}
     />
@@ -365,12 +514,19 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
         actions={
           draft.sample ? <SampleChip /> : !isNew ? <PublishStateChip published={record.published} /> : undefined
         }
+        headingRef={headingRef}
       />
       <div className={`container ${styles.listPage}`}>
         <div className={styles.split}>
           <form className={styles.formColumn} onSubmit={(event) => event.preventDefault()} noValidate>
             {/* After the first save the page reloads at the top, so it says so here too. */}
-            {message !== null && message === flash && !dirty && <Notice tone="success" title={message} />}
+            {message !== null && messageAtTop && !dirty && (
+              <Notice tone="success" title={withPublishLink(message)} titleRef={flashRef} />
+            )}
+            {/* "Copy into the form" scrolls up here, so it says what happened here too. */}
+            {copiedFrom !== null && dirty && (
+              <Notice tone="info" title={`Version ${copiedFrom} is in the form. Save to make it the current one.`} />
+            )}
             {!wide && (
               <details className={styles.foldedPreview}>
                 <summary>See the preview</summary>
@@ -386,6 +542,7 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
                   value={draft.name}
                   errors={errors}
                   disabled={saving}
+                  wide
                   onChange={(value) => update({ name: value })}
                 />
                 <TextField
@@ -413,6 +570,7 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
                   label="Technology"
                   value={draft.technology}
                   options={enumValues("Technology")}
+                  errors={errors}
                   disabled={saving}
                   onChange={(value) => update({ technology: value as Technology })}
                 />
@@ -421,6 +579,7 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
                   label="Stage"
                   value={draft.stage}
                   options={enumValues("Stage")}
+                  errors={errors}
                   disabled={saving}
                   hint={stageHint}
                   onChange={(value) => update({ stage: value as Stage })}
@@ -430,7 +589,10 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
                   label="Category"
                   value={draft.category}
                   options={enumValues("MilestoneCategory")}
+                  groups={categoryGroups()}
+                  errors={errors}
                   disabled={saving}
+                  hint={enumDescription("MilestoneCategory", draft.category)}
                   onChange={(value) => update({ category: value as MilestoneCategory })}
                 />
                 <ChoiceField
@@ -438,6 +600,7 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
                   label="Status"
                   value={draft.status}
                   options={enumValues("MilestoneStatus")}
+                  errors={errors}
                   disabled={saving}
                   hint={enumDescription("MilestoneStatus", draft.status)}
                   onChange={(value) => update({ status: value as MilestoneStatus })}
@@ -582,7 +745,7 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
                 id={fieldId("depends_on")}
                 label="Depends on"
                 hint="Milestones that have to happen before this one."
-                options={milestoneOptions(others)}
+                options={milestoneOptions(others, draft.sample === true, draft.depends_on)}
                 chosen={draft.depends_on}
                 onChange={(next) => update({ depends_on: next })}
                 disabled={saving}
@@ -616,29 +779,46 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
               />
             </Section>
 
-            <div className={styles.saveBar}>
-              {savedFirst && (
-                <ConflictNotice savedFirst={savedFirst} onLoadTheirs={onReload} onSaveMine={() => void saveOver()} />
+            {(savedFirst || problems.length > 0 || (saveError && !savedFirst)) && (
+              <div ref={noticesRef} className={styles.saveNotices}>
+                {savedFirst && (
+                  <ConflictNotice
+                    savedFirst={savedFirst}
+                    onLoadTheirs={loadTheirs}
+                    onSaveMine={() => void saveOver()}
+                    hasHistory
+                    titleRef={resultRef}
+                  />
+                )}
+                {problems.length > 0 && (
+                  <Notice
+                    tone="error"
+                    title={problems.length === 1 ? "One thing to fix before saving." : `${problems.length} things to fix before saving.`}
+                  >
+                    <ul className={styles.problemList}>
+                      {problems.map(([path, text]) => (
+                        <li key={path}>
+                          <button type="button" className={forms.linkButton} onClick={() => focusField(path)}>
+                            {pathLabel(path)}
+                          </button>
+                          : {text}
+                        </li>
+                      ))}
+                    </ul>
+                  </Notice>
+                )}
+                {saveError && !savedFirst && (
+                  <ApiErrorNotice error={saveError} title="The milestone wasn't saved" titleRef={resultRef} />
+                )}
+              </div>
+            )}
+            <div
+              ref={saveRowRef}
+              className={`${styles.saveBar} ${styles.saveRow} ${stickySave ? styles.stickySave : ""}`}
+            >
+              {message && !dirty && !messageAtTop && (
+                <Notice tone="success" title={withPublishLink(message)} titleRef={resultRef} />
               )}
-              {problems.length > 0 && (
-                <Notice
-                  tone="error"
-                  title={problems.length === 1 ? "One thing to fix before saving." : `${problems.length} things to fix before saving.`}
-                >
-                  <ul className={styles.problemList}>
-                    {problems.map(([path, text]) => (
-                      <li key={path}>
-                        <button type="button" className={forms.linkButton} onClick={() => focusField(path)}>
-                          {pathLabel(path)}
-                        </button>
-                        : {text}
-                      </li>
-                    ))}
-                  </ul>
-                </Notice>
-              )}
-              {saveError && !savedFirst && <ApiErrorNotice error={saveError} title="The milestone wasn't saved" />}
-              {message && !dirty && <Notice tone="success" title={message} />}
               <div className={forms.actions}>
                 <button
                   type="button"
@@ -653,15 +833,19 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
                     Discard changes
                   </button>
                 )}
-                {!dirty && !isNew && !message && <span className={styles.savedLine}>No unsaved changes.</span>}
+                {!dirty && !isNew && (!message || messageAtTop) && (
+                  <span ref={noChangesRef} tabIndex={-1} className={styles.savedLine}>
+                    No unsaved changes.
+                  </span>
+                )}
               </div>
-              {record && (
-                <p className={styles.savedLine}>
-                  Version {record.version}, saved {formatDateTime(record.updated_at)}
-                  {record.updated_by ? ` by ${record.updated_by}` : ""}.
-                </p>
-              )}
             </div>
+            {record && (
+              <p className={styles.savedLine}>
+                Version {record.version}, saved {formatDateTime(record.updated_at)}
+                {record.updated_by ? ` by ${record.updated_by}` : ""}.
+              </p>
+            )}
 
             {record && (
               <History
@@ -692,6 +876,28 @@ function MilestoneForm({ initial, others, catalog, flash, onReload }: MilestoneF
   );
 }
 
+// Tabbing to a field near the bottom of the screen scrolls it clear of the
+// sticky save row (scroll-padding-bottom in Editor.module.css). A saved
+// notice makes the row about twice as tall, so the row is measured and its
+// height handed to the CSS as --save-row-height while it sticks.
+function useSaveRowHeight(row: RefObject<HTMLDivElement | null>, sticky: boolean): void {
+  useEffect(() => {
+    const element = row.current;
+    if (!sticky || element === null) {
+      return;
+    }
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => {
+      root.style.setProperty("--save-row-height", `${element.offsetHeight}px`);
+    });
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--save-row-height");
+    };
+  }, [row, sticky]);
+}
+
 // ---------- Pieces of the form ----------
 
 function Section({ id, title, note, children }: { id: string; title: ReactNode; note?: string; children: ReactNode }) {
@@ -718,9 +924,22 @@ interface TextFieldProps {
   hint?: string;
   readOnly?: boolean;
   mono?: boolean;
+  // Across both columns of the grid, for text that runs long (a name).
+  wide?: boolean;
 }
 
-function TextField({ path, label, value, errors, disabled, onChange, hint, readOnly = false, mono = false }: TextFieldProps) {
+function TextField({
+  path,
+  label,
+  value,
+  errors,
+  disabled,
+  onChange,
+  hint,
+  readOnly = false,
+  mono = false,
+  wide = false,
+}: TextFieldProps) {
   const id = fieldId(path);
   const messages = messagesAt(errors, path);
   const describedBy: string[] = [];
@@ -731,7 +950,7 @@ function TextField({ path, label, value, errors, disabled, onChange, hint, readO
     describedBy.push(`${id}-error`);
   }
   return (
-    <div className={forms.field}>
+    <div className={`${forms.field} ${wide ? styles.spanAll : ""}`}>
       <label htmlFor={id} className={forms.label}>
         {label}
       </label>
@@ -764,14 +983,29 @@ interface ChoiceFieldProps {
   path: string;
   label: string;
   value: string;
-  options: { value: string; label: string }[];
+  options: ChoiceOption[];
+  // Lists the options under these headings (native optgroups). Any option
+  // no group lists comes after them (optionsInNoGroup).
+  groups?: ChoiceGroup[];
+  // The API can still refuse a choice, e.g. a category this page offers
+  // before the API is updated to accept it. Its message shows here too.
+  errors: MilestoneErrors;
   disabled: boolean;
   onChange: (value: string) => void;
   hint?: string;
 }
 
-function ChoiceField({ path, label, value, options, disabled, onChange, hint }: ChoiceFieldProps) {
+function ChoiceField({ path, label, value, options, groups, errors, disabled, onChange, hint }: ChoiceFieldProps) {
   const id = fieldId(path);
+  const loose = groups ? optionsInNoGroup(options, groups) : options;
+  const messages = messagesAt(errors, path);
+  const describedBy: string[] = [];
+  if (hint) {
+    describedBy.push(`${id}-hint`);
+  }
+  if (messages.length > 0) {
+    describedBy.push(`${id}-error`);
+  }
   return (
     <div className={forms.field}>
       <label htmlFor={id} className={forms.label}>
@@ -779,13 +1013,23 @@ function ChoiceField({ path, label, value, options, disabled, onChange, hint }: 
       </label>
       <select
         id={id}
-        className={forms.select}
+        className={`${forms.select} ${messages.length > 0 ? forms.invalid : ""}`}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled}
-        aria-describedby={hint ? `${id}-hint` : undefined}
+        aria-invalid={messages.length > 0 ? true : undefined}
+        aria-describedby={describedBy.length > 0 ? describedBy.join(" ") : undefined}
       >
-        {options.map((option) => (
+        {groups?.map((group) => (
+          <optgroup key={group.label} label={group.label}>
+            {group.options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+        {loose.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
@@ -794,6 +1038,11 @@ function ChoiceField({ path, label, value, options, disabled, onChange, hint }: 
       {hint && (
         <p id={`${id}-hint`} className={forms.hint}>
           {hint}
+        </p>
+      )}
+      {messages.length > 0 && (
+        <p id={`${id}-error`} className={forms.error}>
+          {messages.join(" ")}
         </p>
       )}
     </div>
@@ -813,6 +1062,7 @@ function EstimateFields({ draft, errors, disabled, claimProps, onChange }: Estim
   if (estimate === null) {
     return null;
   }
+  const confidenceId = fieldId("confidence");
   const confidenceMessages = messagesAt(errors, "confidence");
 
   function setBasis(basis: Claim) {
@@ -842,11 +1092,11 @@ function EstimateFields({ draft, errors, disabled, claimProps, onChange }: Estim
           hint="Empty if the range has no end."
         />
         <div className={forms.field}>
-          <label htmlFor={fieldId("confidence")} className={forms.label}>
+          <label htmlFor={confidenceId} className={forms.label}>
             Confidence
           </label>
           <select
-            id={fieldId("confidence")}
+            id={confidenceId}
             className={`${forms.select} ${confidenceMessages.length > 0 ? forms.invalid : ""}`}
             value={draft.confidence ?? ""}
             onChange={(event) =>
@@ -854,6 +1104,8 @@ function EstimateFields({ draft, errors, disabled, claimProps, onChange }: Estim
             }
             disabled={disabled}
             aria-invalid={confidenceMessages.length > 0 ? true : undefined}
+            // Linked to its error, as every other field is, so a screen reader says why it's invalid.
+            aria-describedby={confidenceMessages.length > 0 ? `${confidenceId}-error` : undefined}
           >
             <option value="">Pick one</option>
             {enumValues("Confidence").map((info) => (
@@ -862,7 +1114,11 @@ function EstimateFields({ draft, errors, disabled, claimProps, onChange }: Estim
               </option>
             ))}
           </select>
-          {confidenceMessages.length > 0 && <p className={forms.error}>{confidenceMessages.join(" ")}</p>}
+          {confidenceMessages.length > 0 && (
+            <p id={`${confidenceId}-error`} className={forms.error}>
+              {confidenceMessages.join(" ")}
+            </p>
+          )}
         </div>
       </div>
       <ClaimEditor {...claimProps} label="What the range is based on" claim={estimate.basis} onChange={setBasis} />

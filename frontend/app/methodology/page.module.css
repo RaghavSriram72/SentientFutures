@@ -16,6 +16,81 @@
     position: sticky;
     top: calc(var(--header-height) + 3.5rem);
     align-self: start;
+    /* On a short window the full list can run past the bottom edge, so it
+       stops 1rem above the edge and scrolls on its own. MethodologyToc keeps
+       the current entry in view. dvh is the height you can see, so a tablet's
+       toolbar doesn't cover the last entry. */
+    max-height: calc(100dvh - var(--header-height) - 4.5rem);
+    overflow-y: auto;
+    /* Where the system shows scrollbars that take up room (Windows, or macOS
+       with a mouse), a thin one leaves the labels more of the width. */
+    scrollbar-width: thin;
+    /* Heights of the soft fades at the edges of a cut-off list: at the
+       bottom while more entries follow, and at the top once the list has
+       scrolled down. The top one is the most it grows to (see the mask
+       rules below). */
+    --toc-fade: 2.5rem;
+    --toc-fade-top: 1.5rem;
+    /* A scrolling box clips what pokes out of it, like a link's focus ring
+       (global :focus-visible draws it 5px outside the link). The padding,
+       pulled back out with negative side margins so the links don't move,
+       leaves the rings room. scroll-padding keeps that room when a tabbed-to
+       link scrolls into view, and at each edge it also clears that edge's
+       fade. MethodologyToc reads these two values when it keeps the current
+       entry in view, so it leaves the same room. */
+    padding: 0 6px 6px;
+    margin-inline: -6px;
+    scroll-padding-block: calc(var(--toc-fade-top) + 6px) calc(var(--toc-fade) + 6px);
+  }
+
+  /* While the cut-off list has more entries below, its bottom edge fades out,
+     so a list that happens to end cleanly after an entry doesn't look
+     complete. Once the list has scrolled down, its top edge fades out too, so
+     the title or an entry cut off at the top fades away instead of being
+     sliced through its letters. MethodologyToc sets data-more-below and
+     data-more-above, and takes each one off once that end of the list is in
+     view. The mask stays put on the box while the entries scroll under it.
+     One gradient draws both fades. --toc-mask-top and --toc-mask-bottom are
+     how tall the fade at each edge is right now: 0px, which means no fade,
+     unless the rule for that edge after this one switches it on.
+     The mask would fade a scrollbar too, so it has two layers. The first is
+     the fades, over the whole box. The second is solid and covers only the
+     scrollbar's strip at the right edge, which keeps the scrollbar whole.
+     MethodologyToc sets --toc-scrollbar to the scrollbar's width, which is
+     0px for overlay scrollbars, so then only the fades show. */
+  .toc[data-more-above],
+  .toc[data-more-below] {
+    mask-image:
+      linear-gradient(
+        to bottom,
+        transparent,
+        #000 var(--toc-mask-top, 0px),
+        #000 calc(100% - var(--toc-mask-bottom, 0px)),
+        transparent
+      ),
+      linear-gradient(#000, #000);
+    mask-size:
+      100% 100%,
+      var(--toc-scrollbar, 0px) 100%;
+    mask-position:
+      0 0,
+      100% 0;
+    mask-repeat: no-repeat;
+  }
+
+  /* The top fade follows how far the list has scrolled (--toc-scrolled, set
+     by MethodologyToc). The title has about 5px of empty space above its
+     letters, so for the first 5px of scrolling only that space leaves the
+     box and there is no fade at all: the title stays whole and sharp. After
+     that the fade grows six times as fast as the list scrolls, so it is
+     12px tall at 7px and full height from 9px, and letters cut at the edge
+     are already faded away. clamp keeps it between 0 and full height. */
+  .toc[data-more-above] {
+    --toc-mask-top: clamp(0px, calc((var(--toc-scrolled, 0px) - 5px) * 6), var(--toc-fade-top));
+  }
+
+  .toc[data-more-below] {
+    --toc-mask-bottom: var(--toc-fade);
   }
 }
 
@@ -42,7 +117,9 @@
   gap: 0.5rem;
   padding: 0.35rem 0.75rem;
   border: 1px solid var(--rule);
-  border-radius: 999px;
+  /* Round ends on one line. A long label that wraps on a phone ("How new
+     sources move through the scorecard") gets soft corners, not a capsule. */
+  border-radius: 1.25rem;
   background: var(--paper-2);
   font-size: var(--text-sm);
   color: var(--ink-muted);
@@ -54,6 +131,13 @@
 
 .tocLink:hover {
   color: var(--grape);
+  background: var(--grape-tint);
+}
+
+/* The section you're reading */
+.tocLink[aria-current] {
+  color: var(--grape);
+  border-color: var(--grape);
   background: var(--grape-tint);
 }
 
@@ -78,11 +162,20 @@
     border-left: 1px solid transparent;
     border-radius: 0;
     background: transparent;
+    /* When a label wraps (a scrollbar can take some of the width), the
+       browser breaks it so the last line isn't a single word. */
+    text-wrap: pretty;
   }
 
   .tocLink:hover {
     background: transparent;
     border-left-color: var(--grape);
+  }
+
+  .tocLink[aria-current] {
+    background: transparent;
+    border-left-color: var(--grape);
+    color: var(--ink);
   }
 }
 
@@ -141,6 +234,12 @@
   gap: 0.5rem 1rem;
 }
 
+/* The stamp is tilted and outlined, so it needs a little room from the words
+   on either side */
+.inlineStamp {
+  margin-inline: 0.35em;
+}
+
 /* ---------- 02 The four marks ---------- */
 /* The shared legend auto-fits; in this column that leaves 3 + 1, so pin it to 2 by 2 */
 @media (min-width: 560px) {
@@ -195,6 +294,8 @@
   margin-top: 1.25rem;
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
+  /* A link can point at the full disagreement rule: clear the sticky header */
+  scroll-margin-top: calc(var(--header-height) + 2.5rem);
 }
 
 .moreSummary {
@@ -326,7 +427,7 @@
   color: var(--ink-muted);
 }
 
-/* ---------- 06 to 08 Categories ---------- */
+/* ---------- 06 to 10 Categories and placeholders ---------- */
 .enumList {
   display: grid;
 }
@@ -349,7 +450,7 @@
   color: var(--ink);
 }
 
-/* ---------- 09 Versions ---------- */
+/* ---------- 11 Versions ---------- */
 .version {
   display: grid;
   gap: 1.25rem 2.5rem;
@@ -390,4 +491,72 @@
   margin-top: 1.25rem;
   font-size: var(--text-sm);
   color: var(--ink-muted);
+}
+
+/* ---------- Print ---------- */
+/* The folded parts print open (see globals.css), so their chevrons go, and so
+   does the contents list, which can't be clicked on paper. Chrome can't split
+   a grid inside a <details> at a page break: it overprints rows or pushes the
+   whole list to the next page and leaves a gap. So the lists inside them lay
+   out as plain blocks on paper, with margins in place of the gaps. */
+@media print {
+  .layout {
+    display: block;
+  }
+
+  .toc,
+  .moreChevron {
+    display: none;
+  }
+
+  .moreBody,
+  .explainers,
+  .enumList,
+  .ruleSteps,
+  .readingList,
+  .pipeline {
+    display: block;
+  }
+
+  .moreBody > * + * {
+    margin-top: 0.9rem;
+  }
+
+  .ruleSteps > li + li {
+    margin-top: 0.5rem;
+  }
+
+  /* The boxed notes stay whole too: split at a page break, a box leaves an
+     empty band at the bottom of one page and a stray top on the next. So do
+     the numbered points and steps, so a number never sits alone at the foot
+     of a page with its words on the next. */
+  .explainer,
+  .callout,
+  .placeholder,
+  .version,
+  .readingList > li,
+  .pipelineStep {
+    break-inside: avoid;
+  }
+
+  /* The last line of the page goes with the versions box above it, not onto
+     a page of its own */
+  .contactLine {
+    break-before: avoid;
+  }
+
+  /* A label never ends a page with what it labels on the next one. The first
+     child of a section is its SectionHead (number, heading and intro), kept
+     in one piece and on the same page as the start of the section. A fold's
+     summary ("More on each mark") stays with its first line too, and the
+     disagreement rule's threshold with its first step. */
+  .section > :first-child,
+  .moreSummary,
+  .ruleThreshold {
+    break-after: avoid;
+  }
+
+  .section > :first-child {
+    break-inside: avoid;
+  }
 }

@@ -37,6 +37,24 @@
   }
 }
 
+/* On paper the hero is a plain block, not a grid. When a page break fell
+   inside the "Where things stand" card, Chrome moved the whole grid to the
+   next page instead of splitting it, so the first page held only the banner
+   and the logo (US Letter with 12 to 14mm margins, A4 with 19 to 20mm, and
+   landscape Letter, A4 and Legal with narrow margins). As a block it splits
+   like the rest of the page. The margin stands in for the grid's gap. On
+   wide paper (landscape, Tabloid) this puts the card under the hero text
+   instead of beside it. */
+@media print {
+  .heroInner {
+    display: block;
+  }
+
+  .heroInner > * + * {
+    margin-top: clamp(2rem, 4vw, 3rem);
+  }
+}
+
 .heroText {
   min-width: 0;
 }
@@ -69,6 +87,25 @@
   border-radius: var(--radius-panel);
 }
 
+/* On narrow paper such as A5 the box prints as a plain block. As a grid,
+   Chrome moved the whole box to the next page even when it fit in the room
+   left, so with 24 to 26mm margins the page before held only the end of
+   the intro and the two buttons and was two-thirds blank. As a block it
+   stays under the buttons, and when it does meet a page break it splits
+   like the rest of the page. The margin stands in for the grid's 1rem
+   gap. Wider paper such as US Letter and A4 keeps the grid: the box
+   already breaks well there, and the block version only moved their page
+   breaks around. */
+@media print and (max-width: 599px) {
+  .standing {
+    display: block;
+  }
+
+  .standing > * + * {
+    margin-top: 1rem;
+  }
+}
+
 .standingTitle {
   display: flex;
   align-items: center;
@@ -99,12 +136,51 @@
   border-left: 2px solid var(--lavender);
 }
 
+/* One equal column per stat, so the row stays even when "With a date" is left out */
 .standingStats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 0.75rem;
   padding-top: 1rem;
   border-top: 1px solid var(--rule);
+}
+
+/* The link sits on the label, and its ::after stretches over the whole stat,
+   so the big number can be clicked too */
+.stat {
+  position: relative;
+}
+
+.statLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Narrower than the gap between the stats, so the focus ring clears the next one */
+.statLink::after {
+  content: "";
+  position: absolute;
+  inset: -0.35rem -0.25rem;
+  border-radius: var(--radius-md);
+}
+
+.statLink:focus-visible {
+  outline: none;
+}
+
+.statLink:focus-visible::after {
+  outline: 2px solid var(--grape);
+  outline-offset: 0;
+}
+
+.stat:hover .statLink {
+  color: var(--grape);
+  text-decoration: underline;
+}
+
+.stat:hover dd {
+  color: var(--grape);
 }
 
 .standingStats dt {
@@ -120,6 +196,20 @@
   font-size: 2rem;
   line-height: 1.1;
   color: var(--ink);
+}
+
+/* On paper the card's title stays on the same page as its list, and each
+   stat's label stays with its number. Without this, a page break could
+   leave "Where things stand" alone at the foot of a page, or put
+   "Milestones" on one page and its number on the next. */
+@media print {
+  .standingTitle {
+    break-after: avoid;
+  }
+
+  .stat {
+    break-inside: avoid;
+  }
 }
 
 /* ---------- Key terms strip ---------- */
@@ -176,6 +266,32 @@
   margin-bottom: 0;
 }
 
+/* On paper a section's small label ("Three proposals", "Timeline") stays
+   on the same page as the heading under it, instead of ending a page on
+   its own. */
+@media print {
+  .sectionHead > :global(.eyebrow) {
+    break-after: avoid;
+  }
+}
+
+/* Small links under a section heading, on one line, wrapping on phones */
+.headLink {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.5rem;
+  font-size: var(--text-sm);
+}
+
+.headLink a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.headLink a:hover {
+  text-decoration: underline;
+}
+
 .sectionIntro {
   max-width: 62ch;
   font-size: var(--text-base);
@@ -190,7 +306,10 @@
   list-style: none;
 }
 
+/* Each card measures its own width (a container query), so the rating rows
+   below can switch layout when the card itself is narrow, whatever the window */
 .proposal {
+  container: proposal / inline-size;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -260,43 +379,37 @@
   border-top: 1px solid var(--rule);
 }
 
+/* Two columns, like the scorecard's dimension and rating, so the chips line up
+   from card to card. The chip comes from the scorecard, with its reason under it. */
+/* The chip side gets more room, so "Potentially high severity" and the
+   Unclear reasons stay on one line under the chip. Narrow cards stack each
+   row instead (the container query below). */
 .ratingRow {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   align-items: baseline;
-  justify-content: space-between;
-  gap: 0.15rem 0.75rem;
-  padding-block: 0.45rem;
+  gap: 0.75rem;
+  padding-block: 0.55rem;
   border-bottom: 1px solid var(--rule-soft);
 }
 
 .ratingRow dt {
   font-size: var(--text-sm);
+  line-height: 1.4;
   color: var(--ink-body);
 }
 
-.rating,
-.ratingUnclear {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink);
-}
-
-/* Unclear is hatched, like the Unclear mark everywhere else */
-.ratingUnclear {
-  padding: 0.1em 0.5em;
-  border-radius: 6px;
-  background: var(--hatch), var(--paper-2);
-  border: 1px solid color-mix(in srgb, var(--stage-widely) 35%, transparent);
-  color: var(--prov-unclear);
-}
-
-.severity {
-  text-transform: none;
-  letter-spacing: 0;
+/* In a narrow card (the three-column grid from 1024px to about 1080px, and
+   phones under about 350px) the chip column would drop under the 151px that
+   "Potentially high severity" and "No relevant evidence found" need, so they
+   would wrap. There each label sits over its chip instead, and the chip line
+   gets the card's full width. 17rem is the card's content width, inside its
+   padding. */
+@container proposal (width < 17rem) {
+  .ratingRow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.35rem;
+  }
 }
 
 .question {
@@ -400,6 +513,21 @@
   color: var(--ink-faint);
 }
 
+/* The one link after the section links, set like the head links */
+.mindsCompare {
+  margin-top: 0.85rem;
+  font-size: var(--text-sm);
+}
+
+.mindsCompare a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.mindsCompare a:hover {
+  text-decoration: underline;
+}
+
 /* ---------- Timeline teaser ---------- */
 .stageKey {
   display: flex;
@@ -407,6 +535,16 @@
   align-items: center;
   gap: 0.5rem 1rem;
   margin-bottom: 1rem;
+}
+
+.stageKeyLink {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.stageKeyLink:hover {
+  text-decoration: underline;
 }
 
 .stageKeyLabel {

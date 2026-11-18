@@ -11,6 +11,7 @@ import forms from "./forms.module.css";
 import noticeStyles from "./Notice.module.css";
 import { ApiErrorNotice, Notice } from "./Notice";
 import { useApiData } from "./useApiData";
+import { useClearAfterSignIn } from "./useClearAfterSignIn";
 
 function plural(count: number, one: string, many: string): string {
   return count === 1 ? `1 ${one}` : `${count} ${many}`;
@@ -37,6 +38,16 @@ export function waitingText(waiting: PublishWaiting): string {
   return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
+// What the panel says when nothing has changed. A local server can't rebuild
+// the site, so after a publish there it says nothing is new since then,
+// rather than that nothing is waiting to go up.
+function nothingWaitingText(status: PublishStatus): string {
+  if (status.mode === "local" && status.last !== null) {
+    return "Nothing new since the last publish.";
+  }
+  return "Nothing new is waiting to go up.";
+}
+
 function lastPublishedText(status: PublishStatus): string {
   const last = status.last;
   if (last === null || last.requested_at === null) {
@@ -44,6 +55,21 @@ function lastPublishedText(status: PublishStatus): string {
   }
   const by = last.requested_by ? `, by ${last.requested_by}` : "";
   return `Last publish: ${formatDateTime(last.requested_at)}${by}.`;
+}
+
+// Whether to show the local rebuild command, and the command. The status says
+// so on every load. A publish's answer covers the moment before it reloads.
+function localCommand(
+  status: PublishStatus | null,
+  result: PublishResult | null,
+): { shown: boolean; command: string | null } {
+  if (status && status.mode === "local") {
+    return { shown: true, command: status.command ?? (result ? result.command : null) };
+  }
+  if (result && result.mode === "local") {
+    return { shown: true, command: result.command };
+  }
+  return { shown: false, command: null };
 }
 
 // The public site is a static copy, rebuilt on each publish. This panel says
@@ -60,8 +86,18 @@ export function PublishPanel({ refreshes }: { refreshes: number }) {
   const [publishing, setPublishing] = useState(false);
   const [result, setResult] = useState<PublishResult | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
+  // A publish that ended the session leaves "Your session ended." on screen.
+  // Once someone signs in again over the page, it goes.
+  useClearAfterSignIn(error, () => setError(null));
 
   async function publish() {
+    // One stray click rebuilds the public site, so ask first, in the same
+    // kind of box the leave prompt uses.
+    const nothingWaiting = status.data !== null && waitingText(status.data.waiting) === "";
+    const question = nothingWaiting ? "Nothing new is waiting. Publish anyway?" : "Publish to the site now?";
+    if (!window.confirm(question)) {
+      return;
+    }
     setPublishing(true);
     setError(null);
     setResult(null);
@@ -86,6 +122,9 @@ export function PublishPanel({ refreshes }: { refreshes: number }) {
       failedAttempt = attempt;
     }
   }
+  // A local server never rebuilds the site itself, so its command stays on
+  // screen, after a reload too, until someone runs it.
+  const local = localCommand(status.data, result);
 
   return (
     <section className={`paper ${styles.publish}`} aria-labelledby="publish-heading">
@@ -97,7 +136,7 @@ export function PublishPanel({ refreshes }: { refreshes: number }) {
           <>
             <p className={styles.panelNote}>{lastPublishedText(status.data)}</p>
             <p className={styles.publishWaiting}>
-              {waiting === "" ? "Nothing new is waiting to go up." : `Waiting for the next publish: ${waiting}.`}
+              {waiting === "" ? nothingWaitingText(status.data) : `Waiting for the next publish: ${waiting}.`}
             </p>
             {failedAttempt && (
               <p className={styles.pollError}>
@@ -131,12 +170,12 @@ export function PublishPanel({ refreshes }: { refreshes: number }) {
             <p>The site is rebuilding on GitHub. The changes are usually live in a few minutes.</p>
           </Notice>
         )}
-        {result && result.mode === "local" && (
+        {local.shown && (
           <Notice tone="info" title="This server can't rebuild the public site on its own.">
             <p>To see the changes on this computer, run this from the frontend folder:</p>
-            {result.command && (
+            {local.command && (
               <pre className={noticeStyles.command}>
-                <code>{result.command}</code>
+                <code>{local.command}</code>
               </pre>
             )}
           </Notice>

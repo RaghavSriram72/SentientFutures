@@ -27,6 +27,7 @@ from sf_pipeline.collectors.base import Collector
 from sf_pipeline.config import Runner, Settings, load_settings
 from sf_pipeline.runs import RunAlreadyRunning, RunRecorder, Stage, Trigger, new_run_id, start_run
 from sf_pipeline.store import ensure_pipeline_indexes, from_doc, to_doc
+from sf_pipeline.text import cost_text
 from sf_pipeline.triage import load_prompt, make_client, run_triage_stage
 
 logger = logging.getLogger("sf_pipeline")
@@ -145,7 +146,7 @@ def run_pipeline(
         recorder.error(f"The run stopped with an error: {type(error).__name__}: {error}")
         status = "failed"
     finally:
-        recorder.log(f"Finished: {status}. Cost ${recorder.cost_usd:.4f}.")
+        recorder.log(f"Finished: {status}. Cost {cost_text(recorder.cost_usd)}.")
         recorder.finish(status)
     return run_id
 

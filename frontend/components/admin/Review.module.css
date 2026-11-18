@@ -15,6 +15,16 @@
   min-width: 0;
 }
 
+/* Holds the review form, whose sections stay items of the page's grid. It's
+   hidden, not removed, after "Keep current decision", so what was typed stays. */
+.formHolder {
+  display: contents;
+}
+
+.formHolder[hidden] {
+  display: none;
+}
+
 .sectionTitle {
   font-size: var(--text-xl);
 }
@@ -404,6 +414,13 @@
   max-width: 22rem;
 }
 
+/* "Keep current decision": the way out, on its own row under the two decisions. */
+.keepDecision {
+  grid-column: 1 / -1;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule-soft);
+}
+
 /* ---------- The record (audit trail) ---------- */
 .recordHeading {
   margin-top: 0.5rem;
@@ -443,6 +460,19 @@
   font-weight: 500;
   color: var(--ink);
   cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+/* A line in the record with nothing to open, like "Added again by ...". The
+   dashed edge sets it apart from the decisions, which open, and the extra
+   1em lines its text up with theirs, after the disclosure triangle. */
+.recordEvent {
+  padding: 0.7rem 1rem 0.7rem calc(1rem + 1em);
+  border: 1px dashed var(--rule-strong);
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink);
   overflow-wrap: anywhere;
 }
 

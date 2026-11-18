@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { OpenDetailsOnHash } from "@/components/common/OpenDetailsOnHash";
 import { Term } from "@/components/glossary/Term";
 import { ClaimList, ClaimText } from "@/components/provenance/ClaimText";
 import { DefaultMark } from "@/components/provenance/DefaultMark";
@@ -8,17 +9,17 @@ import { MarksHelp } from "@/components/provenance/MarksHelp";
 import { ProvenanceGlyph } from "@/components/provenance/ProvenanceTag";
 import { buildTimeline, type TimelineItem } from "@/components/timeline/timelineModel";
 import { getPublicMilestones, getSiteData, getSources } from "@/lib/data";
-import { enumValues, isDraftEnum } from "@/lib/enums";
-import { sourceRefsById, sourceRefsByRegisterId, type SourceRef } from "@/lib/sources";
-import type { Claim, Provenance, ScorecardRow, Stage, TechnologyPage } from "@/lib/types";
+import { COMPARE_MINDS_KEY, compareHref, MINDS_ROW_ID, scorecardRowId } from "@/lib/dimensions";
+import { enumValues } from "@/lib/enums";
+import { realSources, sourceRefsById, sourceRefsByRegisterId, type SourceRef } from "@/lib/sources";
+import type { Claim, EvidenceRow, Provenance, ScorecardRow, Stage, TechnologyPage } from "@/lib/types";
 
-import { AtAGlance, type GlanceRow } from "./AtAGlance";
 import { EmphasisText } from "./EmphasisText";
 import { EvidenceRegister } from "./EvidenceRegister";
 import { FullAssessment, type AssessmentPart } from "./FullAssessment";
 import { MilestoneTable } from "./MilestoneTable";
-import { OpenDetailsOnHash } from "./OpenDetailsOnHash";
-import { hasSeverityFlag, Scorecard, scorecardRowId, type ScorecardDetailLink } from "./Scorecard";
+import { RatingChip } from "./RatingChip";
+import { Scorecard, type ScorecardDetailLink } from "./Scorecard";
 import {
   AssessmentView,
   CausalChain,
@@ -30,7 +31,7 @@ import {
 } from "./ScorecardSections";
 import { TensionCallout } from "./TensionCallout";
 import { nextTechnology, requireTechnology, technologyNumber, type TechnologyId } from "./technologyData";
-import { capitalize, countWord, joinList, leadSentences, lowerFirst } from "./text";
+import { capitalize, countWord, joinList, lowerFirst } from "./text";
 import { TocNav, type TocItem } from "./TocNav";
 import { WhereWeLand, type MilestoneFacts } from "./WhereWeLand";
 import styles from "./TechnologyPageView.module.css";
@@ -38,9 +39,8 @@ import styles from "./TechnologyPageView.module.css";
 // One template for all three technology pages:
 //   hero (headline, intro, review status, "Where we land")
 //   "The tension", only when the team has written it
-//   "At a glance", one line per part of the argument
 //   detail sections, in the same order on every page
-//   "Full assessment", collapsed
+//   "Full assessment" (or "Full scorecard" when that's all it holds), collapsed
 // A section with nothing in content says so in one plain line. Nothing here
 // writes research text: every line is a field from content or a count.
 
@@ -53,7 +53,7 @@ interface PageContext {
   sourcesByRegisterId: Sources;
   items: TimelineItem[];
   // The kind most claims on this page have. Claims of this kind show only
-  // their glyph, and each section says the default once.
+  // their glyph. On an AI-drafted page each section says the default once.
   quiet: Provenance;
 }
 
@@ -68,12 +68,14 @@ interface SectionSpec {
 }
 
 // The scorecard rows whose basis a detail section covers in full. Those rows
-// show one sentence and a link. Matched by the row's dimension name.
+// show one sentence and a link. Matched by the row's id, which never changes.
+// Until the team writes a welfare assessment, the welfare section shows its
+// rows from the scorecard, in this order.
 const DIMENSION_SECTIONS: Record<string, "minds" | "welfare"> = {
-  "Artificial-mind welfare and rights risk": "minds",
-  "Human welfare risk": "welfare",
-  "Governance risk": "welfare",
-  "Safeguard adequacy": "welfare",
+  [MINDS_ROW_ID]: "minds",
+  "human-welfare-risk": "welfare",
+  "governance-risk": "welfare",
+  "safeguard-adequacy": "welfare",
 };
 
 const PLACEHOLDER = {
@@ -93,11 +95,6 @@ function listOf<T>(items: T[] | undefined): T[] {
   return items ?? [];
 }
 
-function firstOf<T>(items: T[] | undefined): T | null {
-  const list = listOf(items);
-  return list.length > 0 ? list[0] : null;
-}
-
 // ---------- Page ----------
 
 export function TechnologyPageView({ id }: { id: TechnologyId }) {
@@ -107,6 +104,10 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
   const sources = sourceRefsById(getSources());
   const sourcesByRegisterId = sourceRefsByRegisterId(getSources());
   const quiet: Provenance = technology.sample === true ? "ai" : "team";
+  // A page the team wrote says so once, in its hero chip, so its sections
+  // skip the "Our read unless marked" line. An AI-drafted page keeps it on
+  // every section, since a deep link can land below the AI draft banner.
+  const sectionDefault: Provenance | null = quiet === "team" ? null : quiet;
   const context: PageContext = { technology, sources, sourcesByRegisterId, items, quiet };
   const sections = buildSections(context);
   const next = nextTechnology(id);
@@ -138,7 +139,12 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
               </div>
             </div>
             <div className={styles.heroSide}>
-              <WhereWeLand rows={technology.scorecard} milestones={milestoneFacts(items)} />
+              <WhereWeLand
+                rows={technology.scorecard}
+                milestones={milestoneFacts(items)}
+                technologyId={id}
+                sourceCount={sourceCountFor(id)}
+              />
             </div>
           </div>
         </div>
@@ -163,7 +169,7 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
               key={section.id}
               id={section.id}
               title={section.title}
-              defaultKind={section.showsDefault ? quiet : null}
+              defaultKind={section.showsDefault ? sectionDefault : null}
             >
               {section.body}
             </PageSection>
@@ -178,7 +184,6 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
 
 function buildSections(context: PageContext): SectionSpec[] {
   return [
-    glanceSection(context),
     howSection(context),
     caseSection(context),
     mindsSection(context),
@@ -212,86 +217,7 @@ function ReviewStatus({ sample }: { sample: boolean }) {
   );
 }
 
-function glanceSection(context: PageContext): SectionSpec {
-  return {
-    id: "at-a-glance",
-    label: "At a glance",
-    title: (
-      <>
-        At a <em>glance</em>
-      </>
-    ),
-    showsDefault: true,
-    body: <AtAGlance rows={glanceRows(context)} quiet={context.quiet} />,
-  };
-}
-
-// Each row is the opening of a claim further down, so At a glance never says
-// anything the page doesn't. Fields that are empty fall back to the nearest
-// field the team did fill in, or to a placeholder.
-function glanceRows({ technology }: PageContext): GlanceRow[] {
-  const rows: GlanceRow[] = [];
-
-  const claimsToSolve = firstOf(technology.claims_to_solve);
-  rows.push({
-    label: "What it claims to solve",
-    href: "#how",
-    claim: claimsToSolve ? excerpt(claimsToSolve) : scopeProblemClaim(technology),
-    placeholder: PLACEHOLDER.claims,
-  });
-
-  const mechanism = firstOf(technology.mechanism);
-  const alignmentMechanism = technology.alignment_assessment?.mechanism ?? null;
-  rows.push({
-    label: mechanism || !alignmentMechanism ? "How it would work" : "How it would help alignment",
-    href: mechanism ? "#how" : "#alignment",
-    claim: mechanism ? excerpt(mechanism) : alignmentMechanism,
-    placeholder: PLACEHOLDER.mechanism,
-  });
-
-  const strongestCase = firstOf(technology.strongest_case);
-  rows.push({
-    label: "Strongest case",
-    href: "#case",
-    claim: strongestCase ? excerpt(strongestCase) : null,
-    placeholder: PLACEHOLDER.case,
-  });
-
-  const objection = firstOf(technology.strongest_objections);
-  const alternative = firstOf(technology.alternatives);
-  rows.push({
-    label: "Strongest objection",
-    href: "#case",
-    claim: objection ? excerpt(objection) : alternative ? excerpt(alternative) : null,
-    placeholder: PLACEHOLDER.objections,
-    note: !objection && alternative ? "From the team's scorecard counterarguments." : undefined,
-  });
-
-  const mindsQuestion = firstOf(technology.artificial_minds_questions);
-  const consciousness = technology.artificial_minds_assessment?.consciousness ?? null;
-  rows.push({
-    label: "Artificial minds",
-    href: "#minds",
-    claim: mindsQuestion ? excerpt(mindsQuestion) : consciousness ? excerpt(consciousness) : null,
-    placeholder: PLACEHOLDER.minds,
-  });
-
-  const harms = technology.welfare_governance?.harms ?? null;
-  const welfareRow = scorecardRowFor(technology.scorecard, "Human welfare risk");
-  rows.push({
-    label: "Main welfare risks",
-    href: harms ? "#welfare" : "#scorecard",
-    claim: harms ? excerpt(harms) : welfareRow ? excerpt(welfareRow.basis) : null,
-    placeholder: PLACEHOLDER.welfare,
-  });
-
-  return rows;
-}
-
-// The opening sentence or two of a claim, with its provenance kept.
-function excerpt(claim: Claim): Claim {
-  return { ...claim, text: leadSentences(claim.text, 60), source_ids: [] };
-}
+// ---------- Detail sections ----------
 
 // The problem from the team's scope ("Both alignment and the Intelligence
 // Curse"), for pages whose claims_to_solve list is still empty.
@@ -302,22 +228,14 @@ function scopeProblemClaim(technology: TechnologyPage): Claim | null {
   return { text: problemText(technology.scope.problem), provenance: technology.scope.intervention.provenance };
 }
 
-function scorecardRowFor(rows: ScorecardRow[], dimension: string): ScorecardRow | null {
-  for (const row of rows) {
-    if (row.dimension === dimension) {
-      return row;
-    }
-  }
-  return null;
-}
-
-// ---------- Detail sections ----------
-
 function howSection({ technology, sources, quiet }: PageContext): SectionSpec {
   const claims = listOf(technology.claims_to_solve);
   const mechanism = listOf(technology.mechanism);
   const steps = listOf(technology.theory_of_change);
   const scopeProblem = claims.length === 0 ? scopeProblemClaim(technology) : null;
+  // Without its own claims the left column holds one line from the scope, or
+  // a placeholder, beside a much taller mechanism, so the two stack instead.
+  const leftIsShort = claims.length === 0;
 
   return {
     id: "how",
@@ -329,7 +247,7 @@ function howSection({ technology, sources, quiet }: PageContext): SectionSpec {
     ),
     showsDefault: claims.length > 0 || mechanism.length > 0 || steps.length > 0 || scopeProblem !== null,
     body: (
-      <div className={styles.howGrid}>
+      <div className={`${styles.howGrid} ${leftIsShort ? styles.howStacked : ""}`}>
         <div className={styles.subsection}>
           <h3 className={styles.subsectionTitle}>What it claims to solve</h3>
           {claims.length > 0 && <ClaimList claims={claims} sources={sources} quiet={quiet} />}
@@ -379,6 +297,9 @@ function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
     againstClaims = listOf(technology.alternatives);
     againstNote = ALTERNATIVES_NOTE;
   }
+  // A side that is only a placeholder would leave a tall empty column beside
+  // the other one, so the two cards stack instead.
+  const oneSided = forClaims.length === 0 || againstClaims.length === 0;
 
   return {
     id: "case",
@@ -390,7 +311,7 @@ function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
     ),
     showsDefault: forClaims.length > 0 || againstClaims.length > 0,
     body: (
-      <div className={styles.debate}>
+      <div className={`${styles.debate} ${oneSided ? styles.debateStacked : ""}`}>
         <ArgumentColumn
           tone="for"
           label="For"
@@ -426,6 +347,7 @@ function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
 function mindsSection({ technology, sources, quiet }: PageContext): SectionSpec {
   const minds = technology.artificial_minds_assessment;
   const questions = listOf(technology.artificial_minds_questions);
+  const hasContent = Boolean(minds) || questions.length > 0;
   return {
     id: "minds",
     label: "Artificial minds",
@@ -434,7 +356,7 @@ function mindsSection({ technology, sources, quiet }: PageContext): SectionSpec 
         Artificial <em>minds</em>
       </>
     ),
-    showsDefault: Boolean(minds) || questions.length > 0,
+    showsDefault: hasContent,
     body: (
       <div className={styles.stack}>
         {minds && <MindsGrid minds={minds} sources={sources} quiet={quiet} />}
@@ -444,7 +366,16 @@ function mindsSection({ technology, sources, quiet }: PageContext): SectionSpec 
             <ClaimList claims={questions} sources={sources} quiet={quiet} />
           </div>
         )}
-        {!minds && questions.length === 0 && <Placeholder text={PLACEHOLDER.minds} />}
+        {!hasContent && <Placeholder text={PLACEHOLDER.minds} />}
+        {/* The same questions for all three technologies, on the compare page */}
+        {hasContent && (
+          <p className={styles.compareLine}>
+            <Link href={compareHref(COMPARE_MINDS_KEY)}>
+              Compare side by side<span className="visually-hidden">: Artificial minds</span>
+              <span aria-hidden="true"> &rarr;</span>
+            </Link>
+          </p>
+        )}
       </div>
     ),
   };
@@ -452,6 +383,22 @@ function mindsSection({ technology, sources, quiet }: PageContext): SectionSpec 
 
 function welfareSection({ technology, sources, quiet }: PageContext): SectionSpec {
   const welfare = technology.welfare_governance;
+  // Without the team's own assessment, the scorecard's welfare rows stand in.
+  const scorecardRows = welfare ? [] : welfareScorecardRows(technology);
+
+  let body: ReactNode;
+  if (welfare) {
+    body = <WelfareSheet welfare={welfare} shortName={technology.short_name} sources={sources} quiet={quiet} />;
+  } else if (scorecardRows.length > 0) {
+    body = <WelfareFromScorecard rows={scorecardRows} sources={sources} quiet={quiet} />;
+  } else {
+    body = (
+      <p className={`measure ${styles.placeholderBlock}`}>
+        {PLACEHOLDER.welfare} The current risk ratings are in the <a href="#scorecard">full scorecard</a>.
+      </p>
+    );
+  }
+
   return {
     id: "welfare",
     label: "Welfare and governance risks",
@@ -460,15 +407,66 @@ function welfareSection({ technology, sources, quiet }: PageContext): SectionSpe
         Welfare and governance <em>risks</em>
       </>
     ),
-    showsDefault: Boolean(welfare),
-    body: welfare ? (
-      <WelfareSheet welfare={welfare} shortName={technology.short_name} sources={sources} quiet={quiet} />
-    ) : (
-      <p className={`measure ${styles.placeholderBlock}`}>
-        {PLACEHOLDER.welfare} The current risk ratings are in the <a href="#scorecard">full scorecard</a>.
-      </p>
-    ),
+    showsDefault: Boolean(welfare) || scorecardRows.length > 0,
+    body,
   };
+}
+
+// The scorecard rows DIMENSION_SECTIONS sends to the welfare section ("Human
+// welfare risk", "Governance risk", "Safeguard adequacy"), in that order.
+function welfareScorecardRows(technology: TechnologyPage): ScorecardRow[] {
+  const rows: ScorecardRow[] = [];
+  for (const [rowId, section] of Object.entries(DIMENSION_SECTIONS)) {
+    if (section !== "welfare") {
+      continue;
+    }
+    const row = scorecardRowFor(technology.scorecard, rowId);
+    if (row) {
+      rows.push(row);
+    }
+  }
+  return rows;
+}
+
+function scorecardRowFor(rows: ScorecardRow[], rowId: string): ScorecardRow | null {
+  for (const row of rows) {
+    if (row.id === rowId) {
+      return row;
+    }
+  }
+  return null;
+}
+
+// The welfare section before the team has assessed these risks: each
+// scorecard row with its rating and its basis in full. The scorecard then
+// keeps one sentence of each basis and links here. These rows have no ids:
+// the rating cards in the full scorecard are the only #scorecard-<id> targets.
+function WelfareFromScorecard({ rows, sources, quiet }: { rows: ScorecardRow[]; sources: Sources; quiet: Provenance }) {
+  return (
+    <div>
+      <p className={`measure ${styles.sectionNote}`}>
+        From the <a href="#scorecard">scorecard</a>. The team hasn&rsquo;t assessed these risks in detail yet.
+      </p>
+      <div className={styles.riskRows}>
+        {rows.map((row) => (
+          <div key={row.id} className={styles.riskRow}>
+            <h3 className={styles.riskTitle}>{row.dimension}</h3>
+            <div className={styles.riskRating}>
+              <RatingChip
+                scale={row.scale}
+                rating={row.rating}
+                unclearReason={row.unclear_reason}
+                potentialSeverity={row.scale === "risk" ? row.potential_severity : null}
+              />
+            </div>
+            <div className={styles.riskBasis}>
+              <ClaimText claim={row.basis} sources={sources} quiet={quiet} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function milestonesSection({ items }: PageContext): SectionSpec {
@@ -486,15 +484,21 @@ function milestonesSection({ items }: PageContext): SectionSpec {
         <Placeholder text={PLACEHOLDER.milestones} />
       ) : (
         <>
-          <p className={`measure ${styles.sectionNote}`}>{milestonesNote(items)}</p>
+          <p className={`measure ${styles.sectionNote}`}>
+            {milestonesNote(items)}{" "}
+            <Link href="/methodology/#stages">
+              What the stages mean<span aria-hidden="true"> &rarr;</span>
+            </Link>
+          </p>
           <MilestoneTable items={items} />
         </>
       ),
   };
 }
 
-// "None of the 8 has a date yet, and nothing is mapped at the Actually helping
-// stage. Each row opens the milestone on the timeline."
+// "None of the 8 has a date yet, and nothing is mapped at the “Actually
+// helping” stage. Each row opens the milestone on the timeline." The quotes
+// mark the stage's name, which keeps the capitals it has on the badges.
 function milestonesNote(items: TimelineItem[]): string {
   const facts = milestoneFacts(items);
   let dated: string;
@@ -506,7 +510,10 @@ function milestonesNote(items: TimelineItem[]): string {
     dated = `${capitalize(countWord(facts.dated))} of the ${facts.count} have a date or an estimate`;
   }
 
-  const emptyStages = stagesWithoutMilestones(items);
+  const emptyStages: string[] = [];
+  for (const label of stagesWithoutMilestones(items)) {
+    emptyStages.push(`“${label}”`);
+  }
   let gap = "";
   if (emptyStages.length > 0) {
     gap = `, and nothing is mapped at the ${joinList(emptyStages)} stage${emptyStages.length > 1 ? "s" : ""}`;
@@ -531,42 +538,37 @@ function stagesWithoutMilestones(items: TimelineItem[]): string[] {
 }
 
 function fullAssessmentSection(context: PageContext): SectionSpec {
+  const parts = assessmentParts(context);
+  // When the scorecard is the one part, the section is named for it, and the
+  // contents line doesn't repeat the word.
+  const onlyScorecard = parts.length === 1 && parts[0].id === "scorecard";
+  if (onlyScorecard) {
+    parts[0] = { ...parts[0], summary: "the basis for each rating" };
+  }
+  // The default note sits inside the collapsed part, next to the claims. A
+  // page the team wrote skips it, as its sections do.
+  const top = context.quiet === "team" ? undefined : <DefaultMark kind={context.quiet} />;
   return {
     id: "full-assessment",
-    label: "Full assessment",
-    title: (
+    label: onlyScorecard ? "Full scorecard" : "Full assessment",
+    title: onlyScorecard ? (
+      <>
+        Full <em>scorecard</em>
+      </>
+    ) : (
       <>
         Full <em>assessment</em>
       </>
     ),
-    // The default note sits inside the collapsed part, next to the claims.
     showsDefault: false,
-    body: <FullAssessment parts={assessmentParts(context)} top={<DefaultMark kind={context.quiet} />} />,
+    body: <FullAssessment parts={parts} label={onlyScorecard ? "scorecard" : "assessment"} top={top} />,
   };
 }
 
-function assessmentParts({ technology, sources, sourcesByRegisterId, quiet }: PageContext): AssessmentPart[] {
+// The parts of the collapsed Full assessment, the scorecard first.
+function assessmentParts(context: PageContext): AssessmentPart[] {
+  const { technology, sources, sourcesByRegisterId, quiet } = context;
   const parts: AssessmentPart[] = [];
-
-  parts.push({
-    id: "scorecard",
-    title: "Full scorecard",
-    summary: "the full scorecard with the basis for each rating",
-    body: (
-      <>
-        <ScorecardNote rows={technology.scorecard} />
-        <Scorecard
-          rows={technology.scorecard}
-          technologyName={technology.name}
-          shortName={technology.short_name}
-          sources={sources}
-          quiet={quiet}
-          detailLinks={scorecardDetailLinks(technology)}
-        />
-        {technology.evidence_gap && <EvidenceGap claim={technology.evidence_gap} sources={sources} quiet={quiet} />}
-      </>
-    ),
-  });
 
   if (technology.scope) {
     parts.push({
@@ -647,29 +649,65 @@ function assessmentParts({ technology, sources, sourcesByRegisterId, quiet }: Pa
     });
   }
 
+  // The rating cards are h4 under the part's own h3, "Full scorecard". When
+  // the scorecard is the only part, the section's h2 is "Full scorecard" and
+  // the cards are h3. Each card shows the register lines that name its row.
+  parts.unshift(scorecardPart(context, register, parts.length > 0 ? 4 : 3));
   return parts;
 }
 
+function scorecardPart(
+  { technology, sources, sourcesByRegisterId, items, quiet }: PageContext,
+  register: EvidenceRow[],
+  headingLevel: 3 | 4,
+): AssessmentPart {
+  return {
+    id: "scorecard",
+    title: "Full scorecard",
+    summary: "the full scorecard with the basis for each rating",
+    body: (
+      <>
+        <Scorecard
+          rows={technology.scorecard}
+          technologyName={technology.name}
+          shortName={technology.short_name}
+          headingLevel={headingLevel}
+          register={register}
+          items={items}
+          sources={sources}
+          sourcesByRegisterId={sourcesByRegisterId}
+          quiet={quiet}
+          detailLinks={scorecardDetailLinks(technology)}
+        />
+        {technology.evidence_gap && <EvidenceGap claim={technology.evidence_gap} sources={sources} quiet={quiet} />}
+      </>
+    ),
+  };
+}
+
 // Which scorecard rows point to a detail section, for this page's content.
+// Keyed by row id.
 function scorecardDetailLinks(technology: TechnologyPage): Record<string, ScorecardDetailLink> {
   const links: Record<string, ScorecardDetailLink> = {};
   for (const row of technology.scorecard) {
-    const section = DIMENSION_SECTIONS[row.dimension];
+    const section = DIMENSION_SECTIONS[row.id];
     if (section === "minds" && technology.artificial_minds_assessment) {
-      links[row.dimension] = { href: "#minds", label: "Artificial minds" };
+      links[row.id] = { href: "#minds", label: "Artificial minds" };
     }
-    if (section === "welfare" && technology.welfare_governance) {
-      links[row.dimension] = { href: "#welfare", label: "Welfare and governance risks" };
+    // The welfare section always covers these rows: with the team's welfare
+    // sheet, or, without one, with the row's own basis in full.
+    if (section === "welfare") {
+      links[row.id] = { href: "#welfare", label: "Welfare and governance risks" };
     }
   }
   return links;
 }
 
-// The case row for one problem, which holds the reason for that rating.
+// The case row for one problem, whose card holds the reason for that rating.
 function whyLink(rows: ScorecardRow[], problem: "alignment" | "intelligence_curse"): { href: string; label: string } {
   for (const row of rows) {
     if (row.scale === "case" && row.problem === problem) {
-      return { href: `#${scorecardRowId(row.dimension)}`, label: `see the ${row.dimension} row in the scorecard` };
+      return { href: `#${scorecardRowId(row.id)}`, label: `see the ${row.dimension} rating in the scorecard` };
     }
   }
   return { href: "#scorecard", label: "see the scorecard" };
@@ -698,6 +736,19 @@ function milestoneFacts(items: TimelineItem[]): MilestoneFacts {
     }
   }
   return { count: items.length, dated, firstId: items.length > 0 ? items[0].milestone.id : null };
+}
+
+// ---------- Source data ----------
+
+// How many real sources (no samples) are tagged with this technology.
+function sourceCountFor(id: TechnologyId): number {
+  let count = 0;
+  for (const source of realSources(getSources())) {
+    if (source.technology.includes(id)) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 // ---------- Building blocks ----------
@@ -761,23 +812,6 @@ function ArgumentColumn({ tone, label, title, claims, placeholder, note, sources
           ))}
         </ol>
       )}
-    </div>
-  );
-}
-
-// A short reading guide above the full scorecard. The optional sentence comes
-// from the data, so the note stays true as ratings change.
-function ScorecardNote({ rows }: { rows: ScorecardRow[] }) {
-  return (
-    <div className={`measure ${styles.sectionNote}`}>
-      <p>
-        The ratings use the scales in the team&rsquo;s draft scorecard.
-        {hasSeverityFlag(rows) && <> If an Unclear risk could be severe, its row also says how severe.</>}{" "}
-        &ldquo;Not claimed&rdquo; means the proposal doesn&rsquo;t claim that outcome, so there is no case to grade.
-        We never rate a risk Low just because nobody has studied it
-        {isDraftEnum("RiskRating") && ", and the cutoffs for the risk ratings aren’t set yet"}.{" "}
-        <Link href="/methodology/">How we rate</Link>
-      </p>
     </div>
   );
 }

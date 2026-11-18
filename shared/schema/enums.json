@@ -1,5 +1,5 @@
 {
-  "rubric_version": "0.1-draft",
+  "rubric_version": "0.2-draft",
   "enums": {
     "Technology": {
       "draft": false,
@@ -11,7 +11,7 @@
         },
         {
           "value": "bci",
-          "label": "Brain computer interfaces",
+          "label": "Brain-computer interfaces",
           "description": "Devices that read from or write to the nervous system."
         },
         {
@@ -70,19 +70,19 @@
       "draft": false,
       "values": [
         {
-          "value": "reliability_robustness",
-          "label": "Reliability and robustness",
-          "description": "Works consistently outside the lab."
-        },
-        {
           "value": "technical_capability",
           "label": "Technical capability",
-          "description": "The technology can do the main thing it's meant to do."
+          "description": "We can create and operate it."
         },
         {
-          "value": "safety_welfare_assurance",
-          "label": "Safety and welfare assurance",
-          "description": "We can check that it's safe, including for any minds involved."
+          "value": "high_level_fidelity",
+          "label": "High-level fidelity",
+          "description": "Preserves the relevant cognitive, behavioral, memory, personality, preference and decision-making properties of the original person."
+        },
+        {
+          "value": "reliability_robustness",
+          "label": "Reliability and robustness",
+          "description": "Behaves consistently across time and conditions."
         },
         {
           "value": "scalable_production",
@@ -92,7 +92,17 @@
         {
           "value": "economic_viability",
           "label": "Economic viability",
-          "description": "Affordable enough that people will pay for it."
+          "description": "Can be operated at the cost and scale required for the proposed use."
+        },
+        {
+          "value": "equitable_access",
+          "label": "Equitable or broad access",
+          "description": "Available beyond a small privileged group."
+        },
+        {
+          "value": "safety_welfare_assurance",
+          "label": "Safety and welfare assurance",
+          "description": "We can check that it's safe, including for any minds involved."
         },
         {
           "value": "legal_regulatory",
@@ -103,11 +113,6 @@
           "value": "institutional_legitimacy",
           "label": "Institutional capacity and public legitimacy",
           "description": "Institutions can run it and the public accepts it."
-        },
-        {
-          "value": "equitable_access",
-          "label": "Equitable or broad access",
-          "description": "Available beyond a small privileged group."
         }
       ]
     },
@@ -487,7 +492,7 @@
         {
           "value": "ai",
           "label": "AI-suggested",
-          "description": "Suggested by an AI model. The tag names the person who checked it, or says it hasn't been checked yet."
+          "description": "Suggested by an AI model. The tag says whether a person has checked it."
         },
         {
           "value": "unclear",
@@ -496,5 +501,34 @@
         }
       ]
     }
-  }
+  },
+  "milestone_types": [
+    {
+      "value": "technical",
+      "label": "Technical",
+      "categories": [
+        "technical_capability",
+        "high_level_fidelity",
+        "reliability_robustness"
+      ]
+    },
+    {
+      "value": "deployment",
+      "label": "Deployment",
+      "categories": [
+        "scalable_production",
+        "economic_viability",
+        "equitable_access"
+      ]
+    },
+    {
+      "value": "welfare_governance",
+      "label": "Welfare and governance",
+      "categories": [
+        "safety_welfare_assurance",
+        "legal_regulatory",
+        "institutional_legitimacy"
+      ]
+    }
+  ]
 }

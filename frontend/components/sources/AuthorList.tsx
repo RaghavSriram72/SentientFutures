@@ -40,12 +40,16 @@ export function AuthorList({ authors }: { authors: string[] }) {
   }
   const hiddenCount = authors.length - SHOWN_WHEN_SHORTENED;
 
+  // A printout can't be clicked, so it gets the full list in place of the
+  // shortened one and its button. The button keeps the same place as in the
+  // expanded list above, so React reuses it and keyboard focus stays on it.
   return (
     <span title={fullList}>
-      {shown.join(", ")}{" "}
+      <span className={styles.shortened}>{shown.join(", ")}</span>{" "}
       <button type="button" className={styles.toggle} aria-expanded="false" onClick={() => setExpanded(true)}>
         and {hiddenCount} others
       </button>
+      <span className={styles.printedList}>{fullList}</span>
     </span>
   );
 }

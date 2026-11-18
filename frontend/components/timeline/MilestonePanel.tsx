@@ -7,9 +7,11 @@ import Link from "next/link";
 import type { ReactNode, Ref } from "react";
 
 import { ExternalLink } from "@/components/common/ExternalLink";
+import { TypeMark } from "@/components/common/TypeMark";
 import { ClaimList, ClaimText } from "@/components/provenance/ClaimText";
+import { DefaultMark } from "@/components/provenance/DefaultMark";
 import { ProvenanceGlyph } from "@/components/provenance/ProvenanceTag";
-import { enumDescription, enumLabel } from "@/lib/enums";
+import { enumDescription, enumLabel, milestoneTypeOf } from "@/lib/enums";
 import {
   countLabel,
   DISAGREEMENT_GAP_YEARS,
@@ -19,9 +21,16 @@ import {
   type ForecastView,
 } from "@/lib/estimates";
 import { shortCitation, type SourceRef } from "@/lib/sources";
-import type { Claim, Milestone } from "@/lib/types";
+import type { Claim, Milestone, Provenance, Technology } from "@/lib/types";
 
-import { forecastRangeText, rangeText, sortForecastsByWindow, stageKey, type TimelineItem } from "./timelineModel";
+import {
+  forecastRangeText,
+  rangeText,
+  sortForecastsByWindow,
+  stageKey,
+  stageTag,
+  type TimelineItem,
+} from "./timelineModel";
 import styles from "./MilestonePanel.module.css";
 
 interface MilestonePanelProps {
@@ -33,10 +42,21 @@ interface MilestonePanelProps {
   headingRef?: Ref<HTMLHeadingElement>;
   onClose?: () => void;
   onSelectMilestone?: (id: string) => void;
+  // Link the technology to its page and each listed source to its entry in
+  // the source database. The timeline turns this on. The admin preview leaves
+  // it off, since following a link there would leave unsaved edits behind.
+  siteLinks?: boolean;
   // No longer used (the dossier used to draw a strip of the old chart). Kept
   // so existing callers still compile.
   nowYear?: number;
 }
+
+// The technologies with a page of their own (/wbe/ and so on).
+const TECHNOLOGY_PAGES: Technology[] = ["wbe", "bci", "neuromorphic"];
+
+// The dossier says "Our read unless marked" once, above its title. The team's
+// claims then show only their diamond, and every other kind keeps its tag.
+const DOSSIER_DEFAULT: Provenance = "team";
 
 const MONTHS = [
   "January",
@@ -96,12 +116,42 @@ function hasContent(claims: Claim[]): boolean {
   return false;
 }
 
+// True when the claim has words in it. Published milestones fill every claim,
+// but a new milestone in the admin preview starts with empty ones to fill
+// in, and an empty claim would draw its provenance bullet on its own. So a
+// claim without text is left out, and so is a heading with nothing left
+// under it. Each comes back as soon as its field gets text.
+function hasText(claim: Claim): boolean {
+  return claim.text.trim() !== "";
+}
+
+// The claims that have words in them, in their order (see hasText).
+function claimsWithText(claims: Claim[]): Claim[] {
+  const kept: Claim[] = [];
+  for (const claim of claims) {
+    if (hasText(claim)) {
+      kept.push(claim);
+    }
+  }
+  return kept;
+}
+
 // "a", "a and b", "a, b and c"
 function joinWords(words: string[]): string {
   if (words.length <= 1) {
     return words.join("");
   }
   return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
+
+// True when every id in `ids` is also in `list` (and so when `ids` is empty).
+function everyIdIn(ids: string[], list: string[]): boolean {
+  for (const id of ids) {
+    if (!list.includes(id)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // Sources cited by the milestone and by its forecasts, in that order, without repeats.
@@ -139,7 +189,7 @@ function allFromOneForecaster(forecasts: ForecastView[]): boolean {
   return forecasts.length > 0;
 }
 
-// The one-line estimate: "No estimate yet", "Team range 2030 to 2040 · medium
+// The one-line estimate: "No date yet", "Team range 2030 to 2040 · medium
 // confidence", or "3 forecasts, 2032 to never · sources disagree".
 function estimateLine(item: TimelineItem): string {
   const { milestone, view } = item;
@@ -161,7 +211,7 @@ function estimateLine(item: TimelineItem): string {
     parts.push("sources disagree");
   }
   if (parts.length === 0) {
-    return "No estimate yet";
+    return "No date yet";
   }
   return parts.join(" · ");
 }
@@ -180,13 +230,20 @@ function notYetAssessed(item: TimelineItem, neededFor: TimelineItem[]): string[]
   if (milestone.depends_on.length === 0 && neededFor.length === 0) {
     missing.push("dependencies");
   }
-  if (!achieved && !hasContent(milestone.would_move_earlier) && !hasContent(milestone.would_move_later)) {
+  // Empty claims (a new milestone in the admin preview) count as missing too,
+  // since the panel hides them (see hasText). That way this line lists every
+  // section the panel leaves out.
+  if (
+    !achieved &&
+    !hasContent(claimsWithText(milestone.would_move_earlier)) &&
+    !hasContent(claimsWithText(milestone.would_move_later))
+  ) {
     missing.push("what would change the timing");
   }
-  if (isPlaceholder(milestone.main_bottleneck)) {
+  if (!hasText(milestone.main_bottleneck) || isPlaceholder(milestone.main_bottleneck)) {
     missing.push("the main bottleneck");
   }
-  if (!hasContent(milestone.artificial_minds_questions)) {
+  if (!hasContent(claimsWithText(milestone.artificial_minds_questions))) {
     missing.push("questions about artificial minds");
   }
   return missing;
@@ -218,44 +275,97 @@ export function MilestonePanel({
   headingRef,
   onClose,
   onSelectMilestone,
+  siteLinks = false,
 }: MilestonePanelProps) {
   const { milestone, view } = item;
   const key = stageKey(milestone.stage);
+  // null only with a stale enums.json, and then the line shows the category alone
+  const type = milestoneTypeOf(milestone.category);
   const missing = notYetAssessed(item, neededFor);
-  const showSummary = !sameText(milestone.summary.text, milestone.name);
-  const showSuccess = !sameText(milestone.success_criterion.text, milestone.name);
+  // The summary is left out when it only repeats the title, or when it is
+  // empty. Published milestones always have one, but a new milestone in the
+  // admin preview starts without, and an empty summary would draw its
+  // provenance bullet on its own.
+  const summaryIsEmpty = !hasText(milestone.summary);
+  const showSummary = !summaryIsEmpty && !sameText(milestone.summary.text, milestone.name);
+  // The other claims follow the same rule (see hasText): an empty one is left
+  // out, and so is a heading with nothing left under it. A status basis or a
+  // main bottleneck that only says nobody has looked yet is left out too, so
+  // the status chip and its line stand alone.
+  const showStatusBasis = hasText(milestone.status_basis) && !isPlaceholder(milestone.status_basis);
+  const showSuccess = hasText(milestone.success_criterion) && !sameText(milestone.success_criterion.text, milestone.name);
+  const showBottleneck = hasText(milestone.main_bottleneck) && !isPlaceholder(milestone.main_bottleneck);
+  const mindsQuestions = claimsWithText(milestone.artificial_minds_questions);
+  const earlierClaims = claimsWithText(milestone.would_move_earlier);
+  const laterClaims = claimsWithText(milestone.would_move_later);
   const sourceIds = linkedSourceIds(milestone);
   const hasDependencies = milestone.depends_on.length > 0 || neededFor.length > 0;
-  const hasMinds = hasContent(milestone.artificial_minds_questions);
+  const hasMinds = hasContent(mindsQuestions);
   const hasEstimateSection = milestone.estimate !== null || view.forecastCount > 0;
-  const hasTiming = hasContent(milestone.would_move_earlier) || hasContent(milestone.would_move_later);
+  const hasTiming = hasContent(earlierClaims) || hasContent(laterClaims);
+  // When the Sources list at the bottom already holds every source the status
+  // basis cites, its "See ..." line would only repeat them, so it goes. A
+  // basis that cites a source outside the list keeps it.
+  const statusSourcesListed = everyIdIn(milestone.status_basis.source_ids ?? [], sourceIds);
+
+  let technology: ReactNode = enumLabel("Technology", milestone.technology);
+  if (siteLinks && TECHNOLOGY_PAGES.includes(milestone.technology)) {
+    technology = (
+      <Link href={`/${milestone.technology}/`} className={styles.technologyLink}>
+        {technology}
+      </Link>
+    );
+  }
 
   return (
     <article className={styles.dossier} aria-labelledby={headingId}>
       <Paperclip />
 
+      {/* Outside the header, so on a phone it can stay pinned to the top of
+          the sheet (with its close button) while the rest scrolls. */}
+      <div className={`${styles.idRow} ${onClose ? styles.idRowPinned : ""}`}>
+        <p className={styles.idLine}>
+          {item.code} &middot; {technology}
+        </p>
+        <p className={`${styles.stageChip} ${styles[`stage_${key}`]}`}>
+          <span className={styles.stageDot} aria-hidden="true" />
+          {stageTag(milestone.stage)}
+        </p>
+        {onClose && (
+          <button type="button" className={styles.close} onClick={onClose} aria-label="Close the dossier">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M4 4l8 8M12 4l-8 8" />
+            </svg>
+          </button>
+        )}
+      </div>
+
       <header className={styles.header}>
-        <div className={styles.idRow}>
-          <p className={styles.idLine}>
-            <span>
-              {item.code} &middot; {enumLabel("Technology", milestone.technology)}
-            </span>
-            <span className={`${styles.stageChip} ${styles[`stage_${key}`]}`} title={enumDescription("Stage", milestone.stage)}>
-              <span className={styles.stageDot} aria-hidden="true" />
-              {enumLabel("Stage", milestone.stage)}
-            </span>
-          </p>
-          {onClose && (
-            <button type="button" className={styles.close} onClick={onClose} aria-label="Close the dossier">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d="M4 4l8 8M12 4l-8 8" />
-              </svg>
-            </button>
-          )}
+        {/* What the stage chip means, in words, so keyboard and touch readers
+            get it too (it used to be a hover title). */}
+        <p className={styles.stageNote}>{enumDescription("Stage", milestone.stage)}</p>
+        <div className={styles.defaultLine}>
+          <DefaultMark kind={DOSSIER_DEFAULT} />
         </div>
         <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
           {milestone.name}
         </h2>
+        {/* The type, then the category it comes from. It sits here, not in
+            the pinned id row, so the phone sheet's pinned row stays short. */}
+        <p className={styles.typeLine}>
+          {type && <TypeMark type={type} />}
+          <span className={styles.category}>
+            {/* Hangs in the gap before the category (see the CSS), so it
+                never ends a line on its own */}
+            {type && (
+              <span className={styles.typeDot} aria-hidden="true">
+                &middot;
+              </span>
+            )}
+            <span className="visually-hidden">Category: </span>
+            {enumLabel("MilestoneCategory", milestone.category)}
+          </span>
+        </p>
         {(milestone.sample || view.disagreement.flagged) && (
           <div className={styles.chips}>
             {milestone.sample && <span className="chip">Sample</span>}
@@ -264,7 +374,7 @@ export function MilestonePanel({
         )}
         {showSummary && (
           <div className={styles.summary}>
-            <ClaimText claim={milestone.summary} sources={sources} variant="compact" />
+            <ClaimText claim={milestone.summary} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
           </div>
         )}
       </header>
@@ -307,7 +417,7 @@ export function MilestonePanel({
 
       {hasMinds && (
         <Section title="Questions about artificial minds">
-          <ClaimList claims={milestone.artificial_minds_questions} sources={sources} variant="compact" />
+          <ClaimList claims={mindsQuestions} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
         </Section>
       )}
 
@@ -316,11 +426,19 @@ export function MilestonePanel({
           <span className="chip">{enumLabel("MilestoneStatus", milestone.status)}</span>
           <span className={styles.muted}>{enumDescription("MilestoneStatus", milestone.status)}</span>
         </p>
-        <ClaimText claim={milestone.status_basis} sources={sources} variant="compact" />
+        {showStatusBasis && (
+          <ClaimText
+            claim={milestone.status_basis}
+            sources={sources}
+            variant="compact"
+            quiet={DOSSIER_DEFAULT}
+            hideCitation={statusSourcesListed}
+          />
+        )}
         {showSuccess && (
           <div className={styles.success}>
             <h4 className={styles.subTitle}>Counts as reached when</h4>
-            <ClaimText claim={milestone.success_criterion} sources={sources} variant="compact" />
+            <ClaimText claim={milestone.success_criterion} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
           </div>
         )}
       </Section>
@@ -335,40 +453,47 @@ export function MilestonePanel({
 
       {hasTiming && (
         <Section title="What would change the timing">
+          {/* A side whose claims are all empty (see hasText) is left out,
+              heading and all. A side that only says nobody has looked yet
+              keeps its heading, with "Not assessed yet." under it. */}
           <div className={styles.moveColumns}>
-            <div>
-              <h4 className={styles.moveTitle}>
-                <span aria-hidden="true">&larr;</span> Earlier
-              </h4>
-              {hasContent(milestone.would_move_earlier) ? (
-                <ClaimList claims={milestone.would_move_earlier} sources={sources} variant="compact" />
-              ) : (
-                <p className={styles.empty}>Not assessed yet.</p>
-              )}
-            </div>
-            <div>
-              <h4 className={styles.moveTitle}>
-                Later <span aria-hidden="true">&rarr;</span>
-              </h4>
-              {hasContent(milestone.would_move_later) ? (
-                <ClaimList claims={milestone.would_move_later} sources={sources} variant="compact" />
-              ) : (
-                <p className={styles.empty}>Not assessed yet.</p>
-              )}
-            </div>
+            {earlierClaims.length > 0 && (
+              <div>
+                <h4 className={styles.moveTitle}>
+                  <span aria-hidden="true">&larr;</span> Earlier
+                </h4>
+                {hasContent(earlierClaims) ? (
+                  <ClaimList claims={earlierClaims} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
+                ) : (
+                  <p className={styles.empty}>Not assessed yet.</p>
+                )}
+              </div>
+            )}
+            {laterClaims.length > 0 && (
+              <div>
+                <h4 className={styles.moveTitle}>
+                  Later <span aria-hidden="true">&rarr;</span>
+                </h4>
+                {hasContent(laterClaims) ? (
+                  <ClaimList claims={laterClaims} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
+                ) : (
+                  <p className={styles.empty}>Not assessed yet.</p>
+                )}
+              </div>
+            )}
           </div>
         </Section>
       )}
 
-      {!isPlaceholder(milestone.main_bottleneck) && (
+      {showBottleneck && (
         <Section title="Main bottleneck">
-          <ClaimText claim={milestone.main_bottleneck} sources={sources} variant="compact" />
+          <ClaimText claim={milestone.main_bottleneck} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
         </Section>
       )}
 
       {sourceIds.length > 0 && (
         <Section title="Sources">
-          <SourceList ids={sourceIds} sources={sources} />
+          <SourceList ids={sourceIds} sources={sources} siteLinks={siteLinks} />
         </Section>
       )}
     </article>
@@ -396,22 +521,27 @@ function BasedOn({ item, sources }: { item: TimelineItem; sources: Record<string
   const { milestone, view } = item;
 
   if (view.barMode === "achieved") {
-    if (!milestone.achieved_in_basis) {
+    // Nothing to show until the basis has text (see hasText)
+    if (!milestone.achieved_in_basis || !hasText(milestone.achieved_in_basis)) {
       return null;
     }
     return (
       <div className={styles.basedOn}>
         <span className={styles.basedOnLabel}>Based on</span>
-        <ClaimText claim={milestone.achieved_in_basis} sources={sources} variant="compact" />
+        <ClaimText claim={milestone.achieved_in_basis} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
       </div>
     );
   }
 
   if (milestone.estimate) {
+    // Until the basis has text (see hasText), only who set the range shows.
+    const showBasis = hasText(milestone.estimate.basis);
     return (
       <div className={styles.basedOn}>
-        <span className={styles.basedOnLabel}>Based on</span>
-        <ClaimText claim={milestone.estimate.basis} sources={sources} variant="compact" />
+        {showBasis && <span className={styles.basedOnLabel}>Based on</span>}
+        {showBasis && (
+          <ClaimText claim={milestone.estimate.basis} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
+        )}
         <p className={styles.setBy}>
           Set by {milestone.estimate.set_by} on {formatIsoDate(milestone.estimate.set_on)}
         </p>
@@ -558,7 +688,16 @@ function ForecastLedger({ item, sources }: { item: TimelineItem; sources: Record
 function DisagreementBlock({ item, sources }: { item: TimelineItem; sources: Record<string, SourceRef> }) {
   const { milestone, view } = item;
   const d = view.disagreement;
-  const note = milestone.disagreement_note;
+  // The team's reason for its call, and the note, are left out until they
+  // have text (see hasText).
+  let overrideBasis: Claim | null = null;
+  if (d.overrideBasis !== null && hasText(d.overrideBasis)) {
+    overrideBasis = d.overrideBasis;
+  }
+  let note: Claim | null = null;
+  if (milestone.disagreement_note !== null && hasText(milestone.disagreement_note)) {
+    note = milestone.disagreement_note;
+  }
 
   const reasonList =
     d.reasons.length > 0 ? (
@@ -586,7 +725,7 @@ function DisagreementBlock({ item, sources }: { item: TimelineItem; sources: Rec
     heading = "Flagged by the team";
     body = (
       <>
-        {d.overrideBasis && <ClaimText claim={d.overrideBasis} sources={sources} variant="compact" />}
+        {overrideBasis && <ClaimText claim={overrideBasis} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />}
         <p>{d.ruleFlagged ? "Our rule would have flagged it as well:" : "Our rule wouldn't have flagged it."}</p>
         {reasonList}
       </>
@@ -595,7 +734,7 @@ function DisagreementBlock({ item, sources }: { item: TimelineItem; sources: Rec
     heading = "Not flagged (team decision)";
     body = (
       <>
-        {d.overrideBasis && <ClaimText claim={d.overrideBasis} sources={sources} variant="compact" />}
+        {overrideBasis && <ClaimText claim={overrideBasis} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />}
         {d.ruleFlagged ? (
           <>
             <p>Our rule would have flagged it:</p>
@@ -627,11 +766,11 @@ function DisagreementBlock({ item, sources }: { item: TimelineItem; sources: Rec
       <div className={styles.disagreementBody}>{body}</div>
       {note && (
         <div className={styles.disagreementNote}>
-          <ClaimText claim={note} sources={sources} variant="compact" />
+          <ClaimText claim={note} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
         </div>
       )}
       <p className={styles.ruleLink}>
-        <Link href="/methodology/">How the disagreement rule works</Link>
+        <Link href="/methodology/#disagreement-rule">How the disagreement rule works</Link>
       </p>
     </div>
   );
@@ -701,7 +840,10 @@ function SourceCitation({ id, source }: { id: string; source: SourceRef | undefi
   return <ExternalLink href={source.url}>{shortCitation(source)}</ExternalLink>;
 }
 
-function SourceList({ ids, sources }: { ids: string[]; sources: Record<string, SourceRef> }) {
+// Each title links to the source itself, or with siteLinks to its entry in
+// our source database, which links on to the source. The inline "See ..."
+// citations above still go straight to the source.
+function SourceList({ ids, sources, siteLinks }: { ids: string[]; sources: Record<string, SourceRef>; siteLinks: boolean }) {
   return (
     <ul className={styles.sources}>
       {ids.map((id) => {
@@ -713,15 +855,23 @@ function SourceList({ ids, sources }: { ids: string[]; sources: Record<string, S
             </li>
           );
         }
+        let title: ReactNode = (
+          <ExternalLink href={source.url} className={styles.sourceTitle}>
+            {source.title}
+          </ExternalLink>
+        );
+        if (source.sample) {
+          title = <span className={styles.sourceTitle}>{source.title}</span>;
+        } else if (siteLinks) {
+          title = (
+            <Link href={`/sources/#${source.id}`} className={styles.sourceTitle}>
+              {source.title}
+            </Link>
+          );
+        }
         return (
           <li key={id} className={styles.sourceItem}>
-            {source.sample ? (
-              <span className={styles.sourceTitle}>{source.title}</span>
-            ) : (
-              <ExternalLink href={source.url} className={styles.sourceTitle}>
-                {source.title}
-              </ExternalLink>
-            )}
+            {title}
             <span className={styles.sourceMeta}>
               {shortCitation(source)}
               {source.sample && " · placeholder source"}

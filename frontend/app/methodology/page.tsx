@@ -2,18 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { EnumDefinitions, enumTitleFromName } from "@/components/common/EnumDefinitions";
+import { EnumDefinitions, enumTitleFromName, type EnumGroup } from "@/components/common/EnumDefinitions";
 import { DraftBadge } from "@/components/common/Marks";
+import { OpenDetailsOnHash } from "@/components/common/OpenDetailsOnHash";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SectionHead } from "@/components/common/SectionHead";
 import { StageCards } from "@/components/common/StageCards";
 import { Stamp } from "@/components/common/Stamp";
-import { ProvenanceLegend, StageLegend } from "@/components/provenance/Legends";
+import { TypeMark } from "@/components/common/TypeMark";
+import { ProvenanceLegend, StageLegend, TypeLegend } from "@/components/provenance/Legends";
 import { ProvenanceTag } from "@/components/provenance/ProvenanceTag";
-import { allEnumNames, isDraftEnum, RUBRIC_VERSION, type EnumName } from "@/lib/enums";
+import { allEnumNames, isDraftEnum, milestoneTypes, RUBRIC_VERSION, type EnumName } from "@/lib/enums";
 import { DISAGREEMENT_GAP_YEARS, DISAGREEMENT_RULE_TEXT, DISAGREEMENT_RULE_VERSION } from "@/lib/estimates";
 import type { Provenance } from "@/lib/types";
 
+import { MethodologyToc } from "./MethodologyToc";
 import { RuleSpecimens } from "./RuleSpecimens";
 import styles from "./page.module.css";
 
@@ -24,7 +27,8 @@ export const metadata: Metadata = {
 };
 
 // Each section's heading is its label, with one word set in italics, so the
-// contents list and the headings always say the same thing.
+// contents list and the headings always say the same thing. The order here
+// gives each section its number in both places.
 const SECTIONS = [
   { id: "reading", label: "How to read this site", em: "read" },
   { id: "marks", label: "The four marks", em: "marks" },
@@ -33,6 +37,8 @@ const SECTIONS = [
   { id: "pipeline", label: "How sources reach the site", em: "reach" },
   { id: "credibility", label: "Three scales for sources", em: "sources" },
   { id: "ratings", label: "The scorecard's rating scales", em: "rating" },
+  { id: "new-sources", label: "How new sources move through the scorecard", em: "move" },
+  { id: "scorecard-timeline", label: "How the scorecard feeds the timeline", em: "feeds" },
   { id: "categories", label: "Other categories", em: "categories" },
   { id: "versions", label: "Versions", em: "Versions" },
 ] as const;
@@ -108,6 +114,16 @@ function enumTitle(name: EnumName): string {
   return ENUM_COPY[name]?.title ?? enumTitleFromName(name);
 }
 
+// The milestone categories under their three types (Technical, Deployment,
+// and Welfare and governance), for the category's definitions below.
+function milestoneCategoryGroups(): EnumGroup[] {
+  const groups: EnumGroup[] = [];
+  for (const info of milestoneTypes()) {
+    groups.push({ id: info.value, title: <TypeMark type={info} announce={false} />, values: info.categories });
+  }
+  return groups;
+}
+
 // The four marks in the order the legend uses, for the first bullet.
 const MARK_ORDER: Provenance[] = ["source", "team", "ai", "unclear"];
 
@@ -122,7 +138,7 @@ const PROVENANCE_EXPLAINERS: { kind: Provenance; text: string }[] = [
   },
   {
     kind: "ai",
-    text: "Once a person checks the line, the dashed outline stays and the label names who checked it.",
+    text: "A checked line keeps its dashed mark, and the tag names who checked it.",
   },
   {
     kind: "unclear",
@@ -130,16 +146,28 @@ const PROVENANCE_EXPLAINERS: { kind: Provenance; text: string }[] = [
   },
 ];
 
+// Whether the weekly run has AI triage switched on. The site is built without
+// the pipeline's settings, so it can't tell: set this to true once the team
+// confirms the pipeline has its Anthropic API key.
+const AI_TRIAGE_IS_ON = false;
+
+const AI_TRIAGE_STEP = AI_TRIAGE_IS_ON
+  ? {
+      title: "AI triage",
+      text: "An AI model reads each paper's title and abstract, suggests whether it's relevant and how to tag it, and quotes the lines it relied on. Our code checks that each quote really appears in the paper.",
+    }
+  : {
+      title: "AI triage, once it's switched on",
+      text: "An AI model will read each paper's title and abstract, suggest whether it's relevant and how to tag it, and quote the lines it relied on. Our code will check that each quote really appears in the paper. Until then, papers go straight to review.",
+    };
+
 // How a new paper gets from a research database onto this site, as it runs today.
 const PIPELINE_STEPS = [
   {
     title: "A weekly search",
-    text: "Every Monday a script searches arXiv and Semantic Scholar for new papers on these proposals. The team can also start it by hand from the admin.",
+    text: "Every Monday a script searches arXiv and Semantic Scholar for new papers on these proposals.",
   },
-  {
-    title: "AI triage, when it's switched on",
-    text: "When the pipeline has an Anthropic API key, an AI model reads each paper's title and abstract, suggests whether it's relevant and how to tag it, and quotes the lines it relied on. Our code checks that each quote really appears in the paper. Without a key, papers wait for review untriaged.",
-  },
+  AI_TRIAGE_STEP,
   {
     title: "A person reviews every paper",
     text: "Someone on the team approves, edits or rejects each one. The AI can't approve a paper or put anything on the site.",
@@ -154,13 +182,17 @@ const PIPELINE_STEPS = [
   },
 ];
 
-function MethodSection({ id, number, intro, children }: { id: SectionId; number: number; intro?: ReactNode; children: ReactNode }) {
+function MethodSection({ id, intro, children }: { id: SectionId; intro?: ReactNode; children: ReactNode }) {
+  // Numbered by its place in SECTIONS, like the contents list, so adding a
+  // section renumbers the ones after it.
+  let number = 0;
   let title: ReactNode = id;
-  for (const section of SECTIONS) {
+  SECTIONS.forEach((section, index) => {
     if (section.id === id) {
+      number = index + 1;
       title = emphasize(section.label, section.em);
     }
-  }
+  });
   return (
     <section id={id} className={styles.section} aria-labelledby={`${id}-heading`}>
       <SectionHead
@@ -176,9 +208,14 @@ function MethodSection({ id, number, intro, children }: { id: SectionId; number:
 }
 
 // A <details> with a quiet one-line summary, for the parts most readers skip.
-function More({ summary, children }: { summary: ReactNode; children: ReactNode }) {
+// With an id, a link to it opens it (see OpenDetailsOnHash).
+// A link to something inside, like a category under "All 10 categories", makes
+// the browser open it before React starts up, so it no longer matches the
+// server HTML. React never sets `open` here, so suppressHydrationWarning only
+// stops the dev warning about that attribute.
+function More({ id, summary, children }: { id?: string; summary: ReactNode; children: ReactNode }) {
   return (
-    <details className={styles.more}>
+    <details id={id} className={styles.more} suppressHydrationWarning>
       <summary className={styles.moreSummary}>
         {summary}
         <span className={styles.moreChevron} aria-hidden="true" />
@@ -210,24 +247,13 @@ export default function MethodologyPage() {
         <span className="chip">Rubric v{RUBRIC_VERSION}</span>
       </PageHeader>
 
+      <OpenDetailsOnHash />
       <div className="container">
         <div className={styles.layout}>
-          <nav className={styles.toc} aria-label="On this page">
-            <p className={`eyebrow ${styles.tocTitle}`}>On this page</p>
-            <ol className={styles.tocList}>
-              {SECTIONS.map((section, index) => (
-                <li key={section.id}>
-                  <a href={`#${section.id}`} className={styles.tocLink}>
-                    <span className={styles.tocNumber}>{String(index + 1).padStart(2, "0")}</span>
-                    {section.label}
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </nav>
+          <MethodologyToc sections={SECTIONS} />
 
           <div className={styles.content}>
-            <MethodSection id="reading" number={1}>
+            <MethodSection id="reading">
               <ol className={styles.readingList}>
                 <li>
                   <p>Every research claim carries one of four marks, each with its own glyph and line style.</p>
@@ -247,6 +273,12 @@ export default function MethodologyPage() {
                   </div>
                 </li>
                 <li>
+                  <p>Every milestone also has one of three types, set by its category.</p>
+                  <div className={styles.inlineKey}>
+                    <TypeLegend />
+                  </div>
+                </li>
+                <li>
                   <p>
                     We never average forecasts into one date. Each one is shown on its own with who made it, when, and
                     the exact quote, and a team range never hides them.
@@ -255,7 +287,11 @@ export default function MethodologyPage() {
                 <li>
                   <p>
                     When two forecasts for the same milestone are more than {DISAGREEMENT_GAP_YEARS} years apart, or
-                    one says it will never happen, the milestone gets a <Stamp size="sm" /> stamp.
+                    one says it will never happen, the milestone gets a{" "}
+                    <span className={styles.inlineStamp}>
+                      <Stamp size="sm" />
+                    </span>{" "}
+                    stamp.
                   </p>
                 </li>
                 <li>
@@ -270,8 +306,7 @@ export default function MethodologyPage() {
 
             <MethodSection
               id="marks"
-              number={2}
-              intro="Claims in milestones, forecasts, source summaries and scorecards all carry a mark. The glyphs and line styles keep the four apart even in black and white."
+              intro="Claims in milestones, forecasts, source summaries and scorecards all carry a mark."
             >
               <div className={styles.legendWrap}>
                 <ProvenanceLegend />
@@ -289,7 +324,7 @@ export default function MethodologyPage() {
                 </dl>
                 <p className={`${styles.callout} ${styles.calloutAi}`}>
                   Nothing AI-written goes on the site until a person has checked it, with one exception while the site
-                  is a draft: the brain computer interface and neuromorphic AI pages are AI drafts the team
+                  is a draft: the brain-computer interface and neuromorphic AI pages are AI drafts the team
                   hasn&rsquo;t reviewed. They say so, and so does every excerpt from them elsewhere on the site, like
                   the cards on the home page.
                 </p>
@@ -298,7 +333,6 @@ export default function MethodologyPage() {
 
             <MethodSection
               id="stages"
-              number={3}
               intro="Each stage asks a different question: can it be done, can people get it, and does it help? Claims about brain tech often run these together. Every milestone gets exactly one stage."
             >
               <StageCards compact />
@@ -306,8 +340,7 @@ export default function MethodologyPage() {
 
             <MethodSection
               id="timeline"
-              number={4}
-              intro="Each milestone sits on the track at the years it's expected, if anyone has said. What it's drawn with depends on the estimates we have, and forecasts are never merged into one date."
+              intro="Each milestone sits on the track at the years it's expected, if anyone has said. What it's drawn with depends on the estimates we have."
             >
               <RuleSpecimens />
 
@@ -323,6 +356,7 @@ export default function MethodologyPage() {
               </ul>
 
               <More
+                id="disagreement-rule"
                 summary={
                   <>
                     The disagreement rule in full
@@ -341,7 +375,7 @@ export default function MethodologyPage() {
               </More>
             </MethodSection>
 
-            <MethodSection id="pipeline" number={5}>
+            <MethodSection id="pipeline">
               <ol className={styles.pipeline}>
                 {PIPELINE_STEPS.map((step, index) => (
                   <li key={step.title} className={styles.pipelineStep}>
@@ -359,8 +393,7 @@ export default function MethodologyPage() {
 
             <MethodSection
               id="credibility"
-              number={6}
-              intro="We rate credibility, independence and evidence type separately and never combine them into one score. A source can be independent and still weak, or affiliated and still careful. Sources from the team's scouting database start out unrated, and a category marked Draft may still change."
+              intro="We rate credibility, independence and evidence type separately and never combine them into one score. A source can be independent and still weak, or affiliated and still careful. Every source starts out unrated."
             >
               <div className={styles.enumList}>
                 {CREDIBILITY_GROUP.map((name) => (
@@ -371,7 +404,6 @@ export default function MethodologyPage() {
 
             <MethodSection
               id="ratings"
-              number={7}
               intro={`Each technology page's scorecard gives six ratings: the alignment case, the Intelligence Curse case, human welfare risk, artificial-mind welfare and rights risk, governance risk and safeguard adequacy. Each one says how confident we are and what it rests on.${isDraftEnum("RiskRating") ? " The risk scale is a draft until the team sets its cutoffs." : ""}`}
             >
               <div className={styles.enumList}>
@@ -385,21 +417,41 @@ export default function MethodologyPage() {
               </div>
             </MethodSection>
 
+            <MethodSection id="new-sources">
+              {/* Placeholder: Vilija and the mentor are writing this section. Replace the note with their text. */}
+              <div className={styles.placeholder}>
+                <p>The team hasn&rsquo;t written this section yet.</p>
+              </div>
+            </MethodSection>
+
+            <MethodSection id="scorecard-timeline">
+              {/* Placeholder: Vilija and the mentor are writing this section. Replace the note with their text. */}
+              <div className={styles.placeholder}>
+                <p>The team hasn&rsquo;t written this section yet.</p>
+              </div>
+            </MethodSection>
+
             <MethodSection
               id="categories"
-              number={8}
-              intro="Everything else we tag, from technology and milestone category to source type and claim direction, gets a value from a short named list. The lists live in one shared file, so changing one is a small edit and a new rubric version."
+              intro="Everything else we tag, from technology and milestone category to source type and claim direction, gets a value from a short named list."
             >
               <More summary={`All ${otherEnums.length} categories`}>
                 <div className={styles.enumList}>
                   {otherEnums.map((name) => (
-                    <EnumDefinitions key={name} name={name} title={enumTitle(name)} note={ENUM_COPY[name]?.note} collapsible />
+                    <EnumDefinitions
+                      key={name}
+                      name={name}
+                      title={enumTitle(name)}
+                      note={ENUM_COPY[name]?.note}
+                      groups={name === "MilestoneCategory" ? milestoneCategoryGroups() : undefined}
+                      collapsible
+                    />
                   ))}
                 </div>
               </More>
             </MethodSection>
 
-            <MethodSection id="versions" number={9}>
+            <MethodSection id="versions">
               <div className={styles.version}>
                 <p className={styles.versionNumber}>
                   <span className="eyebrow">Current rubric</span>
@@ -417,8 +469,8 @@ export default function MethodologyPage() {
                 </p>
                 <p className={styles.versionText}>
                   Changing the {DISAGREEMENT_GAP_YEARS}-year threshold or the wording of the{" "}
-                  <a href="#timeline">disagreement rule</a> bumps this version. The stamps are worked out again every
-                  time the site is built, so every one you see follows the current rule.
+                  <a href="#disagreement-rule">disagreement rule</a> bumps this version. Every stamp you see follows the
+                  current rule.
                 </p>
               </div>
               <p className={styles.contactLine}>

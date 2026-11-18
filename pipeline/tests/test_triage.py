@@ -651,7 +651,7 @@ def test_a_candidate_decided_after_the_batch_was_loaded_gets_no_call(db, prompt)
     assert len(client.messages.calls) == 1
     assert db["sources"].find_one({"id": second})["review_status"] == "approved"
     assert reporter.counts == {"triaged": 1, "triaged_out": 1}
-    assert any("1 candidate was decided by a person" in line for line in reporter.logs)
+    assert any("1 paper was decided by a person" in line for line in reporter.logs)
 
 
 # ---------------------------------------------------------------------------

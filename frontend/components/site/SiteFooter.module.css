@@ -40,6 +40,15 @@
   list-style: none;
 }
 
+/* On a phone the links sit closer together, so all five still fit on one
+   line at 390px wide: the words take about 310px of the 358px there. On a
+   narrower phone the last ones wrap onto a second line. */
+@media (max-width: 480px) {
+  .links {
+    column-gap: 0.7rem;
+  }
+}
+
 .links a {
   font-size: var(--text-sm);
   color: var(--ink-body);
@@ -48,4 +57,69 @@
 
 .links a:hover {
   color: var(--grape);
+}
+
+/* On paper the footer keeps only the site's name */
+@media print {
+  .links {
+    display: none;
+  }
+
+  /* The screen's gap above the footer (--footer-gap, 48 to 96px) is a lot
+     of paper. When the last page was nearly full, the footer didn't fit
+     under the content and moved to an extra page with nothing else on it.
+     A smaller gap lets it fit more often.
+
+     The gap is the screen's gap less 2.25rem, and never less than 1rem.
+     It isn't simply 1rem because the 404 page pulls its background down
+     into the gap by the full --footer-gap (a negative margin in
+     not-found.module.css). The footer is about 2.6rem tall on paper, so
+     the gap plus the footer must stay at least --footer-gap tall, or that
+     background reaches past the foot of the page and prints a blank
+     second page.
+
+     The footer also stays whole: its rule never sits apart from the name,
+     and when the footer doesn't fit, all of it moves on. Without that,
+     Chrome could keep the name on the page but put the last of the
+     footer's bottom padding on a new page, which printed blank. */
+  .footer {
+    margin-top: max(1rem, calc(var(--footer-gap) - 2.25rem));
+    break-inside: avoid;
+  }
+
+  /* With the links hidden, the name is all that's left, so the footer is a
+     plain block. As a flex row, the empty nav wrapped under the name on
+     narrow paper such as A5 and added a row gap. The block padding is
+     smaller than on screen. A little padding stays at the bottom because
+     the name's letters reach about 2px below its line. On a short page
+     the body stretches to the whole sheet (min-height: 100vh), so the
+     footer ends right at the foot of the page, and with no padding those
+     2px spilled onto a blank second page. */
+  .inner {
+    display: block;
+    padding-block: 0.75rem 0.25rem;
+  }
+}
+
+/* The page you're on, in the header's current-page color */
+.links a[aria-current="page"] {
+  color: var(--grape);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 0.25em;
+}
+
+/* On touch screens each link gets about 44px of height to tap. The list's
+   negative margin takes the padding back out, so the footer keeps its size,
+   and rows that wrap sit edge to edge instead of overlapping. */
+@media (pointer: coarse) {
+  .links {
+    row-gap: 0;
+    margin-block: -11px;
+  }
+
+  .links a {
+    display: inline-block;
+    padding-block: 11px;
+  }
 }

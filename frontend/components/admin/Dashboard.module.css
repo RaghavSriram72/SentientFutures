@@ -160,6 +160,13 @@
   font-weight: 500;
 }
 
+/* The finished run's links, side by side, wrapping on a phone. */
+.detailLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+}
+
 /* ---------- Publishing the public site ---------- */
 .publish {
   display: grid;

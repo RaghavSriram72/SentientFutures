@@ -64,3 +64,10 @@
   line-height: 1.5;
   color: var(--ink-muted);
 }
+
+/* On paper a glyph stays on the same page as its name and meaning */
+@media print {
+  .item {
+    break-inside: avoid;
+  }
+}

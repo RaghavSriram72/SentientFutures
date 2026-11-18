@@ -68,17 +68,19 @@ The route list is in the architecture doc. A few details it leaves out:
 - Starting a run takes a short lock in the `locks` collection, so two requests on different gunicorn workers can't both start one. The loser gets the same 409 `run_in_progress` as when a run is already going.
 - `GET /api/pipeline/config` and `PUT` also return `models`, the model ids the pipeline has prices for (`null` if the pipeline package isn't installed). `PUT` refuses a model that isn't one of them, and search text the pipeline can't translate, as `queries[i].text: <why>`.
 - `GET /api/reviews/stats` gives, per prompt version, `approval_rate` and `by_ai_relevant`: reviews, approvals and approval rate split by what the AI said (`yes`, `unsure`, `no_spot_check`, `no_rescued`, `no_answer`). Approvals in the two `no` groups are relevant papers the AI would have dropped.
-- `GET /api/queue` takes `status` as any review status (default `pending_review`), plus `kind` (what the AI said), `flag`, `q` (title or author), `limit` and `offset`. Each item is `{candidate, assessment}`.
+- `GET /api/queue` takes `status` as any review status (default `pending_review`), plus `kind`, `flag`, `q` (title or author), `limit` and `offset`. In `approved` and `rejected`, `kind` filters on the current decision's kind, falling back to the AI's when the decision has none; in the other statuses it filters on what the AI said. Each item is `{candidate, assessment, reject_reason}`, where `reject_reason` is the current decision's (`null` for an approval or no decision).
 - `POST /api/queue/<id>/review` can include `assessment_id`, the assessment the reviewer was looking at (or `null` for none). If a newer one has arrived since, the review is refused with a 409 so the comparison matches what they saw.
 - To change an earlier decision, the review also sends `replaces_review_id`: the id of the source's current review. Without it an approved or rejected source answers 409 `not_reviewable`, and with a stale one it answers 409 `review_changed`.
 - The review response includes `publish_problems`: anything that would keep this source off the public site, like a missing year. The approval still counts. `GET /api/public/sources` lists those sources under `skipped` with the same problems.
 - `GET /api/queue` also returns `counts`, the number of sources in each status, whatever the filters.
+- `GET /api/queue/<id>` also returns `re_adds`, newest first: each time someone added the paper again after it was rejected, with who, when and which of the link, title and year changed.
+- Runs started from the dashboard carry `requested_by_name` beside `requested_by`, so the dashboard can show a name. Runs started elsewhere have none.
 - `POST /api/auth/logout` ends the token it's sent with; it gets a 401 from then on. Tokens issued before sign-out existed (no `jti`) get a 401 too.
 - Errors are always `{"error": {"code", "message", "details"}}`. `code` is stable and safe to switch on; `message` is written for people. For validation errors, `details` is a list of `"path: message"` lines.
 
 ## Rules the code enforces
 
-Reviews, AI assessments, milestone and post revisions, and site publishes are only ever inserted. `tests/test_insert_only.py` fails if any code in `sf_api/` updates or deletes them.
+Reviews, AI assessments, re-add records, milestone and post revisions, and site publishes are only ever inserted. `tests/test_insert_only.py` fails if any code in `sf_api/` updates or deletes them.
 
 Approving needs a team-written summary, a known source type, a kind, and at least one technology or "General background". Credibility "unclear" needs a reason other than "other". Rejecting needs a reason. `new`, `pending_review` and `triaged_out` sources can be reviewed; an approved or rejected one only by naming the review it replaces. Every review is kept, and `GET /api/reviews/stats` counts only each source's newest one.
 

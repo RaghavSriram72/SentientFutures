@@ -51,18 +51,28 @@
   font-weight: 600;
 }
 
-/* ---------- The four kinds: as many side by side as the column fits ---------- */
-.kinds {
+/* ---------- The four kinds: one compact row of choices, each as wide as its
+   name, wrapping where the column is narrow. Only the chosen kind's hint
+   shows. ---------- */
+.kindPicker {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
   gap: 0.4rem;
+}
+
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
 }
 
 .kind {
   position: relative;
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.5rem 0.65rem 0.55rem 2rem;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.6rem;
   border: 1px solid var(--rule-soft);
   border-radius: var(--radius-sm);
   background: var(--paper-2);
@@ -84,14 +94,15 @@
   outline-offset: 2px;
 }
 
+/* The real radio button covers the whole choice, unseen, so clicks, the
+   keyboard and screen readers all work as usual. */
 .radio {
   position: absolute;
-  top: 0.62rem;
-  left: 0.65rem;
-  width: 0.95rem;
-  height: 0.95rem;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
-  accent-color: var(--grape);
+  opacity: 0;
   cursor: pointer;
 }
 
@@ -103,6 +114,7 @@
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.06em;
+  text-align: center;
   text-transform: uppercase;
   color: var(--ink);
 }

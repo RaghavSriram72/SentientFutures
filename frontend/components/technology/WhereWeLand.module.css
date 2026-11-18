@@ -1,4 +1,5 @@
-/* The hero's summary box: six ratings one line each, then the milestones. */
+/* The hero's summary box: six ratings one line each, then one line about the
+   milestones, one about the sources and one to the comparison. */
 .box {
   display: grid;
   gap: 0.75rem;
@@ -33,6 +34,21 @@
   white-space: nowrap;
 }
 
+/* On touch screens the link's hit area grows to about 44px tall. The negative
+   margin takes the padding back out, so nothing moves. */
+@media (pointer: coarse) {
+  .headLink {
+    display: inline-block;
+    padding-block: 12px;
+    margin-block: -12px;
+  }
+}
+
+.lead {
+  display: grid;
+  gap: 0.4rem;
+}
+
 .summary {
   font-family: var(--font-display);
   font-size: 1.375rem;
@@ -40,22 +56,35 @@
   color: var(--ink);
 }
 
+/* "Low confidence in all six.": set like a row's meta line, said once */
+.sharedMeta {
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+
 .rows {
   list-style: none;
   display: grid;
 }
 
-/* Dimension and chip on one line, confidence and severity under them */
+/* Dimension, chip and the arrow to its card on one line, confidence and
+   severity under them */
 .row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   grid-template-areas:
-    "dimension rating"
-    "meta meta";
+    "dimension rating link"
+    "meta meta meta";
   column-gap: 0.75rem;
   row-gap: 0.15rem;
   padding-block: 0.55rem;
   border-top: 1px solid var(--rule-soft);
+}
+
+/* A row with nothing under it (the confidence is said once, above) */
+.rowNoMeta {
+  grid-template-areas: "dimension rating link";
 }
 
 .dimension {
@@ -80,13 +109,120 @@
   color: var(--ink-muted);
 }
 
-.milestones {
+/* The arrow down to the rating's card: faint until hovered or focused, so
+   the chips stay the thing to read. A 32px target; the negative margins take
+   the extra size back out, so the row keeps its height, the arrow sits close
+   to the chip, and it lines up under the "Full scorecard" arrow. */
+.rowLink {
+  grid-area: link;
+  align-self: center;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-block: -6px;
+  margin-inline: -0.4rem -12px;
+  border-radius: 6px;
+  font-size: var(--text-sm);
+  line-height: 1;
+  color: var(--ink-faint);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.rowLink:hover,
+.rowLink:focus-visible {
+  color: var(--grape);
+}
+
+/* The global focus ring, drawn on the square so it doesn't crowd the chip */
+.rowLink:focus-visible {
+  outline-offset: 0;
+}
+
+.rowArrow {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.rowLink:hover .rowArrow {
+  transform: translateY(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rowLink:hover .rowArrow {
+    transform: none;
+  }
+}
+
+/* On touch screens the target grows to 44px, again without moving anything */
+@media (pointer: coarse) {
+  .rowLink {
+    width: 44px;
+    height: 44px;
+    margin-block: -12px;
+    margin-inline: -0.75rem -18px;
+  }
+}
+
+/* The milestones line, the sources line and the compare line */
+.footer {
+  display: grid;
+  gap: 0.35rem;
   padding-top: 0.7rem;
   border-top: 1px solid var(--rule);
+}
+
+/* Balanced, so a line that wraps doesn't leave "yet →" alone on the second */
+.footerLine {
   font-size: var(--text-sm);
+  text-wrap: balance;
   color: var(--ink-muted);
 }
 
-.milestonesLink {
+.footerLink {
   font-weight: 500;
+}
+
+/* On paper a rating line never splits across two pages. Split, Chrome prints
+   the next line on top of it. The box and its list are plain blocks there,
+   with margins in place of the gap: as grids, Chrome moved the whole box to
+   the next page, which left most of the hero's first page empty. */
+@media print {
+  .box,
+  .rows {
+    display: block;
+  }
+
+  .box > * + * {
+    margin-top: 0.75rem;
+  }
+
+  .row {
+    break-inside: avoid;
+  }
+
+  /* An in-page jump has no use on paper */
+  .rowLink {
+    display: none;
+  }
+
+  /* With the arrow hidden, the rows drop its column too. Kept, the empty
+     column and its gap held every chip 0.75rem in from the right edge,
+     out of line with "Full scorecard" above. */
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "dimension rating"
+      "meta meta";
+  }
+
+  .rowNoMeta {
+    grid-template-areas: "dimension rating";
+  }
+
+  /* The compare line points to another page, so it has no use on paper,
+     like the compare lines on the rating cards and in Artificial minds. */
+  .compareLine {
+    display: none;
+  }
 }

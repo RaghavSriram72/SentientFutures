@@ -1,15 +1,17 @@
-// The timeline as an accessible list. Milestones with something on the dates
-// come first, grouped by technology; the ones with no estimate follow in one
-// short group. It's built from the same computed view as the 3D track, with the
-// track's own glyphs, so the marks and labels always agree.
+// The timeline as an accessible list. Milestones with something on the
+// dates come first, grouped by technology; the ones with no estimate follow
+// in one short group, Timing unknown. It's built from the same computed view
+// as the 3D track, with the track's own glyphs, so the marks and labels
+// always agree.
+import { TypeMark } from "@/components/common/TypeMark";
+import { ProvenanceTag } from "@/components/provenance/ProvenanceTag";
 import {
   AchievedDot,
   FaintRibbonSwatch,
   LineSwatch,
   RibbonSwatch,
 } from "@/components/timeline3d/TrackGlyphs";
-import { ProvenanceTag } from "@/components/provenance/ProvenanceTag";
-import { enumLabel } from "@/lib/enums";
+import { milestoneTypeOf } from "@/lib/enums";
 import { countLabel, formatWindow } from "@/lib/estimates";
 
 import {
@@ -17,6 +19,7 @@ import {
   hasEstimate,
   sortForecastsByWindow,
   stageKey,
+  stageTag,
   type TimelineGroup,
   type TimelineItem,
 } from "./timelineModel";
@@ -86,10 +89,11 @@ export function TimelineList({ groups, selectedId, onSelect, itemsById = {} }: T
 
       {undatedCount > 0 && (
         <section className={styles.part} aria-labelledby="list-undated">
+          {/* Named after the zone these stand in on the track */}
           <h3 id="list-undated" className={styles.partTitle}>
-            No estimate yet <span className={styles.partCount}>({undatedCount})</span>
+            Timing unknown <span className={styles.partCount}>({undatedCount})</span>
           </h3>
-          <p className={styles.partNote}>No team range and no forecast yet. On the track they stand under Timing unknown.</p>
+          <p className={styles.partNote}>No team range and no forecast yet.</p>
           {undated.map((group) => (
             <section key={group.technology} className={styles.group} aria-labelledby={`list-undated-${group.technology}`}>
               <h4 id={`list-undated-${group.technology}`} className={styles.groupTitle}>
@@ -150,6 +154,8 @@ interface ListRowProps {
 function ListRow({ item, selected, onSelect, itemsById, compact = false }: ListRowProps) {
   const { milestone, view } = item;
   const key = stageKey(milestone.stage);
+  // null only with a stale enums.json, and then the row shows no type line
+  const type = milestoneTypeOf(milestone.category);
   const disagreement = view.disagreement;
   const forecasts = sortForecastsByWindow(view.forecasts);
 
@@ -159,7 +165,7 @@ function ListRow({ item, selected, onSelect, itemsById, compact = false }: ListR
         <span className={styles.code}>{item.code}</span>
         <span className={`${styles.stage} ${styles[`stage_${key}`]}`}>
           <span className={styles.stageDot} aria-hidden="true" />
-          {enumLabel("Stage", milestone.stage)}
+          {stageTag(milestone.stage)}
         </span>
         {milestone.sample && <span className="chip">Sample</span>}
       </div>
@@ -177,6 +183,8 @@ function ListRow({ item, selected, onSelect, itemsById, compact = false }: ListR
           {milestone.name}
         </button>
       </p>
+
+      {type && <TypeMark type={type} className={styles.type} />}
 
       {!compact && (
         <div className={styles.estimate}>

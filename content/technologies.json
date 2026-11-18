@@ -3,7 +3,7 @@
     "id": "wbe",
     "name": "Whole brain emulation",
     "short_name": "WBE",
-    "headline": "Could an *emulated* human brain improve alignment or preserve human agency?",
+    "headline": "Could *whole brain emulation* improve AI alignment or preserve human agency?",
     "intro": {
       "text": "Whole brain emulation would create digital minds derived from human brains. We assess the claim that those minds would improve alignment or preserve human agency. How exactly they would do that is still unresolved, and so are WBE's feasibility and its welfare implications.",
       "provenance": "team"
@@ -14,6 +14,7 @@
     "strongest_objections": [],
     "scorecard": [
       {
+        "id": "alignment-case",
         "dimension": "Alignment case",
         "problem": "alignment",
         "scale": "case",
@@ -24,9 +25,18 @@
           "text": "S02 and S13 both name WBE as a possible pathway for alignment, but neither shows how an emulation would solve a specific alignment problem. The evidence we have isn't enough to tell whether WBE is a promising research direction or an intervention that matters for safety.",
           "provenance": "team",
           "source_ids": ["s02", "s13"]
+        },
+        "tracker": {
+          "what_would_change": {
+            "text": "Direct evidence that a WBE-based system solves a specified alignment problem better than a non-WBE comparator.",
+            "provenance": "team"
+          },
+          "last_updated": "2026-11-16",
+          "placeholder": true
         }
       },
       {
+        "id": "intelligence-curse-case",
         "dimension": "Intelligence Curse case",
         "problem": "intelligence_curse",
         "scale": "case",
@@ -40,6 +50,7 @@
         }
       },
       {
+        "id": "human-welfare-risk",
         "dimension": "Human welfare risk",
         "problem": null,
         "scale": "risk",
@@ -53,6 +64,7 @@
         }
       },
       {
+        "id": "artificial-mind-welfare-and-rights-risk",
         "dimension": "Artificial-mind welfare and rights risk",
         "problem": null,
         "scale": "risk",
@@ -67,6 +79,7 @@
         }
       },
       {
+        "id": "governance-risk",
         "dimension": "Governance risk",
         "problem": null,
         "scale": "risk",
@@ -81,6 +94,7 @@
         }
       },
       {
+        "id": "safeguard-adequacy",
         "dimension": "Safeguard adequacy",
         "problem": null,
         "scale": "case",
@@ -169,7 +183,8 @@
         "directness": "remote",
         "limitation": "No one has shown that an emulation would be safer, aligned or deployable.",
         "independence": "Mixed",
-        "provenance": "team"
+        "provenance": "team",
+        "scorecard_ids": ["alignment-case"]
       },
       {
         "claim": "Regulatory and moral bottlenecks could delay WBE.",
@@ -353,11 +368,11 @@
   },
   {
     "id": "bci",
-    "name": "Brain computer interfaces",
+    "name": "Brain-computer interfaces",
     "short_name": "BCI",
-    "headline": "Could brain computer interfaces help people *keep up* with AI?",
+    "headline": "Could *brain-computer interfaces* improve AI alignment or preserve human agency?",
     "intro": {
-      "text": "Brain computer interfaces connect the nervous system to a computer. Implanted devices already let a small number of people with paralysis move a cursor or produce text. The bigger claim is that much faster interfaces could keep people in charge of increasingly capable AI and keep their work worth paying for.",
+      "text": "Brain-computer interfaces connect the nervous system to a computer. Implanted devices already let a small number of people with paralysis move a cursor or produce text. The bigger claim is that much faster interfaces could keep people in charge of increasingly capable AI and keep their work worth paying for.",
       "provenance": "ai",
       "reviewed_by": null
     },
@@ -421,6 +436,7 @@
     ],
     "scorecard": [
       {
+        "id": "alignment-case",
         "dimension": "Alignment case",
         "problem": "alignment",
         "scale": "case",
@@ -434,6 +450,7 @@
         }
       },
       {
+        "id": "intelligence-curse-case",
         "dimension": "Intelligence Curse case",
         "problem": "intelligence_curse",
         "scale": "case",
@@ -447,6 +464,7 @@
         }
       },
       {
+        "id": "human-welfare-risk",
         "dimension": "Human welfare risk",
         "problem": null,
         "scale": "risk",
@@ -460,6 +478,7 @@
         }
       },
       {
+        "id": "artificial-mind-welfare-and-rights-risk",
         "dimension": "Artificial-mind welfare and rights risk",
         "problem": null,
         "scale": "risk",
@@ -473,6 +492,7 @@
         }
       },
       {
+        "id": "governance-risk",
         "dimension": "Governance risk",
         "problem": null,
         "scale": "risk",
@@ -486,6 +506,7 @@
         }
       },
       {
+        "id": "safeguard-adequacy",
         "dimension": "Safeguard adequacy",
         "problem": null,
         "scale": "case",
@@ -522,7 +543,7 @@
     "id": "neuromorphic",
     "name": "Neuromorphic AI",
     "short_name": "Neuromorphic AI",
-    "headline": "Would AI built like a brain *think like us*?",
+    "headline": "Could *neuromorphic AI* improve AI alignment or preserve human agency?",
     "intro": {
       "text": "Neuromorphic, or brain-inspired, AI borrows parts of how brains work, such as spiking neurons or the circuits behind empathy, without copying any particular brain. The hope is that AI built this way would learn values closer to ours, though it might mostly just make AI more capable sooner.",
       "provenance": "ai",
@@ -583,6 +604,7 @@
     ],
     "scorecard": [
       {
+        "id": "alignment-case",
         "dimension": "Alignment case",
         "problem": "alignment",
         "scale": "case",
@@ -596,6 +618,7 @@
         }
       },
       {
+        "id": "intelligence-curse-case",
         "dimension": "Intelligence Curse case",
         "problem": "intelligence_curse",
         "scale": "case",
@@ -609,6 +632,7 @@
         }
       },
       {
+        "id": "human-welfare-risk",
         "dimension": "Human welfare risk",
         "problem": null,
         "scale": "risk",
@@ -622,6 +646,7 @@
         }
       },
       {
+        "id": "artificial-mind-welfare-and-rights-risk",
         "dimension": "Artificial-mind welfare and rights risk",
         "problem": null,
         "scale": "risk",
@@ -635,6 +660,7 @@
         }
       },
       {
+        "id": "governance-risk",
         "dimension": "Governance risk",
         "problem": null,
         "scale": "risk",
@@ -648,6 +674,7 @@
         }
       },
       {
+        "id": "safeguard-adequacy",
         "dimension": "Safeguard adequacy",
         "problem": null,
         "scale": "case",

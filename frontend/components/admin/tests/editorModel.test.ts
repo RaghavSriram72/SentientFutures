@@ -100,6 +100,13 @@ describe("pathLabel", () => {
     assert.equal(pathLabel("forecasts.0.quote"), "Forecast 1, quote");
     assert.equal(pathLabel("would_move_later.1.unclear_reason"), "What would push it later 2, reason");
   });
+
+  test("uses the select fields' own labels", () => {
+    assert.equal(pathLabel("technology"), "Technology");
+    assert.equal(pathLabel("stage"), "Stage");
+    assert.equal(pathLabel("category"), "Category");
+    assert.equal(pathLabel("status"), "Status");
+  });
 });
 
 describe("logLinesInLocalTime", () => {

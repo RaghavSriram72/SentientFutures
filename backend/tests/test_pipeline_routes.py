@@ -7,7 +7,7 @@ import time
 
 import httpx
 import pytest
-from api_helpers import REVIEWER_EMAIL, bearer, insert_candidate, make_config, minutes_ago
+from api_helpers import REVIEWER_EMAIL, REVIEWER_NAME, bearer, insert_candidate, make_config, minutes_ago
 from sf_shared.db import now
 
 from sf_api import create_app, runner
@@ -161,6 +161,9 @@ def test_run_now_calls_the_local_pipeline_with_the_new_run_id(client, db, header
     assert run["status"] == "queued"
     assert run["stages"] == ["collect", "triage"]
     assert run["requested_by"] == REVIEWER_EMAIL
+    # The name is stored with the run, so the dashboard can show it.
+    assert run["requested_by_name"] == REVIEWER_NAME
+    assert db["pipeline_runs"].find_one({"_id": run["id"]})["requested_by_name"] == REVIEWER_NAME
 
     assert fake_pipeline.done.wait(WAIT_SECONDS)
     call = fake_pipeline.calls[0]

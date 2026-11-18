@@ -208,7 +208,7 @@ Once the milestones are imported into the database, add and edit them in admin i
 | `name` | The milestone as a short statement of what happens: "A non-invasive headset decodes text at typing speed." |
 | `technology` | `wbe`, `bci`, `neuromorphic` or `hybrid`. |
 | `stage` | `possible` (someone has shown it can be done), `widely_available` (cheap, reliable and accessible enough to matter) or `actually_helping` (measurably helping with alignment or human agency). |
-| `category` | `technical_capability`, `reliability_robustness`, `safety_welfare_assurance`, `scalable_production`, `economic_viability`, `legal_regulatory`, `institutional_legitimacy` or `equitable_access`. |
+| `category` | `technical_capability`, `high_level_fidelity`, `reliability_robustness`, `scalable_production`, `economic_viability`, `equitable_access`, `safety_welfare_assurance`, `legal_regulatory` or `institutional_legitimacy`. The site groups categories into three types (Technical, Deployment, Welfare and governance). The grouping lives in `shared/sf_shared/enums.py` (`MILESTONE_TYPES`), and a milestone's type is never stored. |
 | `status` | `not_demonstrated`, `prototype` (shown once, in limited conditions), `replicated` (shown more than once, by more than one group), `mature` (routine) or `not_claimed` (none of our current sources claims the proposal will do this, as in the scorecard's "if claimed" rows). |
 | `status_basis` | A claim saying why it has that status. |
 | `achieved_in` | The year it happened, or `null` if it hasn't. |
@@ -375,6 +375,8 @@ An evidence register row looks like this:
 
 The register ids (S02, S13, S15) are the team's own numbering. In `supporting_ids` and `contrary_ids`, write them that way, and the site links each one to the source with that `register_id`. A claim's `source_ids` takes the source's `id` instead, so a claim whose text mentions S02 lists `"s02"`, and the site shows a link to the source under the claim.
 
+A register row can also say which scorecard ratings it bears on, with `scorecard_ids`. See "Rating cards" below.
+
 The alignment and Intelligence Curse assessments have the same shape:
 
 ```json
@@ -400,14 +402,18 @@ The alignment and Intelligence Curse assessments have the same shape:
 
 `scorecard` is the rating synopsis from section 8 of the team's scorecard. Every page has the same six rows, in this order:
 
-| `dimension` | `scale` | `problem` |
-|---|---|---|
-| Alignment case | `case` | `alignment` |
-| Intelligence Curse case | `case` | `intelligence_curse` |
-| Human welfare risk | `risk` | `null` |
-| Artificial-mind welfare and rights risk | `risk` | `null` |
-| Governance risk | `risk` | `null` |
-| Safeguard adequacy | `case` | `null` |
+| `id` | `dimension` | `scale` | `problem` |
+|---|---|---|---|
+| `alignment-case` | Alignment case | `case` | `alignment` |
+| `intelligence-curse-case` | Intelligence Curse case | `case` | `intelligence_curse` |
+| `human-welfare-risk` | Human welfare risk | `risk` | `null` |
+| `artificial-mind-welfare-and-rights-risk` | Artificial-mind welfare and rights risk | `risk` | `null` |
+| `governance-risk` | Governance risk | `risk` | `null` |
+| `safeguard-adequacy` | Safeguard adequacy | `case` | `null` |
+
+Every page has the same rows, with the same id, dimension, scale and problem, in the same order. The validator checks this. The id never changes once it's public, because the compare page's address and the link to each rating use it. To rename a dimension, change `dimension` on all three pages and keep the id.
+
+An id can't be `artificial-minds` or a milestone category written with hyphens, like `economic-viability`, because the compare page uses those for its own views.
 
 Human welfare risk is about harm to people: mental privacy, autonomy and manipulation, workplace surveillance and neuromanipulation, and dependency and deskilling. Harm to the artificial minds themselves has its own row.
 
@@ -417,6 +423,61 @@ A `case` row is rated `strong`, `moderate`, `weak`, `unclear` or `not_claimed`, 
 - A `low` risk needs a `source` basis. We never call a risk low just because nobody has studied it.
 - `not_claimed` means the proposal doesn't claim that outcome, which is different from `weak` or `unclear`. Don't also list that outcome under `claims_to_solve`.
 - `potential_severity` (`high`, `medium` or `low`) is for risk rows only. Use it when the rating is still `unclear` but the team has judged how bad the harm could be. The WBE scorecard's "Unclear, with potentially high severity" is written as `"rating": "unclear"` with `"potential_severity": "high"`. Leave it out when nobody has made that judgment, as on the BCI and neuromorphic pages.
+- The `alignment_assessment` and `intelligence_curse_assessment` repeat the rating of the case row with the same `problem`. Their `rating`, `confidence` and `unclear_reason` must match that row, so change both together.
+
+### Rating cards
+
+Each scorecard row is shown on its page as a rating card. A row can carry a `tracker` with what the card adds to the rating. Every field is optional. When the evidence, what would change the assessment or the milestones are missing, the card lists them in a "Not added yet" line. "Last updated" is shown only once `last_updated` is set, and an empty history reads "No changes recorded yet."
+
+| Field | What to put |
+|---|---|
+| `what_would_change` | A claim: the evidence that would change the assessment. |
+| `last_updated` | The date the team last reviewed this rating, like `"2026-11-16"`. Required once there's a history. |
+| `history` | The changes to the rating, oldest first. See "Recording a change" below. |
+| `milestone_ids` | The ids of the milestones this rating informs, in the order the card should list them. Only milestones of this page's technology, and never a sample. Leave it out until the team has decided. |
+| `placeholder` | `true` while the tracker is an example the team hasn't checked. Leave it out otherwise. |
+
+To link evidence to a rating, add `scorecard_ids` to an evidence register row: a list of row ids from the same page, like `["alignment-case"]`. The card lists every register row that links to it, with its supporting and contrary sources, directness and main limitation. One register row can link to more than one rating. Leave `scorecard_ids` out when a row isn't linked.
+
+Milestone links are checked against `milestones.json`. Before you link a milestone that was made in admin, run `flask --app sf_api content export-milestones --out ../content` (in `backend/`) and commit the result, so the file has it. When the site is published, a link to a milestone that isn't published is left out, and the publish log names it.
+
+`placeholder` is different from `sample`. A sample is a made-up record that the public site leaves out, or a page it marks as an AI draft. A placeholder tracker is shown: the card puts the tracker's fields, and the register rows linked to it, in one box labelled "Placeholder". The rating, confidence and basis stay outside the box. The validator prints a warning on every run while the flag is on. Right now the only placeholder is the WBE Alignment case row.
+
+To make a placeholder real, confirm or edit its fields and its register links, delete `"placeholder": true`, and from then on record changes in `history`. A placeholder can't have a history.
+
+#### Recording a change
+
+When a rating or its confidence changes, update `rating` or `confidence` on the row, add an entry at the end of `history`, and set `last_updated`. The card's history keeps the old values visible. This example is made up, so don't copy its text:
+
+```json
+"tracker": {
+  "last_updated": "2026-11-16",
+  "history": [
+    {
+      "date": "2026-11-16",
+      "rating_before": "unclear",
+      "rating_after": "unclear",
+      "confidence_before": "low",
+      "confidence_after": "medium",
+      "note": {
+        "text": "Confidence increased from Low to Medium after new evidence on high-level emulation fidelity. Alignment rating unchanged.",
+        "provenance": "team",
+        "source_ids": ["lee-2026-emulation-fidelity"]
+      }
+    }
+  ]
+}
+```
+
+The rules:
+
+- Entries go oldest first, and new ones go at the end.
+- Each entry starts where the one before it ended: its `rating_before` is the previous entry's `rating_after`, and the same for confidence.
+- The newest entry ends at the row's current `rating` and `confidence`.
+- The ratings use the row's scale, like `rating` does.
+- `last_updated` can't be before the newest entry, and no date can be more than a day in the future.
+- An entry where neither value changed is fine. It records a review that left the rating as it was, and the card shows "Rating unchanged" and "Confidence unchanged".
+- The `note` says what changed and why. Its `source_ids` names the source or sources that caused the change, and each one must be in `content/sources.json`. The note can't be `unclear`, and an `ai` note needs `reviewed_by` like any other AI claim.
 
 ## Checking your work
 
@@ -445,7 +506,7 @@ If everything is fine, you'll see something like:
 OK: 13 milestones, 36 sources, 3 technologies, 2 posts
 ```
 
-You might also see a line starting with `Warning:` above it, such as "Warning: 39 AI-suggested claims in sample records have no reviewer." A warning doesn't fail the check. It's a reminder that the samples still hold AI text somebody has to review before they become real entries.
+You might also see a line starting with `Warning:` above it, such as "Warning: 39 AI-suggested claims in sample records have no reviewer." A warning doesn't fail the check. It's a reminder that the samples still hold AI text somebody has to review before they become real entries. The warning about a placeholder tracker is the same kind of reminder (see "Rating cards").
 
 Otherwise you'll get one line per problem, then a count:
 
@@ -471,7 +532,9 @@ The same check runs on GitHub whenever someone pushes a change, so a broken file
 | `no source with id "smith-2025" in sources.json` | The id is misspelled, or the source hasn't been added yet. It also happens if you put a register id like `S02` in `source_ids`. Use the source's id, `s02`. |
 | `register_id: must look like "S02"` | A register id needs a capital S and at least two digits: `S02`, not `s02` or `S2`. |
 | `register_id: "S02" is already used by` | Two sources have the same register id. Check the Notion database for a duplicate row. |
-| `no milestone with id "..." in milestones.json` | A `depends_on` entry points to a milestone that doesn't exist. Check the spelling. |
+| `no milestone with id "..." in milestones.json` | A `depends_on` or `milestone_ids` entry points to a milestone that doesn't exist. Check the spelling. For a milestone made in admin, run `export-milestones` first (see "Rating cards"). |
+| `is a sample milestone` | A real milestone, or any scorecard row, links to a sample milestone, which the public site leaves out. Link to a real one. |
+| `is a bci milestone, and this is the wbe page` | A rating can only link to milestones of its own technology. |
 | `dependency cycle: a -> b -> a` | Two milestones each depend on the other. Remove one of the links. |
 | `Input should be a valid integer (got "2045")` | A year in quotes. Remove the quotes. |
 | `Input should be 'possible', 'widely_available' or 'actually_helping' (got "Possible")` | A value that isn't on the list. Values are lowercase with underscores. |
@@ -482,6 +545,20 @@ The same check runs on GitHub whenever someone pushes a change, so a broken file
 | `"other" needs a note` | Source credibility, scorecard rows and assessments can't use `other`. Pick the closest of the four other reasons. |
 | `only risk rows (scale "risk") can have a potential severity` | `potential_severity` is on a `case` row. Remove it. |
 | `needs exactly one *italic* word or phrase` | The technology page `headline` has no asterisks, or more than one pair. |
+| `scorecard[3].id: "governance-risk" is already used by scorecard[2]` | Two rows on one page have the same `id` (or the same `dimension`). Each row needs its own. |
+| `Every page needs the same scorecard rows as technologies[0] (wbe)` | A page has a row the first page doesn't, is missing one, or has them in another order. Make the three pages match. |
+| `A row means the same thing on every page` | A row has a different `dimension`, `scale` or `problem` on another page. Change it on all three pages at once. |
+| `is taken by the compare page's` | A row id clashes with one of the compare page's own views. Pick another id. |
+| `no scorecard row with id "alignment" on this page` | A register row's `scorecard_ids` entry doesn't match a row id on that page. Use the id the message suggests. |
+| `doesn't match the scorecard row "alignment-case"` | An assessment's rating, confidence or unclear reason differs from its scorecard row. Change both together. |
+| `Each change starts where the one before it ended` | A history entry's `rating_before` or `confidence_before` doesn't match the entry above it. Fix the values, or add the missing change. |
+| `The newest change has to end at the current rating` | The row's `rating` (or `confidence`) changed without a history entry. Add one at the end of `history`. |
+| `Keep the history oldest first` | Move the entries so the dates run from oldest to newest. |
+| `last_updated: required when there is a history` | Set `last_updated` to the date of the newest change, or later. |
+| `name the source or sources that caused this change` | A history entry's `note` needs `source_ids`. |
+| `must be empty while placeholder is true` | Remove `"placeholder": true` once the team has checked the tracker, then record the change. |
+| `true, but the row has nothing to mark` | A tracker has `"placeholder": true` but no example fields. A `what_would_change` that is `unclear` with `search_incomplete` doesn't count, because the card shows it as not assessed. Add the fields, or remove the flag. |
+| `is in the future. Check the year` | A history date or `last_updated` is after tomorrow. Usually a typo in the year. |
 | `put the value of "summary" in double quotes` | A blog post header value the site would misread. Wrap the whole value in `"..."`. |
 | `unclear_reason: required when provenance is unclear` | Say why it's unclear, using one of the reasons above. |
 | `confidence: required when there is an estimate` | Set `confidence` to `high`, `medium` or `low`. |

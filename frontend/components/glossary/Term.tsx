@@ -8,20 +8,28 @@ interface TermProps {
   children: ReactNode;
   // Replaces the glossary line, for a definition that depends on the page.
   definition?: string;
+  // "end" lines the tip up with the word's right edge, for a term at the
+  // right of a box that clips what overflows it (the technology page hero).
+  align?: "start" | "end";
 }
 
 // A term with a dotted underline. Hovering, tapping or tabbing to it shows a
-// one-line definition. No JavaScript: the definition is in the page, linked by
-// aria-describedby, and CSS shows it on :hover and :focus.
+// one-line definition. No JavaScript needed: the definition is in the page,
+// linked by aria-describedby, and CSS shows it on :hover and :focus. On a
+// phone, TermDock (mounted once in the layout) moves or closes the docked tip.
+// Elsewhere it keeps the tip under its word from running off the screen and,
+// for a term that wraps, keeps it up a moment after the pointer leaves, and at
+// any width it lets Escape hide the tip.
 // Use it once per page, at the term's first use, so the id stays unique.
-export function Term({ name, children, definition }: TermProps) {
+export function Term({ name, children, definition, align = "start" }: TermProps) {
   const tipId = `term-${name}`;
+  const tipClass = align === "end" ? `${styles.tip} ${styles.tipEnd}` : styles.tip;
   return (
     <span className={styles.term}>
       <span className={styles.word} tabIndex={0} aria-describedby={tipId}>
         {children}
       </span>
-      <span id={tipId} role="tooltip" className={styles.tip}>
+      <span id={tipId} role="tooltip" className={tipClass}>
         {definition ?? GLOSSARY[name]}
       </span>
     </span>

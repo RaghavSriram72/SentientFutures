@@ -4,7 +4,8 @@
 // The form edits a MilestoneDraft: the public Milestone with the years that
 // can be half typed allowed to be null, plus the published flag. toMilestone()
 // turns it back into exactly what the API and the public site expect.
-import type { CatalogSource } from "@/lib/adminTypes";
+import type { CatalogSource, MilestoneRecord } from "@/lib/adminTypes";
+import { enumLabel, milestoneTypes } from "@/lib/enums";
 import type { Claim, Forecast, Milestone } from "@/lib/types";
 
 import { hasLongDash, isSlug, LONG_DASH_FIX } from "./editorModel";
@@ -91,6 +92,20 @@ export function toDraft(milestone: Milestone, published: boolean): MilestoneDraf
     forecasts: milestone.forecasts.map((forecast) => ({ ...forecast })),
     published,
   };
+}
+
+// What ticking or unticking "The team has its own range" changes. A new range
+// always starts with no confidence, even when the stored milestone still has
+// one from before, so the team picks it on purpose and milestoneProblems()
+// asks for it.
+export function teamRangePatch(on: boolean): Partial<MilestoneDraft> {
+  if (on) {
+    return {
+      estimate: { earliest: null, latest: null, basis: blankClaim(), set_by: "", set_on: "" },
+      confidence: null,
+    };
+  }
+  return { estimate: null, confidence: null };
 }
 
 // The smallest "forecast-N" this milestone doesn't use yet.
@@ -262,18 +277,20 @@ function checkLongDashes(value: unknown, path: string, errors: MilestoneErrors):
   }
 }
 
+// Every problem the draft has, in the order its fields appear in the form
+// (inFormOrder), so the list reads top to bottom and focus goes to the first.
 export function milestoneProblems(draft: MilestoneDraft): MilestoneErrors {
   const errors: MilestoneErrors = {};
   const sample = draft.sample === true;
 
+  if (draft.name.trim() === "") {
+    errors.name = "Give the milestone a name.";
+  }
   const id = draft.id.trim();
   if (id === "") {
     errors.id = "Give the milestone an id.";
   } else if (!isSlug(id)) {
     errors.id = "Use lowercase letters, numbers and single hyphens, like wbe-fly-connectome.";
-  }
-  if (draft.name.trim() === "") {
-    errors.name = "Give the milestone a name.";
   }
 
   checkClaim(draft.status_basis, "status_basis", sample, errors);
@@ -371,7 +388,152 @@ export function milestoneProblems(draft: MilestoneDraft): MilestoneErrors {
     "",
     errors,
   );
-  return errors;
+  return inFormOrder(errors);
+}
+
+// ---------- The order of problems ----------
+
+// The milestone's parts as the form shows them, top to bottom.
+const FORM_ORDER = [
+  "name",
+  "id",
+  "technology",
+  "stage",
+  "category",
+  "status",
+  "status_basis",
+  "achieved_in",
+  "achieved_in_basis",
+  "published",
+  "sample",
+  "summary",
+  "success_criterion",
+  "main_bottleneck",
+  "would_move_earlier",
+  "would_move_later",
+  "artificial_minds_questions",
+  "estimate",
+  "depends_on",
+  "source_ids",
+  "forecasts",
+];
+
+// The fields inside a claim, a forecast and the team range, top to bottom.
+// One list serves all three, since none of them orders a shared name
+// (quote, earliest, latest) differently.
+const PART_ORDER = [
+  "text",
+  "provenance",
+  "forecaster",
+  "source_id",
+  "source_ids",
+  "claim",
+  "quote",
+  "quote_location",
+  "reviewed_by",
+  "unclear_reason",
+  "unclear_note",
+  "made_in",
+  "earliest",
+  "latest",
+  "never",
+  "confidence",
+  "basis",
+];
+
+// A name's place in a list. Anything the list doesn't know goes after it.
+function rankIn(list: string[], name: string): number {
+  const index = list.indexOf(name);
+  return index === -1 ? list.length : index;
+}
+
+// Where a path's field sits in the form, as numbers to compare in turn:
+// "forecasts.1.quote" -> [the forecasts section, 1, quote's place in a forecast].
+function formPosition(path: string): number[] {
+  // Confidence is stored on the milestone, but the form asks for it inside
+  // the team range, between the latest year and the basis.
+  const placed = path === "confidence" ? "estimate.confidence" : path;
+  const position: number[] = [];
+  placed.split(".").forEach((part, index) => {
+    if (/^\d+$/.test(part)) {
+      position.push(Number(part));
+    } else if (index === 0) {
+      position.push(rankIn(FORM_ORDER, part));
+    } else {
+      position.push(rankIn(PART_ORDER, part));
+    }
+  });
+  return position;
+}
+
+function compareFormPositions(a: string, b: string): number {
+  const first = formPosition(a);
+  const second = formPosition(b);
+  for (let index = 0; index < Math.min(first.length, second.length); index += 1) {
+    if (first[index] !== second[index]) {
+      return first[index] - second[index];
+    }
+  }
+  // A problem on a whole part comes before the problems inside it.
+  return first.length - second.length;
+}
+
+// The same problems, in the order their fields appear in the form. The list
+// of problems shows them in this order, and saving focuses the first, so
+// both match what's on screen. The API's problems come in its own order, so
+// they go through this too.
+export function inFormOrder(errors: MilestoneErrors): MilestoneErrors {
+  const paths = Object.keys(errors);
+  paths.sort(compareFormPositions);
+  const ordered: MilestoneErrors = {};
+  for (const path of paths) {
+    ordered[path] = errors[path];
+  }
+  return ordered;
+}
+
+// The problems from the last save that the draft still has, worded for the
+// draft as it is now. A fixed field drops out, and so does every problem on a
+// forecast or claim that was removed. A new problem waits for the next save,
+// so nothing turns red halfway through typing a year. Problems only the API
+// knows about (a dependency cycle, an id that's taken) aren't in
+// milestoneProblems(), so they drop out too, and the next save checks again.
+export function problemsStillOpen(found: MilestoneErrors, draft: MilestoneDraft): MilestoneErrors {
+  const open: MilestoneErrors = {};
+  if (Object.keys(found).length === 0) {
+    return open;
+  }
+  const now = milestoneProblems(draft);
+  for (const path of Object.keys(found)) {
+    if (now[path] !== undefined) {
+      open[path] = now[path];
+    }
+  }
+  return open;
+}
+
+// ---------- The preview ----------
+
+// The milestones the preview numbers this one among, in list order: the ones
+// the public timeline shows (published and not samples), plus the one being
+// edited in its own place. Codes like "WBE-05" count position within a
+// technology, so leaving anything else in would shift them away from what the
+// timeline says. A new milestone (id "") isn't in the list yet; the preview
+// puts it at the end, where saving puts it too.
+//
+// A sample only ever shows on the style guide's track, which draws the
+// published samples too, so a sample's preview numbers it among those and
+// its sample dependencies keep their codes and names.
+export function previewMilestones(records: MilestoneRecord[], editingId: string, sample: boolean): Milestone[] {
+  const shown: Milestone[] = [];
+  for (const record of records) {
+    const isThisOne = editingId !== "" && record.milestone.id === editingId;
+    const onTheTimeline = record.published && (sample || !record.milestone.sample);
+    if (isThisOne || onTheTimeline) {
+      shown.push(record.milestone);
+    }
+  }
+  return shown;
 }
 
 // ---------- Field paths, ids and labels ----------
@@ -411,6 +573,10 @@ export function messagesAt(errors: MilestoneErrors, path: string): string[] {
 const PART_LABELS: Record<string, string> = {
   id: "Id",
   name: "Name",
+  technology: "Technology",
+  stage: "Stage",
+  category: "Category",
+  status: "Status",
   published: "Published",
   status_basis: "Why it has this status",
   summary: "Summary",
@@ -484,4 +650,51 @@ export function catalogLabel(source: CatalogSource): string {
   const head = parts.join(" · ");
   const title = source.title.length > 70 ? `${source.title.slice(0, 67)}...` : source.title;
   return head === "" ? title : `${head}: ${title}`;
+}
+
+// ---------- The category select ----------
+
+export interface ChoiceOption {
+  value: string;
+  label: string;
+}
+
+export interface ChoiceGroup {
+  label: string;
+  options: ChoiceOption[];
+}
+
+// The categories under one heading per milestone type (Technical, Deployment,
+// Welfare and governance), in the order of MILESTONE_TYPES in enums.py. The
+// type comes from the category, so the headings only help find one; nothing
+// about the type is saved.
+export function categoryGroups(): ChoiceGroup[] {
+  const groups: ChoiceGroup[] = [];
+  for (const type of milestoneTypes()) {
+    const options: ChoiceOption[] = [];
+    for (const category of type.categories) {
+      options.push({ value: category, label: enumLabel("MilestoneCategory", category) });
+    }
+    groups.push({ label: type.label, options });
+  }
+  return groups;
+}
+
+// The options no group lists, in their own order. A select shows them after
+// the groups, so none goes missing when the groups fall behind the options
+// (a stale copy of enums.json has no milestone types, so no groups at all).
+export function optionsInNoGroup(options: ChoiceOption[], groups: ChoiceGroup[]): ChoiceOption[] {
+  const grouped = new Set<string>();
+  for (const group of groups) {
+    for (const option of group.options) {
+      grouped.add(option.value);
+    }
+  }
+  const loose: ChoiceOption[] = [];
+  for (const option of options) {
+    if (!grouped.has(option.value)) {
+      loose.push(option);
+    }
+  }
+  return loose;
 }

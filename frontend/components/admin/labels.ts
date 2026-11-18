@@ -34,6 +34,10 @@ export const REVIEW_STATUS_HINTS: Record<ReviewStatus, string> = {
   triaged_out: "The AI said not relevant",
 };
 
+// The New tile's hint while the AI is off: nothing will triage those papers,
+// so like Pending review they wait for a person.
+export const NEW_HINT_TRIAGE_OFF = "Collected, waiting for a person";
+
 // The order of the queue tabs.
 export const QUEUE_STATUSES: ReviewStatus[] = ["pending_review", "new", "approved", "rejected", "triaged_out"];
 
@@ -79,6 +83,15 @@ export const REJECT_REASON_LABELS: Record<RejectReason, string> = {
 };
 
 export const REJECT_REASONS: RejectReason[] = ["not_relevant", "duplicate", "out_of_scope", "low_quality", "other"];
+
+// The same reasons, short enough for a chip on a queue row.
+export const REJECT_REASON_CHIP_LABELS: Record<RejectReason, string> = {
+  not_relevant: "Not relevant",
+  duplicate: "Duplicate",
+  out_of_scope: "Out of scope",
+  low_quality: "Low quality",
+  other: "Other",
+};
 
 export const RUN_STATUS_LABELS: Record<RunStatus, string> = {
   queued: "Queued",

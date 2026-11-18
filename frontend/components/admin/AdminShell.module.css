@@ -119,3 +119,41 @@
 .signOut:hover {
   background: var(--wash-soft);
 }
+
+/* On a phone: "Team admin" and Sign out share the first line, and the links
+   are one row below it that scrolls sideways, instead of wrapping into four
+   rows before the page starts. */
+@media (max-width: 600px) {
+  .barInner {
+    gap: 0.15rem 0.75rem;
+    padding-block: 0.4rem 0.25rem;
+  }
+
+  .user {
+    margin-left: auto;
+  }
+
+  .nav {
+    order: 3;
+    flex-basis: 100%;
+    /* The row runs to the screen's edges, so a cut-off link shows there is more. */
+    margin-inline: calc(var(--gutter) * -1);
+  }
+
+  .links {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-inline: var(--gutter);
+    padding-block: 0.15rem;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .links li {
+    flex: none;
+  }
+}

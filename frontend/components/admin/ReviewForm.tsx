@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type Ref } from "react";
 
 import { DirectionGlyph, directionTone } from "@/components/sources/ClaimDirectionChip";
 import type { AiAssessment, Candidate, Decision, FieldEvidence, RejectReason, Review, ReviewField } from "@/lib/adminTypes";
@@ -30,6 +30,7 @@ import {
   type FieldValues,
 } from "./reviewModel";
 import { useUnsavedWork } from "./unsavedWork";
+import { useClearAfterSignIn } from "./useClearAfterSignIn";
 
 interface FormErrors {
   kind?: string;
@@ -139,15 +140,31 @@ interface ReviewFormProps {
   // Reloads the paper without unmounting the form, so what was typed stays.
   onLoadLatest: () => void;
   onSubmitted: (decision: Decision, publishProblems: string[]) => void;
+  // While re-reviewing a decided paper: closes the form and keeps the
+  // decision as it is. Gets the id of the decision the form started from, so
+  // the page can tell whether what was typed still fits. Left out otherwise.
+  onKeepDecision?: (startedFrom: string | null) => void;
+  // Lets the page move focus to the form's first heading when it opens.
+  headingRef?: Ref<HTMLHeadingElement>;
 }
 
-export function ReviewForm({ source, assessment, replacing, refresh, onLoadLatest, onSubmitted }: ReviewFormProps) {
+export function ReviewForm({
+  source,
+  assessment,
+  replacing,
+  refresh,
+  onLoadLatest,
+  onSubmitted,
+  onKeepDecision,
+  headingRef,
+}: ReviewFormProps) {
   const parsed = assessment ? assessment.parsed : null;
   const aiValues = parsed ? aiFieldValues(parsed) : null;
 
   // How the form started. Kept apart from the props, which change after "Load the latest".
   const [start] = useState(() => ({
     fields: startingFields(replacing, aiValues),
+    replacingId: replacing ? replacing.id : null,
     fromApproval: replacing !== null && replacing.decision === "approve",
     summary: replacing?.final.summary ?? "",
   }));
@@ -171,6 +188,32 @@ export function ReviewForm({ source, assessment, replacing, refresh, onLoadLates
   const [submitError, setSubmitError] = useState<ApiError | null>(null);
   // Set after "Load the latest", until the next attempt to decide.
   const [loadedLatest, setLoadedLatest] = useState(false);
+  // The decision buttons are disabled while saving, so focus would drop to
+  // the page. When the decision isn't saved, focus goes to the title of the
+  // notice that says why. (When it is, the notice that replaces the form
+  // takes focus itself.)
+  const resultRef = useRef<HTMLParagraphElement>(null);
+  const focusResultAfterSubmit = useRef(false);
+  // "Load the latest" goes away once pressed, so focus follows the notices
+  // that say how loading is going.
+  const latestRef = useRef<HTMLParagraphElement>(null);
+  // A decision that ended the session leaves "Your session ended." on screen.
+  // Once someone signs in again over the form, it goes.
+  useClearAfterSignIn(submitError, () => setSubmitError(null));
+
+  useEffect(() => {
+    if (submitting !== null || !focusResultAfterSubmit.current) {
+      return;
+    }
+    resultRef.current?.focus();
+    focusResultAfterSubmit.current = false;
+  }, [submitting]);
+
+  useEffect(() => {
+    if (loadedLatest) {
+      latestRef.current?.focus();
+    }
+  }, [loadedLatest, refresh.loading]);
 
   // Typed text is the work worth asking about before leaving.
   useUnsavedWork(draft.summary.trim() !== start.summary.trim() || draft.notes.trim() !== "");
@@ -264,6 +307,7 @@ export function ReviewForm({ source, assessment, replacing, refresh, onLoadLates
         }
       } else {
         setSubmitError(apiError);
+        focusResultAfterSubmit.current = true;
       }
       setSubmitting(null);
     }
@@ -278,21 +322,40 @@ export function ReviewForm({ source, assessment, replacing, refresh, onLoadLates
   const busy = submitting !== null;
   const changedTitle = changedWhileOpen(submitError);
 
+  // With no AI answer, the notice above the section already says why.
   let sectionNote: string;
   if (start.fromApproval) {
     sectionNote = aiValues
       ? "This starts from the current decision. Change anything you disagree with. The AI's answer and yours are stored side by side."
-      : "This starts from the current decision. There's no AI answer to compare against.";
+      : "This starts from the current decision.";
   } else {
     sectionNote = aiValues
       ? "Your column starts empty. Decide each field yourself, or press Use AI value when you agree. The AI's answer and yours are stored side by side."
-      : "There's no AI answer to compare against, so fill in each field yourself.";
+      : "Fill in each field yourself.";
+  }
+
+  // A teammate picked a hand-added paper's type, so "the collector" is wrong
+  // there. Its hint only shows while the type still needs picking.
+  let sourceTypeHint: string | null;
+  if (source.origin === "manual") {
+    sourceTypeHint = source.source_type ? null : "Needed to approve.";
+  } else {
+    sourceTypeHint = source.source_type
+      ? "Filled in from the collector's metadata."
+      : "The collector didn't say. Needed to approve.";
+  }
+  const sourceTypeDescribedBy: string[] = [];
+  if (sourceTypeHint !== null) {
+    sourceTypeDescribedBy.push("review-source-type-hint");
+  }
+  if (errors.sourceType) {
+    sourceTypeDescribedBy.push("review-source-type-error");
   }
 
   return (
     <>
       <section className={styles.section} aria-labelledby="fields-heading">
-        <h2 id="fields-heading" className={styles.sectionTitle}>
+        <h2 id="fields-heading" ref={headingRef} tabIndex={-1} className={styles.sectionTitle}>
           The <em>categories</em>
         </h2>
         <p className={styles.sectionNote}>{sectionNote}</p>
@@ -384,9 +447,7 @@ export function ReviewForm({ source, assessment, replacing, refresh, onLoadLates
               value={draft.sourceType}
               onChange={(event) => updateDraft({ sourceType: event.target.value as SourceType | "" }, "sourceType")}
               disabled={busy}
-              aria-describedby={
-                errors.sourceType ? "review-source-type-hint review-source-type-error" : "review-source-type-hint"
-              }
+              aria-describedby={sourceTypeDescribedBy.length > 0 ? sourceTypeDescribedBy.join(" ") : undefined}
               aria-invalid={errors.sourceType ? true : undefined}
             >
               <option value="">Not set</option>
@@ -396,11 +457,11 @@ export function ReviewForm({ source, assessment, replacing, refresh, onLoadLates
                 </option>
               ))}
             </select>
-            <p id="review-source-type-hint" className={forms.hint}>
-              {source.source_type
-                ? "Filled in from the collector's metadata."
-                : "The collector didn't say. Needed to approve."}
-            </p>
+            {sourceTypeHint !== null && (
+              <p id="review-source-type-hint" className={forms.hint}>
+                {sourceTypeHint}
+              </p>
+            )}
             {errors.sourceType && (
               <p id="review-source-type-error" className={forms.error}>
                 {errors.sourceType}
@@ -474,6 +535,7 @@ export function ReviewForm({ source, assessment, replacing, refresh, onLoadLates
           <Notice
             tone="warning"
             title={`Your decision wasn't saved. ${changedTitle}`}
+            titleRef={resultRef}
             action={
               <button type="button" className={`btn btn-primary ${forms.smallButton}`} onClick={loadLatest}>
                 Load the latest
@@ -487,13 +549,22 @@ export function ReviewForm({ source, assessment, replacing, refresh, onLoadLates
             <ErrorCode error={submitError} />
           </Notice>
         )}
-        {submitError && !changedTitle && <ApiErrorNotice error={submitError} title="Your decision wasn't saved" />}
-        {loadedLatest && refresh.loading && <Notice tone="info" title="Loading the latest version…" />}
+        {submitError && !changedTitle && (
+          <ApiErrorNotice error={submitError} title="Your decision wasn't saved" titleRef={resultRef} />
+        )}
+        {loadedLatest && refresh.loading && (
+          <Notice tone="info" title="Loading the latest version…" titleRef={latestRef} />
+        )}
         {loadedLatest && !refresh.loading && refresh.error && (
-          <ApiErrorNotice error={refresh.error} title="Couldn't load the latest version" onRetry={onLoadLatest} />
+          <ApiErrorNotice
+            error={refresh.error}
+            title="Couldn't load the latest version"
+            onRetry={onLoadLatest}
+            titleRef={latestRef}
+          />
         )}
         {loadedLatest && !refresh.loading && !refresh.error && (
-          <Notice tone="info" title="This is the latest version.">
+          <Notice tone="info" title="This is the latest version." titleRef={latestRef}>
             <p>What you typed is still here. Check the AI&rsquo;s column and the record below, then decide again.</p>
           </Notice>
         )}
@@ -546,6 +617,18 @@ export function ReviewForm({ source, assessment, replacing, refresh, onLoadLates
               {submitting === "reject" ? "Rejecting…" : "Reject"}
             </button>
           </div>
+          {onKeepDecision && (
+            <div className={styles.keepDecision}>
+              <button
+                type="button"
+                className={`btn btn-secondary ${forms.button}`}
+                onClick={() => onKeepDecision(start.replacingId)}
+                disabled={busy}
+              >
+                Keep current decision
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </>

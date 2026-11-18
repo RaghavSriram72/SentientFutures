@@ -77,6 +77,20 @@ function topChanges(stats: FieldStats): ValuePair[] {
   return changes.slice(0, TOP_CHANGES);
 }
 
+// True when there are decisions but none of them had an AI answer behind it,
+// so the page has no prompt version to show stats for.
+function onlyPapersTheAiDidntRead(versions: PromptVersionStats[]): boolean {
+  if (versions.length === 0) {
+    return false;
+  }
+  for (const version of versions) {
+    if (version.prompt_version !== null) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // /admin/stats/: how often reviewers change what the AI said, per prompt
 // version. If they keep changing one field, the prompt needs work there.
 export function StatsView() {
@@ -103,6 +117,9 @@ export function StatsView() {
         {!stats.error && !stats.data && <p className={detail.muted}>Loading&hellip;</p>}
         {stats.data && stats.data.by_prompt_version.length === 0 && (
           <p className={detail.muted}>No decisions yet. These numbers fill in as the team reviews papers.</p>
+        )}
+        {stats.data && onlyPapersTheAiDidntRead(stats.data.by_prompt_version) && (
+          <p className={detail.muted}>The AI hasn&rsquo;t read any decided papers yet, so there&rsquo;s nothing to compare.</p>
         )}
         {stats.data &&
           stats.data.by_prompt_version.map((version) => (

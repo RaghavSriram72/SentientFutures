@@ -1,13 +1,13 @@
-"""Reviews, AI assessments, milestone and post revisions, and site publishes are
-insert-only. This reads the API's own source and fails if any code could
-update, replace or delete them."""
+"""Reviews, AI assessments, re-adds, milestone and post revisions, and site
+publishes are insert-only. This reads the API's own source and fails if any
+code could update, replace or delete them."""
 
 import re
 from pathlib import Path
 
 API_SOURCE = Path(__file__).resolve().parents[1] / "sf_api"
 
-PROTECTED = r"(reviews|ai_assessments|milestone_revisions|post_revisions|site_publishes)"
+PROTECTED = r"(reviews|ai_assessments|re_adds|milestone_revisions|post_revisions|site_publishes)"
 WRITE_METHODS = (
     r"(update_one|update_many|replace_one|delete_one|delete_many|bulk_write|drop"
     r"|find_one_and_update|find_one_and_replace|find_one_and_delete)"
@@ -37,4 +37,6 @@ def test_the_check_catches_a_write():
     assert not DIRECT_WRITE.search('db["reviews"].insert_one(document)')
     assert DIRECT_WRITE.search('db["milestone_revisions"].replace_one({}, {})')
     assert DIRECT_WRITE.search('db["site_publishes"].delete_one({})')
+    assert DIRECT_WRITE.search('db["re_adds"].update_one({}, {})')
+    assert not DIRECT_WRITE.search('db["re_adds"].insert_one(document)')
     assert not DIRECT_WRITE.search('db["post_revisions"].insert_one(document)')

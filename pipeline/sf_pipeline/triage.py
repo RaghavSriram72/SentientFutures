@@ -795,7 +795,7 @@ def run_triage_stage(
         would_triage = min(total, cap)
         reporter.add_counts(triaged=would_triage, skipped=total - would_triage)
         reporter.log(
-            f"Dry run: would triage {would_triage} of {plural(total, 'candidate')} with {config.model} "
+            f"Dry run: would triage {would_triage} of {plural(total, 'paper')} with {config.model} "
             f"at {config.effort} effort. No model was called."
         )
         return True
@@ -804,7 +804,7 @@ def run_triage_stage(
         reporter.add_counts(skipped=waiting)
         reporter.log(
             f"Triage skipped: ANTHROPIC_API_KEY isn't set, so no model was called. "
-            f"{plural(waiting, 'new candidate')} {'is' if waiting == 1 else 'are'} waiting for a run that has a key."
+            f"{plural(waiting, 'new paper')} {'is' if waiting == 1 else 'are'} waiting for a run that has a key."
         )
         return True
 
@@ -816,7 +816,7 @@ def run_triage_stage(
         reporter.error(f"Triage didn't start: {error}")
         return False
     if waiting == 0:
-        reporter.log("Nothing to triage: there are no new candidates.")
+        reporter.log("Nothing to triage: there are no new papers.")
         return True
 
     candidates = list(
@@ -825,7 +825,7 @@ def run_triage_stage(
     earlier = latest_assessments(db, [candidate["id"] for candidate in candidates], prompt.version)
     settings = TriageSettings(model=config.model, effort=config.effort, run_id=run_id)
     reporter.log(
-        f"Triaging {len(candidates)} of {plural(waiting, 'new candidate')} with {config.model} "
+        f"Triaging {len(candidates)} of {plural(waiting, 'new paper')} with {config.model} "
         f"at {config.effort} effort, prompt {prompt.version}."
     )
 
@@ -887,12 +887,12 @@ def run_triage_stage(
     if decided_meanwhile:
         were = "was" if decided_meanwhile == 1 else "were"
         reporter.log(
-            f"{plural(decided_meanwhile, 'candidate')} {were} decided by a person during this run, so triage left them alone."
+            f"{plural(decided_meanwhile, 'paper')} {were} decided by a person during this run, so triage left them alone."
         )
     remaining = sources.count_documents({"review_status": ReviewStatus.NEW.value})
     if remaining:
         reporter.add_counts(skipped=remaining)
         reason = stopped_by or ("of the error above" if not finished_cleanly else f"this run triages at most {cap}")
         waits = "waits" if remaining == 1 else "wait"
-        reporter.log(f"{plural(remaining, 'new candidate')} {waits} for the next run, because {reason}.")
+        reporter.log(f"{plural(remaining, 'new paper')} {waits} for the next run, because {reason}.")
     return finished_cleanly

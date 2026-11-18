@@ -62,6 +62,7 @@ class RunRequest:
     limit: int | None
     dry_run: bool
     requested_by: str  # the signed-in user's email (stays in the database)
+    requested_by_name: str  # their name, which the dashboard shows
 
 
 # ---------- Which runs are going ----------
@@ -148,6 +149,10 @@ def create_queued_run(db, config: Config, request: RunRequest) -> dict:
         trigger="admin",
         runner=config.pipeline_runner,
         requested_by=request.requested_by,
+        # The name goes beside the email, as on a site publish, so the
+        # dashboard can show it. The pipeline's own updates ($set) leave it
+        # alone. Runs started elsewhere have none, and show the email.
+        requested_by_name=request.requested_by_name,
         status="queued",
         stages=request.stages,
         options={"limit": request.limit, "dry_run": request.dry_run},

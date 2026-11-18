@@ -9,8 +9,11 @@ then build the site from that folder (in frontend/): DATA_DIR=../.site-data npm 
 The folder has the same layout as content/, so frontend/lib/data.ts reads
 either one:
 
-    technologies.json  copied from content/ as is. Technology pages are edited
-                       in git, on purpose (see content/README.md).
+    technologies.json  content/technologies.json, minus any scorecard link to a
+                       milestone that isn't in the milestones.json below (one
+                       unpublished in admin, say). Each dropped link is printed.
+                       Technology pages are edited in git, on purpose (see
+                       content/README.md).
     sources.json       content/sources.json plus the approved sources from
                        GET /api/public/sources. An API source that repeats one
                        in content/ (same DOI, arXiv id or title) is skipped,
@@ -194,6 +197,39 @@ def export_milestones(content_dir: Path, out_dir: Path, fetch: Fetch | None, say
     say(f"Milestones: {len(milestones)}, from content/milestones.json.")
 
 
+def export_technologies(content_dir: Path, out_dir: Path, milestones_path: Path, say: Say) -> None:
+    """Copy the technology pages, leaving out each scorecard row's links to
+    milestones that aren't published. The API only answers with published
+    milestones, so without this, unpublishing one in admin would fail the
+    deploy. CI still checks every link in content/ strictly."""
+    pages = read_json_list(content_dir / "technologies.json")
+    published_ids = set()
+    for milestone in read_json_list(milestones_path):
+        if isinstance(milestone, dict):
+            published_ids.add(milestone.get("id"))
+
+    for page_index, page in enumerate(pages):
+        if not isinstance(page, dict) or not isinstance(page.get("scorecard"), list):
+            continue  # the validator reports it
+        page_label = f"technologies[{page_index}] ({page.get('id')})"
+        for row_index, row in enumerate(page["scorecard"]):
+            tracker = row.get("tracker") if isinstance(row, dict) else None
+            if not isinstance(tracker, dict) or not isinstance(tracker.get("milestone_ids"), list):
+                continue
+            kept = []
+            for milestone_id in tracker["milestone_ids"]:
+                # Anything that isn't a string is kept for the validator to report.
+                if not isinstance(milestone_id, str) or milestone_id in published_ids:
+                    kept.append(milestone_id)
+                else:
+                    say(
+                        f"  Left out the link from {page_label}.scorecard[{row_index}] to milestone "
+                        f'"{milestone_id}": it isn\'t published.'
+                    )
+            tracker["milestone_ids"] = kept
+    write_json(out_dir / "technologies.json", pages)
+
+
 def yaml_text(value: object) -> str:
     """A frontmatter value as a double-quoted string. A JSON string is valid YAML,
     and quoting keeps a date like 2026-10-26 a string for gray-matter."""
@@ -257,9 +293,10 @@ def export_site(content_dir: Path, out_dir: Path, fetch: Fetch | None = None, sa
     Raises ExportError when it can't be written at all (the API is down, say).
     """
     prepare_out_dir(out_dir, content_dir)
-    shutil.copyfile(content_dir / "technologies.json", out_dir / "technologies.json")
     export_sources(content_dir, out_dir, fetch, say)
     export_milestones(content_dir, out_dir, fetch, say)
+    # After the milestones, so it knows which ones are published.
+    export_technologies(content_dir, out_dir, out_dir / "milestones.json", say)
     export_posts(content_dir, out_dir, fetch, say)
 
     report = validate_content(out_dir)

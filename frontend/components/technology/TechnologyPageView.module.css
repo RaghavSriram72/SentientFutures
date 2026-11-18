@@ -20,6 +20,15 @@
   box-shadow: var(--shadow-paper);
 }
 
+/* On the narrowest phones the side padding drops to the page gutter's 16px.
+   Those few px let the headline's first line hold "Could brain-computer" or
+   "Could neuromorphic AI" rather than leave "Could" on a line alone. */
+@media (max-width: 359px) {
+  .heroPanel {
+    padding-inline: 16px;
+  }
+}
+
 @media (min-width: 720px) {
   .heroPanel {
     border-radius: var(--radius-hero);
@@ -65,8 +74,13 @@
   align-content: start;
 }
 
+/* The headline is a question of about ten words, so it takes the column's
+   full width, up to the intro's measure, rather than a narrow one that set
+   it five lines deep. The size is the h1's (--text-3xl) with a lower floor,
+   which saves the narrowest phones a line or two. */
 .headline {
-  max-width: 16ch;
+  max-width: var(--text-width);
+  font-size: clamp(1.875rem, 1.3rem + 3.2vw, 4.125rem);
 }
 
 .intro {
@@ -162,6 +176,46 @@
   min-width: 0;
 }
 
+/* On paper the side nav is hidden (TocNav), so the content takes the width,
+   and a numbered quote stays on one page with its number. The hero is one
+   column on paper anyway. As nested grids it overprinted the "Where we land"
+   lines at a page break, so it prints as plain blocks, with margins in place
+   of the gaps. */
+@media print {
+  .body {
+    display: block;
+  }
+
+  .heroPanel,
+  .heroSide {
+    display: block;
+  }
+
+  .heroSide {
+    margin-top: 2rem;
+  }
+
+  .heroSide > * + * {
+    margin-top: 1rem;
+  }
+
+  .pullItem {
+    break-inside: avoid;
+  }
+
+  /* A note that introduces what follows stays with it, in one piece:
+     Chrome would rather break inside the note than move its heading. */
+  .sectionNote {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  /* The next technology card is short; it never splits */
+  .next {
+    break-inside: avoid;
+  }
+}
+
 .topNotes {
   display: flex;
   flex-wrap: wrap;
@@ -179,7 +233,7 @@
   scroll-margin-top: calc(var(--header-height) + 1.5rem);
 }
 
-/* At a glance follows the small marks help, so it needs less air */
+/* The first section follows the small marks help, so it needs less air */
 .topNotes + .section,
 .tension + .section {
   padding-top: clamp(24px, 3vw, 36px);
@@ -217,6 +271,11 @@
     grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr);
     gap: clamp(2rem, 4vw, 3.5rem);
   }
+
+  /* The claims are only a line from the scope: stack (TechnologyPageView) */
+  .howGrid.howStacked {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .subsection {
@@ -237,14 +296,82 @@
   color: var(--ink-muted);
 }
 
-.placeholder {
+/* "Compare side by side", the last line of the Artificial minds section. It
+   points to another page, so it has no use on paper. */
+.compareLine {
+  font-size: var(--text-sm);
+}
+
+.compareLine a {
+  font-weight: 500;
+}
+
+@media print {
+  .compareLine {
+    display: none;
+  }
+}
+
+/* "The team hasn't written ... yet." Both kinds share one style: the block
+   one is a full sentence with a link, set to the text width. */
+.placeholder,
+.placeholderBlock {
   font-size: var(--text-sm);
   font-style: italic;
   color: var(--ink-faint);
 }
 
-.placeholderBlock {
-  color: var(--ink-muted);
+/* ---------- Welfare and governance, from the scorecard ---------- */
+/* Before the team assesses these risks, the section shows the scorecard's
+   welfare rows: on phones the name and rating share a line, with the basis
+   under them; from 720px the name and rating sit in a column beside the
+   basis, as in the scorecard. */
+.riskRows {
+  display: grid;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.riskRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title rating"
+    "basis basis";
+  align-items: start;
+  gap: 0.9rem 1rem;
+  padding-block: 1.25rem;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.riskTitle {
+  grid-area: title;
+  font-size: var(--text-lg);
+}
+
+.riskRating {
+  grid-area: rating;
+}
+
+.riskBasis {
+  grid-area: basis;
+  min-width: 0;
+}
+
+@media (min-width: 720px) {
+  .riskRow {
+    grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "title basis"
+      "rating basis";
+    gap: 0.75rem clamp(1.5rem, 3vw, 2.5rem);
+    padding-block: 1.5rem;
+  }
+
+  /* Lines the name up with the first line of the basis beside it */
+  .riskTitle {
+    padding-top: 0.2rem;
+  }
 }
 
 /* ---------- Case and objections ---------- */
@@ -258,6 +385,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.5rem;
     align-items: start;
+  }
+
+  /* One side is still a placeholder: stack the cards (TechnologyPageView) */
+  .debate.debateStacked {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -317,6 +449,17 @@
   margin: -0.5rem 0 1.25rem;
   font-size: var(--text-sm);
   color: var(--ink-muted);
+}
+
+/* On paper the label stays with the card's title. As an inline-block it sits
+   in a line box, where break-after doesn't apply, so on paper it is a block
+   as wide as its text. This comes after the label's own rules, so it wins. */
+@media print {
+  .columnLabel {
+    display: block;
+    width: fit-content;
+    break-after: avoid;
+  }
 }
 
 .pullList {
@@ -391,6 +534,7 @@
 
 .nextHeadline {
   font-size: var(--text-lg);
+  text-wrap: balance;
   color: var(--ink-muted);
 }
 
@@ -411,4 +555,25 @@
 
 .next:hover .nextArrow {
   transform: translate(4px, -50%);
+}
+
+/* On the narrowest phones the arrow moves up to the corner, beside the
+   "Next" line, and the name and headline take the card's full width. Kept
+   in the middle, it needed 64px of padding that left "Could" alone on the
+   headline's first line, or it crowded the end of that line. */
+@media (max-width: 359px) {
+  .next {
+    padding-right: 20px;
+  }
+
+  /* Centered on the eyebrow's line, 20px from the edge like the text */
+  .nextArrow {
+    top: 14px;
+    right: 18px;
+    transform: none;
+  }
+
+  .next:hover .nextArrow {
+    transform: translateX(4px);
+  }
 }

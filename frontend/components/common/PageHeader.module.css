@@ -12,6 +12,10 @@
   padding-block: clamp(48px, 7vw, 104px) clamp(40px, 5.5vw, 72px);
 }
 
+.inner.compact {
+  padding-block: 32px 28px;
+}
+
 .narrow {
   max-width: var(--text-width);
   margin-inline: auto;

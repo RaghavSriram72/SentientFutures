@@ -103,11 +103,15 @@ function aiNote(reviewedBy: string | null | undefined): string {
 }
 
 interface CardOptions {
-  // The name shared by most sources ("Vilija"). The page header says it once,
-  // so a card only shows "Added by" when its name is different.
+  // The name shared by most sources ("Vilija"). A card only shows "Added by"
+  // when its name is different.
   sharedAddedBy?: string | null;
   // The page header already says nothing is rated, so drop the per-card line.
   hideUnrated?: boolean;
+  // A row on the sources page already shows the technology and claim direction
+  // as chips, so its card leaves those two cells out, unless the AI suggested
+  // the field and the cell carries the AI mark.
+  hideSummaryFields?: boolean;
 }
 
 // One source as a library catalog card: the register id and call line, a serif
@@ -121,7 +125,7 @@ export function CatalogCard({
   sources,
   sharedAddedBy = null,
   hideUnrated = false,
-}: { source: Source; sources: Record<string, SourceRef> } & CardOptions) {
+}: { source: Source; sources: Record<string, SourceRef> } & Omit<CardOptions, "hideSummaryFields">) {
   const titleId = `${source.id}-title`;
   const isAiSourceType = source.ai_suggested_fields.includes("source_type");
   const otherUrls = source.other_urls ?? [];
@@ -165,7 +169,13 @@ export function CatalogCard({
         {otherUrls.length > 0 && <AlsoAt urls={otherUrls} />}
       </div>
 
-      <CardBody source={source} sources={sources} sharedAddedBy={sharedAddedBy} hideUnrated={hideUnrated} />
+      <CardBody
+        source={source}
+        sources={sources}
+        sharedAddedBy={sharedAddedBy}
+        hideUnrated={hideUnrated}
+        hideSummaryFields={false}
+      />
     </article>
   );
 }
@@ -178,6 +188,7 @@ export function SourceDetails({
   sources,
   sharedAddedBy = null,
   hideUnrated = false,
+  hideSummaryFields = false,
 }: { source: Source; sources: Record<string, SourceRef> } & CardOptions) {
   const isAiSourceType = source.ai_suggested_fields.includes("source_type");
   const otherUrls = source.other_urls ?? [];
@@ -202,8 +213,9 @@ export function SourceDetails({
           </p>
         )}
         {otherUrls.length > 0 && <AlsoAt urls={otherUrls} />}
-        {/* The row shows a lone author in full already; longer lists get their full names here. */}
-        {source.authors.length > 1 && (
+        {/* The row shows a lone author in full already. Longer lists get their
+            full names here, and an empty one says "Authors not listed". */}
+        {source.authors.length !== 1 && (
           <p className={styles.byline}>
             <AuthorList authors={source.authors} />
           </p>
@@ -215,7 +227,13 @@ export function SourceDetails({
           </span>
         )}
       </div>
-      <CardBody source={source} sources={sources} sharedAddedBy={sharedAddedBy} hideUnrated={hideUnrated} />
+      <CardBody
+        source={source}
+        sources={sources}
+        sharedAddedBy={sharedAddedBy}
+        hideUnrated={hideUnrated}
+        hideSummaryFields={hideSummaryFields}
+      />
     </div>
   );
 }
@@ -244,9 +262,11 @@ function CardBody({
   sources,
   sharedAddedBy,
   hideUnrated,
+  hideSummaryFields,
 }: { source: Source; sources: Record<string, SourceRef> } & Required<CardOptions>) {
   const directions = source.claim_directions ?? [];
   const isAiDirections = source.ai_suggested_fields.includes("claim_directions");
+  const showDirections = !hideSummaryFields || isAiDirections;
   const showAddedBy = Boolean(source.added_by) && source.added_by !== sharedAddedBy;
   const showFooter = showAddedBy || Boolean(source.reviewed_by);
 
@@ -256,10 +276,13 @@ function CardBody({
         <ClaimText claim={source.summary} sources={sources} variant="compact" />
       </div>
 
-      <dl className={styles.fields}>
+      <dl className={hideSummaryFields ? `${styles.fields} ${styles.fieldsCompact}` : styles.fields}>
         {TAG_FIELDS.map((field) => {
           // Kind is left out until someone classifies the source.
           if (field.key === "kind" && fieldValues(source, "kind").length === 0) {
+            return null;
+          }
+          if (field.key === "technology" && hideSummaryFields && !source.ai_suggested_fields.includes("technology")) {
             return null;
           }
           return (
@@ -272,24 +295,26 @@ function CardBody({
             />
           );
         })}
-        <div className={`${styles.field} ${styles.fieldWide}`}>
-          <dt className={styles.fieldLabel}>
-            Claim direction
-            {isDraftEnum("ClaimDirection") && <DraftMark />}
-          </dt>
-          <dd className={styles.fieldValue}>
-            {directions.length === 0 && <span className={styles.none}>Not tagged</span>}
-            {directions.map((direction) => (
-              <ClaimDirectionChip key={direction} direction={direction} />
-            ))}
-            {isAiDirections && (
-              <span className={styles.aiNote}>
-                <ProvenanceGlyph kind="ai" />
-                {aiNote(source.reviewed_by)}
-              </span>
-            )}
-          </dd>
-        </div>
+        {showDirections && (
+          <div className={`${styles.field} ${styles.fieldWide}`}>
+            <dt className={styles.fieldLabel}>
+              Claim direction
+              {isDraftEnum("ClaimDirection") && <DraftMark />}
+            </dt>
+            <dd className={styles.fieldValue}>
+              {directions.length === 0 && <span className={styles.none}>Not tagged</span>}
+              {directions.map((direction) => (
+                <ClaimDirectionChip key={direction} direction={direction} />
+              ))}
+              {isAiDirections && (
+                <span className={styles.aiNote}>
+                  <ProvenanceGlyph kind="ai" />
+                  {aiNote(source.reviewed_by)}
+                </span>
+              )}
+            </dd>
+          </div>
+        )}
       </dl>
 
       <RubricBlock source={source} hideUnrated={hideUnrated} />

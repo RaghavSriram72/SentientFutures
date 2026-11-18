@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { PostBody } from "@/components/blog/PostBody";
 import { EmphasisText } from "@/components/common/Emphasis";
@@ -26,10 +26,11 @@ import {
 } from "./editorModel";
 import forms from "./forms.module.css";
 import { ConflictNotice } from "./ConflictNotice";
-import { ApiErrorNotice, Notice } from "./Notice";
+import { ApiErrorNotice, Notice, withPublishLink } from "./Notice";
 import { postEditHref } from "./PostList";
 import { useUnsavedWork } from "./unsavedWork";
 import { useApiData } from "./useApiData";
+import { useClearAfterSignIn } from "./useClearAfterSignIn";
 import { useWideScreen } from "./useWideScreen";
 
 interface PostDraft {
@@ -56,12 +57,20 @@ const FIELDS: { key: DraftField; id: string; label: string }[] = [
   { key: "body", id: "post-body", label: "Post" },
 ];
 
-function focusFirstError(errors: Errors): void {
+// The input of the first field with a problem, in page order.
+function firstErrorId(errors: Errors): string | null {
   for (const field of FIELDS) {
     if (errors[field.key]) {
-      document.getElementById(field.id)?.focus();
-      return;
+      return field.id;
     }
+  }
+  return null;
+}
+
+function focusFirstError(errors: Errors): void {
+  const id = firstErrorId(errors);
+  if (id !== null) {
+    document.getElementById(id)?.focus();
   }
 }
 
@@ -130,10 +139,17 @@ function toInput(draft: PostDraft, status: PostStatus): PostInput {
   };
 }
 
-function savedMessage(status: PostStatus): string {
-  return status === "published"
-    ? "Saved. It goes on the site with the next publish."
-    : "Draft saved. It stays off the site until you mark it published.";
+// before: the post's status when the save started. A published post moved
+// back to draft stays on the site until the next publish takes it off. Saving
+// it again as a draft only says that drafts don't get published.
+function savedMessage(before: PostStatus, status: PostStatus): string {
+  if (status === "published") {
+    return "Saved. It goes on the site with the next publish.";
+  }
+  if (before === "published") {
+    return "Moved back to draft. It comes off the site with the next publish.";
+  }
+  return "Draft saved. It won't get published until you click Mark published.";
 }
 
 // /admin/posts/edit/?slug=<slug>, or no slug for a new post.
@@ -177,13 +193,20 @@ function PostScreen({ slug }: { slug: string }) {
     );
   }
 
-  // A newer version from "Load their version" remounts the form with it.
+  // A newer version from "Load their version" remounts the form with it. The
+  // "Saved" from the first save was about this tab's version, so the new form
+  // starts without it.
+  function loadTheirs() {
+    flash.clear();
+    loaded.reload();
+  }
+
   return (
     <PostForm
       key={loaded.data ? loaded.data.version : "new"}
       initial={loaded.data}
-      flash={flash}
-      onReload={loaded.reload}
+      flash={flash.message}
+      onReload={loadTheirs}
     />
   );
 }
@@ -208,9 +231,49 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
   const [saving, setSaving] = useState<PostStatus | null>(null);
   const [saveError, setSaveError] = useState<ApiError | null>(null);
   const [message, setMessage] = useState<string | null>(flash);
+  // True while the message is the one the page opened with after the first
+  // save. The page starts at the top then, so it shows there instead of in
+  // the save row at the bottom.
+  const [messageAtTop, setMessageAtTop] = useState(flash !== null);
+  // The input to move focus to once saving is over. Every input is disabled
+  // while saving, so a problem the API finds can't take focus right away.
+  const focusAfterSave = useRef<string | null>(null);
+  // The save buttons are disabled while saving, so focus would drop to the
+  // page. It goes to the title of whichever notice says how the save went
+  // instead: saved, a conflict, or an error.
+  const resultRef = useRef<HTMLParagraphElement>(null);
+  const focusResultAfterSave = useRef(false);
+  // The same "Saved" at the top of the form, after the first save.
+  const flashRef = useRef<HTMLParagraphElement>(null);
+  // Holds focus while "Load their version" swaps the form (loadTheirs).
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   const dirty = JSON.stringify(draft) !== baseline;
   useUnsavedWork(dirty);
+  // A save that ended the session leaves "Your session ended." on screen.
+  // Once someone signs in again over the form, it goes.
+  useClearAfterSignIn(saveError, () => setSaveError(null));
+
+  useEffect(() => {
+    if (saving !== null) {
+      return;
+    }
+    if (focusAfterSave.current !== null) {
+      document.getElementById(focusAfterSave.current)?.focus();
+    } else if (focusResultAfterSave.current) {
+      resultRef.current?.focus();
+    }
+    focusAfterSave.current = null;
+    focusResultAfterSave.current = false;
+  }, [saving]);
+
+  // A new post's first save (or a draft's new address) opens it at its new
+  // address, in a fresh form, with "Saved" at the top. Focus starts there.
+  useEffect(() => {
+    if (flash !== null) {
+      flashRef.current?.focus();
+    }
+  }, [flash]);
 
   const status: PostStatus = record ? record.status : "draft";
   const wide = useWideScreen();
@@ -219,6 +282,12 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
   const savedFirst = savedFirstFrom(saveError);
 
   function update(field: DraftField, value: string) {
+    // Typing in a field clears its problem until the next save. A new post's
+    // title fills in its address too, so that clears the address's problem.
+    const changed: DraftField[] = [field];
+    if (field === "title" && !slugEdited) {
+      changed.push("slug");
+    }
     setDraft((previous) => {
       const next = { ...previous, [field]: value };
       if (field === "title" && !slugEdited) {
@@ -229,8 +298,20 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
     if (field === "slug") {
       setSlugEdited(true);
     }
-    if (errors[field]) {
-      setErrors((previous) => ({ ...previous, [field]: undefined }));
+    let stale = false;
+    for (const key of changed) {
+      if (errors[key]) {
+        stale = true;
+      }
+    }
+    if (stale) {
+      setErrors((previous) => {
+        const next = { ...previous };
+        for (const key of changed) {
+          next[key] = undefined;
+        }
+        return next;
+      });
     }
     setMessage(null);
   }
@@ -241,12 +322,14 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
     setOtherProblems([]);
     setSaveError(null);
     setMessage(null);
+    setMessageAtTop(false);
     if (Object.keys(found).length > 0) {
       focusFirstError(found);
       return;
     }
 
     setSaving(nextStatus);
+    focusResultAfterSave.current = true;
     const input = toInput(draft, nextStatus);
     try {
       let saved: AdminPost | null;
@@ -256,7 +339,7 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
         const version = overVersion ?? record.version;
         saved = await savePost(record.slug, { ...input, version });
       }
-      const text = savedMessage(nextStatus);
+      const text = savedMessage(status, nextStatus);
       // A new post, or a renamed draft, lives at a new address now.
       if (record === null || input.slug !== record.slug) {
         setBaseline(JSON.stringify(draft));
@@ -273,13 +356,21 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
       const apiError = toApiError(caught);
       if (apiError.status === 409 && apiError.code === "slug_taken") {
         setErrors({ slug: "Another post already has this address. Pick another." });
-        document.getElementById("post-slug")?.focus();
+        focusAfterSave.current = "post-slug";
       } else {
         placeApiErrors(apiError);
       }
     } finally {
       setSaving(null);
     }
+  }
+
+  // "Load their version" after a conflict. Their version comes in a fresh
+  // form, and the button goes with the old one, so focus waits on the
+  // heading, which hands it on to the new form's (AdminPageHead).
+  function loadTheirs() {
+    headingRef.current?.focus();
+    onReload();
   }
 
   // "Save mine over it" after a conflict: save against the newest version.
@@ -309,7 +400,8 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
     setErrors(mapped);
     setOtherProblems(unplaced);
     if (Object.keys(mapped).length > 0) {
-      focusFirstError(mapped);
+      // Called while saving, so the focus waits for the inputs to come back.
+      focusAfterSave.current = firstErrorId(mapped);
     } else if (unplaced.length === 0) {
       setSaveError(apiError);
     }
@@ -360,12 +452,15 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
         title={heading}
         kicker={<BackLink />}
         actions={record ? <PublishStateChip published={status === "published"} /> : undefined}
+        headingRef={headingRef}
       />
       <div className={`container ${styles.listPage}`}>
         <div className={styles.split}>
           <form className={styles.formColumn} onSubmit={(event) => event.preventDefault()} noValidate>
-            {/* After the first save the page reloads at the top, so it says so here too. */}
-            {message !== null && message === flash && !dirty && <Notice tone="success" title={message} />}
+            {/* After the first save the page reloads at the top, so it says so here instead. */}
+            {message !== null && messageAtTop && !dirty && (
+              <Notice tone="success" title={withPublishLink(message)} titleRef={flashRef} />
+            )}
             {!wide && (
               <details className={styles.foldedPreview}>
                 <summary>See the preview</summary>
@@ -403,7 +498,7 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
                 />
                 <p id="post-slug-hint" className={forms.hint}>
                   {slugLocked
-                    ? `Fixed, because the post has been published at /blog/${draft.slug}/.`
+                    ? `Fixed, because the post was published at /blog/${draft.slug}/.`
                     : `The post will be at /blog/${draft.slug.trim() || "its-address"}/.${slugEdited ? "" : " Filled in from the title."}`}
                 </p>
                 {errorFor("slug", "post-slug")}
@@ -471,10 +566,15 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
 
             <div className={styles.saveBar}>
               {savedFirst && (
-                <ConflictNotice savedFirst={savedFirst} onLoadTheirs={onReload} onSaveMine={() => void saveOver()} />
+                <ConflictNotice
+                  savedFirst={savedFirst}
+                  onLoadTheirs={loadTheirs}
+                  onSaveMine={() => void saveOver()}
+                  titleRef={resultRef}
+                />
               )}
               {otherProblems.length > 0 && (
-                <Notice tone="error" title="The post wasn't saved.">
+                <Notice tone="error" title="The post wasn't saved." titleRef={resultRef}>
                   <ul className={styles.problemList}>
                     {otherProblems.map((problem) => (
                       <li key={problem}>{problem}</li>
@@ -482,8 +582,13 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
                   </ul>
                 </Notice>
               )}
-              {saveError && !savedFirst && <ApiErrorNotice error={saveError} title="The post wasn't saved" />}
-              {message && !dirty && <Notice tone="success" title={message} />}
+              {saveError && !savedFirst && (
+                <ApiErrorNotice error={saveError} title="The post wasn't saved" titleRef={resultRef} />
+              )}
+              {message && !dirty && !messageAtTop && (
+                <Notice tone="success" title={withPublishLink(message)} titleRef={resultRef} />
+              )}
+              {/* While the conflict notice shows, its two buttons are the only way on. */}
               <div className={forms.actions}>
                 {status === "draft" ? (
                   <>
@@ -491,7 +596,7 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
                       type="button"
                       className={`btn btn-secondary ${forms.button}`}
                       onClick={() => void save("draft")}
-                      disabled={saving !== null}
+                      disabled={saving !== null || savedFirst !== null}
                     >
                       {saving === "draft" ? "Saving…" : "Save draft"}
                     </button>
@@ -499,7 +604,7 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
                       type="button"
                       className={`btn btn-primary ${forms.button}`}
                       onClick={() => void save("published")}
-                      disabled={saving !== null}
+                      disabled={saving !== null || savedFirst !== null}
                     >
                       {saving === "published" ? "Saving…" : "Mark published"}
                     </button>
@@ -510,7 +615,7 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
                       type="button"
                       className={`btn btn-primary ${forms.button}`}
                       onClick={() => void save("published")}
-                      disabled={saving !== null || !dirty}
+                      disabled={saving !== null || !dirty || savedFirst !== null}
                     >
                       {saving === "published" ? "Saving…" : "Save changes"}
                     </button>
@@ -518,21 +623,28 @@ function PostForm({ initial, flash, onReload }: PostFormProps) {
                       type="button"
                       className={`btn btn-secondary ${forms.button}`}
                       onClick={() => void save("draft")}
-                      disabled={saving !== null}
+                      disabled={saving !== null || savedFirst !== null}
                     >
                       {saving === "draft" ? "Saving…" : "Move back to draft"}
                     </button>
                   </>
                 )}
-                {!dirty && !message && record && <span className={styles.savedLine}>No unsaved changes.</span>}
+                {!dirty && record && (!message || messageAtTop) && (
+                  <span className={styles.savedLine}>No unsaved changes.</span>
+                )}
               </div>
               {record && (
                 <p className={styles.savedLine}>
                   Last saved {formatDateTime(record.updated_at)}
                   {record.updated_by ? ` by ${record.updated_by}` : ""}.{" "}
-                  {status === "published"
-                    ? "Published posts go on the site with the next publish, from the dashboard."
-                    : "Drafts never go on the site."}
+                  {status === "published" ? (
+                    <>
+                      Published posts go on the site with the next publish, from{" "}
+                      <Link href="/admin/">the dashboard</Link>.
+                    </>
+                  ) : (
+                    "Drafts are saved but don't get published until you click Mark published."
+                  )}
                 </p>
               )}
             </div>

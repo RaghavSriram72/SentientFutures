@@ -10,9 +10,19 @@ export interface AssessmentPart {
   body: ReactNode;
 }
 
+interface FullAssessmentProps {
+  parts: AssessmentPart[];
+  // What the toggle names: "Show the full assessment", or "Show the full
+  // scorecard" when the scorecard is the one part.
+  label: "assessment" | "scorecard";
+  top?: ReactNode;
+}
+
 // The working behind the ratings, collapsed by default: a native <details>, so
 // it needs no JavaScript. OpenDetailsOnHash opens it when a link points inside.
-export function FullAssessment({ parts, top }: { parts: AssessmentPart[]; top?: ReactNode }) {
+// The browser can open it before React hydrates (a URL like /wbe/#scorecard),
+// so the open attribute is allowed to differ from the server HTML.
+export function FullAssessment({ parts, label, top }: FullAssessmentProps) {
   const summaries: string[] = [];
   for (const part of parts) {
     summaries.push(part.summary);
@@ -20,17 +30,18 @@ export function FullAssessment({ parts, top }: { parts: AssessmentPart[]; top?: 
   return (
     <>
       <p className={styles.contents}>{capitalize(joinList(summaries))}.</p>
-      <details className={styles.details}>
+      <details className={styles.details} suppressHydrationWarning>
         <summary className={styles.summary}>
-          <span className={styles.closedLabel}>Show the full assessment</span>
-          <span className={styles.openLabel}>Hide the full assessment</span>
+          <span className={styles.closedLabel}>Show the full {label}</span>
+          <span className={styles.openLabel}>Hide the full {label}</span>
           <span className={styles.toggle} aria-hidden="true" />
         </summary>
         <div className={styles.body}>
           {top}
           {parts.map((part) => (
             <div key={part.id} id={part.id} className={styles.part}>
-              <h3 className={styles.partTitle}>{part.title}</h3>
+              {/* With one part, the section's heading already names it. */}
+              {parts.length > 1 && <h3 className={styles.partTitle}>{part.title}</h3>}
               {part.body}
             </div>
           ))}

@@ -37,6 +37,20 @@
   outline-offset: 2px;
 }
 
+/* On touch screens a transparent layer 7px above and below makes the pill
+   about 44px tall to tap, without changing how it looks */
+@media (pointer: coarse) {
+  .summary {
+    position: relative;
+  }
+
+  .summary::after {
+    content: "";
+    position: absolute;
+    inset: -7px 0;
+  }
+}
+
 .mark {
   display: inline-grid;
   place-items: center;

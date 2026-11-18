@@ -1,18 +1,22 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
+import type { ReAdd } from "@/lib/adminTypes";
 import { queueItemDetailFrom } from "@/lib/api";
 
 import {
   aiFieldValues,
   buildReviewRequest,
   currentAssessment,
+  decisionRecordNewestFirst,
   emptyFieldValues,
   isUsingAi,
+  paperLinks,
+  reAddChangesText,
   startingFields,
   type FieldValues,
 } from "../reviewModel";
-import { assessment, draft, review, reviewFinal, triageResult } from "./fixtures";
+import { assessment, candidate, draft, review, reviewFinal, triageResult } from "./fixtures";
 
 const AI_VALUES: FieldValues = aiFieldValues(triageResult());
 
@@ -164,5 +168,76 @@ describe("currentAssessment", () => {
       reviews: [],
     });
     assert.equal(currentAssessment(detail)?.id, "assessment-1");
+  });
+});
+
+describe("paperLinks", () => {
+  // The labels are the only place the review page shows the paper's ids.
+  test("keeps the DOI and arXiv links when the paper's own link is the same page", () => {
+    const arxivPaper = candidate({ url: "https://arxiv.org/abs/2501.99999", arxiv_id: "2501.99999" });
+    assert.deepEqual(paperLinks(arxivPaper).map((link) => link.label), ["Open the paper", "arXiv 2501.99999"]);
+
+    const doiPaper = candidate({ url: "https://doi.org/10.5555/abc", doi: "10.5555/abc", arxiv_id: null });
+    assert.deepEqual(paperLinks(doiPaper).map((link) => link.label), ["Open the paper", "DOI 10.5555/abc"]);
+  });
+
+  test("drops a Semantic Scholar link that repeats the paper's own link", () => {
+    const s2Paper = candidate({
+      url: "https://www.semanticscholar.org/paper/abc123",
+      arxiv_id: null,
+      s2_id: "abc123",
+    });
+    assert.deepEqual(paperLinks(s2Paper).map((link) => link.label), ["Open the paper"]);
+  });
+});
+
+describe("a paper added again", () => {
+  function reAdd(overrides: Partial<ReAdd> = {}): ReAdd {
+    return {
+      id: "re-add-1",
+      added_by: "raghav@example.com",
+      added_by_name: "Raghav",
+      added_at: "2026-10-28T15:52:00Z",
+      changed: ["url"],
+      ...overrides,
+    };
+  }
+
+  test("comes back from the API with the paper's record", () => {
+    const detail = queueItemDetailFrom({
+      candidate: { id: "manual-paper" },
+      reviews: [],
+      re_adds: [{ id: "re-add-1", added_by: "raghav@example.com", added_by_name: "Raghav", added_at: "x", changed: ["title", "url"] }],
+    });
+    assert.equal(detail.re_adds.length, 1);
+    // Always in the order link, title, year.
+    assert.deepEqual(detail.re_adds[0].changed, ["url", "title"]);
+    assert.deepEqual(queueItemDetailFrom({ candidate: { id: "manual-paper" } }).re_adds, []);
+  });
+
+  // "Added again by Raghav · 28 Oct 2026, 15:52 · link changed" sits above the rejection it undid.
+  test("is listed with the decisions, newest first", () => {
+    const rejection = review({ id: "review-1", decision: "reject", created_at: "2026-10-28T15:40:00Z" });
+    const record = decisionRecordNewestFirst([rejection], [reAdd()]);
+    assert.deepEqual(
+      record.map((item) => item.kind),
+      ["re_add", "review"],
+    );
+  });
+
+  test("counts as newer than a rejection saved at the same moment", () => {
+    const rejection = review({ id: "review-1", decision: "reject", created_at: "2026-10-28T15:52:00Z" });
+    const record = decisionRecordNewestFirst([rejection], [reAdd({ added_at: "2026-10-28T15:52:00Z" })]);
+    assert.deepEqual(
+      record.map((item) => item.kind),
+      ["re_add", "review"],
+    );
+  });
+
+  test("names what changed", () => {
+    assert.equal(reAddChangesText(["url"]), "link changed");
+    assert.equal(reAddChangesText(["url", "title"]), "link and title changed");
+    assert.equal(reAddChangesText(["url", "title", "year"]), "link, title and year changed");
+    assert.equal(reAddChangesText([]), "");
   });
 });

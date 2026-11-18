@@ -1,6 +1,6 @@
 """The review queue: listing, filters and one candidate's history."""
 
-from api_helpers import insert_assessment, insert_candidate, minutes_ago, triage_result
+from api_helpers import approve_body, insert_assessment, insert_candidate, minutes_ago, triage_result
 
 
 def queue_ids(response) -> list[str]:
@@ -146,3 +146,72 @@ def test_candidate_detail_404s_for_an_unknown_id(client, headers):
     response = client.get("/api/queue/arxiv-missing", headers=headers)
     assert response.status_code == 404
     assert response.get_json()["error"]["code"] == "not_found"
+
+
+def decide(client, headers, candidate_id: str, body: dict) -> None:
+    response = client.post(f"/api/queue/{candidate_id}/review", json=body, headers=headers)
+    assert response.status_code == 201, response.get_json()
+
+
+def test_queue_kind_reads_the_decision_in_approved_and_rejected(client, db, headers):
+    # The AI said argument, the reviewer changed it to milestone evidence.
+    insert_candidate(db, "arxiv-changed")
+    insert_assessment(db, "arxiv-changed", parsed=triage_result(kind="argument"))
+    decide(client, headers, "arxiv-changed", approve_body(final={**approve_body()["final"], "kind": "milestone_evidence"}))
+    # Added by hand, so the AI never gave a kind.
+    insert_candidate(db, "manual-paper", origin="manual", collector="manual")
+    decide(client, headers, "manual-paper", approve_body())
+
+    def kind_ids(kind: str) -> list[str]:
+        return queue_ids(client.get(f"/api/queue?status=approved&kind={kind}", headers=headers))
+
+    assert kind_ids("milestone_evidence") == ["arxiv-changed"]
+    assert kind_ids("argument") == ["manual-paper"]
+
+
+def test_queue_kind_falls_back_to_the_ais_when_the_decision_has_none(client, db, headers):
+    insert_candidate(db, "arxiv-rejected")
+    insert_assessment(db, "arxiv-rejected", parsed=triage_result(kind="milestone_evidence"))
+    decide(client, headers, "arxiv-rejected", {"decision": "reject", "reject_reason": "out_of_scope", "notes": ""})
+    insert_candidate(db, "manual-rejected", origin="manual", collector="manual")
+    decide(client, headers, "manual-rejected", {"decision": "reject", "reject_reason": "duplicate", "notes": ""})
+
+    response = client.get("/api/queue?status=rejected&kind=milestone_evidence", headers=headers)
+
+    assert queue_ids(response) == ["arxiv-rejected"]
+    assert response.get_json()["total"] == 1
+
+
+def test_queue_kind_still_reads_the_ai_in_pending_review(client, db, headers):
+    insert_candidate(db, "manual-pending", origin="manual", collector="manual")
+    insert_candidate(db, "arxiv-pending")
+    insert_assessment(db, "arxiv-pending", parsed=triage_result(kind="argument"))
+
+    assert queue_ids(client.get("/api/queue?kind=argument", headers=headers)) == ["arxiv-pending"]
+
+
+def test_rejected_rows_carry_their_reject_reason(client, db, headers):
+    insert_candidate(db, "arxiv-rejected", found_at=minutes_ago(20))
+    decide(client, headers, "arxiv-rejected", {"decision": "reject", "reject_reason": "low_quality", "notes": ""})
+    insert_candidate(db, "arxiv-approved", found_at=minutes_ago(10))
+    decide(client, headers, "arxiv-approved", approve_body())
+    insert_candidate(db, "arxiv-pending")
+
+    rejected = client.get("/api/queue?status=rejected", headers=headers).get_json()["items"]
+    approved = client.get("/api/queue?status=approved", headers=headers).get_json()["items"]
+    pending = client.get("/api/queue", headers=headers).get_json()["items"]
+
+    assert [item["reject_reason"] for item in rejected] == ["low_quality"]
+    assert [item["reject_reason"] for item in approved] == [None]
+    assert [item["reject_reason"] for item in pending] == [None]
+
+
+def test_a_changed_rejection_shows_the_newest_reason(client, db, headers):
+    insert_candidate(db, "arxiv-1")
+    decide(client, headers, "arxiv-1", {"decision": "reject", "reject_reason": "low_quality", "notes": ""})
+    first = db["sources"].find_one({"_id": "arxiv-1"})["current_review_id"]
+    change = {"decision": "reject", "reject_reason": "duplicate", "notes": "", "replaces_review_id": first}
+    decide(client, headers, "arxiv-1", change)
+
+    items = client.get("/api/queue?status=rejected", headers=headers).get_json()["items"]
+    assert [item["reject_reason"] for item in items] == ["duplicate"]

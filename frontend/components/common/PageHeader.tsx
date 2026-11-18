@@ -11,16 +11,27 @@ interface PageHeaderProps {
   kicker?: ReactNode;
   // Narrow centers everything on the 680px reading column (blog posts).
   narrow?: boolean;
+  // Compact trims the band's top and bottom padding, for a page whose content
+  // should start on the first screen (the source database).
+  compact?: boolean;
   // A row under the lede for counts, chips or buttons.
   children?: ReactNode;
 }
 
 // The washed band at the top of every inner page.
-export function PageHeader({ eyebrow, title, lede, kicker, narrow = false, children }: PageHeaderProps) {
+export function PageHeader({
+  eyebrow,
+  title,
+  lede,
+  kicker,
+  narrow = false,
+  compact = false,
+  children,
+}: PageHeaderProps) {
   return (
     <header className={styles.header}>
       <div className="container">
-        <div className={`${styles.inner} ${narrow ? styles.narrow : ""}`}>
+        <div className={`${styles.inner} ${narrow ? styles.narrow : ""} ${compact ? styles.compact : ""}`}>
           {kicker && <div className={styles.kicker}>{kicker}</div>}
           <p className={`eyebrow ${styles.eyebrow}`}>{eyebrow}</p>
           <h1 className={styles.title}>{title}</h1>

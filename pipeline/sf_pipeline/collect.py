@@ -112,7 +112,7 @@ def run_collect_stage(
     if dry_run:
         reporter.add_counts(new=len(plan.new_candidates), duplicates=duplicates)
         reporter.log(
-            f"Dry run: would add {plural(len(plan.new_candidates), 'new candidate')}{flagged}. "
+            f"Dry run: would add {plural(len(plan.new_candidates), 'new paper')}{flagged}. "
             f"Already known or found twice: {duplicates}. Nothing was written."
         )
         return CollectResult(new=len(plan.new_candidates), ok=failures < calls)
@@ -120,7 +120,7 @@ def run_collect_stage(
     applied = apply_dedupe(db, plan)
     reporter.add_counts(new=applied.inserted, duplicates=duplicates + applied.collisions)
     reporter.log(
-        f"Added {plural(applied.inserted, 'new candidate')}{flagged}. "
+        f"Added {plural(applied.inserted, 'new paper')}{flagged}. "
         f"Already known or found twice: {duplicates + applied.collisions}."
     )
     return CollectResult(new=applied.inserted, ok=failures < calls)

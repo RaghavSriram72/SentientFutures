@@ -94,3 +94,45 @@
   border-top: 1px solid var(--rule-soft);
   font-size: var(--text-xl);
 }
+
+/* On paper the assessment prints open (see globals.css), so the show and hide
+   button has nothing to do. The parts stack as plain blocks there: when a
+   tall part such as the scorecard breaks across pages, Chrome places the
+   next grid item too high and it overprints the end of the part. */
+@media print {
+  .summary {
+    display: none;
+  }
+
+  /* The contents line, and the default mark above the parts, move with the
+     first part, so the section's heading never ends a page on its own. The
+     line itself doesn't split: Chrome would rather break inside it than
+     move the heading. The mark is an inline-flex line, and break-after only
+     applies to blocks, so here it is a flex block as wide as its text. */
+  .contents,
+  .body > :not(.part) {
+    break-after: avoid;
+  }
+
+  .contents {
+    break-inside: avoid;
+  }
+
+  .body > :not(.part) {
+    display: flex;
+    width: fit-content;
+  }
+
+  .body,
+  .part {
+    display: block;
+  }
+
+  .body > * + * {
+    margin-top: 2.5rem;
+  }
+
+  .part > * + * {
+    margin-top: 1.25rem;
+  }
+}

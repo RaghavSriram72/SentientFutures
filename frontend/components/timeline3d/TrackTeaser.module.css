@@ -1,5 +1,5 @@
 /* The home page teaser: a short window onto the 3D track, and a plain list
-   below 600px. */
+   below 600px wide or 500px tall. */
 
 .teaser {
   display: grid;
@@ -8,6 +8,12 @@
 
 .viewport {
   position: relative;
+  /* On a short window, no taller than the space under the sticky site
+     header, so it can be seen whole. svh, not dvh, so it doesn't change size
+     as the browser's bars come and go. Shorter than its full height, the
+     teaser switches to its farther camera (TEASER_SHORT_CAMERA), which still
+     draws the far cards' small lines at 11px. */
+  max-height: calc(100svh - var(--header-height) - 2rem);
   overflow: clip;
   border: 1px solid var(--rule-soft);
   border-radius: var(--radius-panel);
@@ -20,6 +26,11 @@
 
 .viewport:active {
   cursor: grabbing;
+}
+
+/* Every card fits, so there's nothing to drag */
+.viewport[data-still="true"] {
+  cursor: default;
 }
 
 .viewport:focus-visible {
@@ -85,6 +96,18 @@
   color: var(--ink-faint);
   border-color: var(--rule);
   cursor: default;
+}
+
+/* Before the teaser has measured itself (and with no JavaScript), the arrows
+   and their hint are a guess: wide screens usually fit every card. 818px is
+   about where today's eight milestones first all fit with TEASER_CAMERA, so
+   the row under the teaser keeps its height when the measurement lands. The
+   point moves as milestones are added: to find it again, widen the window
+   until the teaser's data-still="true" appears, and set this to match. */
+@media (min-width: 818px) {
+  .unmeasured {
+    display: none;
+  }
 }
 
 .empty {
@@ -182,6 +205,12 @@
   color: var(--ink);
 }
 
+/* The type under the name, in the same small caps as the code line above */
+.rowType {
+  justify-self: start;
+  margin-top: 0.15rem;
+}
+
 .rowEstimate {
   font-size: var(--text-sm);
   color: var(--ink-muted);
@@ -191,7 +220,32 @@
   color: var(--grape);
 }
 
-@media (max-width: 599px) {
+/* "See all 8 on the timeline", under the shortened list. Set like the other
+   arrow links in the section ("What the stages mean"). */
+.allLink {
+  justify-self: start;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.allLink:hover {
+  text-decoration: underline;
+}
+
+/* A taller hit area for fingers. The negative margin takes the padding back
+   out, so nothing moves. */
+@media (pointer: coarse) {
+  .allLink {
+    padding-block: 12px;
+    margin-block: -12px;
+  }
+}
+
+/* A phone held upright, or held sideways: on a screen 500px tall or less the
+   window would have to shrink the cards too small to read, so the list shows
+   instead, as /timeline/ opens on its list (its SHORT_SCREEN). */
+@media (max-width: 599px), (max-height: 500px) {
   .viewport,
   .controls {
     display: none;
@@ -199,5 +253,67 @@
 
   .list {
     display: grid;
+  }
+}
+
+/* ---------- On paper ---------- */
+/* A printout gets the list too, on any paper. The track needs more room than
+   a page gives it: it is fitted to the screen it was opened on and isn't
+   fitted again to the paper, and its floor runs on well past the page's
+   right edge. Chrome then either shrinks the whole home page to two thirds
+   to make room (Letter, A4, Tabloid and A3, at most margins) or prints the
+   cards cut off at the right edge (Legal). The list fits any page.
+
+   The list prints as plain blocks, with margins in place of the grid gaps.
+   When a row of a grid falls across a page break, Chrome can move the row to
+   the next page but leave the grid's later items where they were, which
+   printed the "See all" link over a row (A5 with 21mm margins). A block
+   moves down with the row above it. Each row also stays whole on one page. */
+@media print {
+  .teaser {
+    display: block;
+  }
+
+  .viewport,
+  .controls {
+    display: none;
+  }
+
+  .list,
+  .group,
+  .rows {
+    display: block;
+  }
+
+  /* The list's own gap, between the technology groups. The same gap above
+     "See all" is its top margin, below. */
+  .group + .group {
+    margin-top: 1.25rem;
+  }
+
+  /* The group's gap, between its title and its rows */
+  .rows {
+    margin-top: 0.5rem;
+  }
+
+  /* The gap between rows */
+  .rows > li + li {
+    margin-top: 0.5rem;
+  }
+
+  .row {
+    break-inside: avoid;
+  }
+
+  /* A block as wide as its words (as it sat in the grid), so its margin
+     works. The taller hit area for fingers above is no use on paper. It
+     stays on the same page as the last row, rather than starting a page on
+     its own. */
+  .allLink {
+    display: block;
+    width: fit-content;
+    margin: 1.25rem 0 0;
+    padding-block: 0;
+    break-before: avoid;
   }
 }

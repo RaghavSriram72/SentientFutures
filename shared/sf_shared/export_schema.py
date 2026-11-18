@@ -2,15 +2,36 @@
 
 Run: python -m sf_shared.export_schema          (writes the file)
      python -m sf_shared.export_schema --check  (fails if the file is out of date)
+
+The file holds the rubric version, every enum in ALL_ENUMS with its labels,
+and MILESTONE_TYPES as a "milestone_types" list.
 """
 
 import json
 import sys
 from pathlib import Path
 
-from sf_shared.enums import ALL_ENUMS, ENUM_INFO, RUBRIC_VERSION
+from sf_shared.enums import ALL_ENUMS, ENUM_INFO, MILESTONE_TYPES, RUBRIC_VERSION, milestone_type_problems
 
 OUT_PATH = Path(__file__).resolve().parent.parent / "schema" / "enums.json"
+
+
+def build_milestone_types() -> list[dict]:
+    """MILESTONE_TYPES as a list, in the owner's order:
+    [{"value": "technical", "label": "Technical", "categories": ["technical_capability", ...]}, ...]
+
+    Fails if a category has no type or two, so the site never shows a milestone without one.
+    """
+    problems = milestone_type_problems()
+    if len(problems) > 0:
+        raise ValueError("; ".join(problems))
+    milestone_types = []
+    for milestone_type, info in MILESTONE_TYPES.items():
+        categories = []
+        for category in info.categories:
+            categories.append(category.value)
+        milestone_types.append({"value": milestone_type.value, "label": info.label, "categories": categories})
+    return milestone_types
 
 
 def build_enums_json() -> dict:
@@ -26,7 +47,7 @@ def build_enums_json() -> dict:
         if len(info["values"]) != len(values):
             raise ValueError(f"ENUM_INFO['{name}'] has labels for values that aren't in the enum")
         enums[name] = {"draft": info["draft"], "values": values}
-    return {"rubric_version": RUBRIC_VERSION, "enums": enums}
+    return {"rubric_version": RUBRIC_VERSION, "enums": enums, "milestone_types": build_milestone_types()}
 
 
 def main() -> int:

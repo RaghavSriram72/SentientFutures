@@ -13,7 +13,8 @@ import type {
   WelfareGovernance,
 } from "@/lib/types";
 
-import { ConfidenceMeter, RatingChip } from "./Scorecard";
+import { mindsParts } from "./mindsParts";
+import { ConfidenceMeter, RatingChip } from "./RatingChip";
 import styles from "./ScorecardSections.module.css";
 
 // The sections of the team's populated scorecard (scorecard v0.1, sections 1
@@ -216,15 +217,9 @@ export function MindsGrid({
   sources: Sources;
   quiet?: Provenance;
 }) {
-  const items = [
-    { label: "Consciousness", claim: minds.consciousness },
-    { label: "Moral status", claim: minds.moral_status },
-    { label: "Identity", claim: minds.identity },
-    { label: "Welfare", claim: minds.welfare },
-  ];
   return (
     <dl className={styles.minds}>
-      {items.map((item) => (
+      {mindsParts(minds).map((item) => (
         <div key={item.label} className={`paper ${styles.mindCard}`}>
           <dt className={styles.mindLabel}>{item.label}</dt>
           <dd>

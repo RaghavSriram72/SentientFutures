@@ -5,15 +5,18 @@
 export type Technology = "wbe" | "bci" | "neuromorphic" | "hybrid";
 export type Problem = "alignment" | "intelligence_curse" | "both";
 export type Stage = "possible" | "widely_available" | "actually_helping";
+// In type order: Technical, then Deployment, then Welfare and governance.
 export type MilestoneCategory =
-  | "reliability_robustness"
   | "technical_capability"
-  | "safety_welfare_assurance"
+  | "high_level_fidelity"
+  | "reliability_robustness"
   | "scalable_production"
   | "economic_viability"
+  | "equitable_access"
+  | "safety_welfare_assurance"
   | "legal_regulatory"
-  | "institutional_legitimacy"
-  | "equitable_access";
+  | "institutional_legitimacy";
+export type MilestoneType = "technical" | "deployment" | "welfare_governance"; // worked out from the category, never stored
 export type MilestoneStatus = "not_demonstrated" | "prototype" | "replicated" | "mature" | "not_claimed";
 export type Confidence = "high" | "medium" | "low";
 export type CaseRating = "strong" | "moderate" | "weak" | "unclear" | "not_claimed";
@@ -143,7 +146,33 @@ export interface Source {
   sample?: boolean;
 }
 
+// One change to a scorecard rating. The previous assessment stays visible.
+// note.source_ids names the source or sources that caused the change.
+export interface RatingChange {
+  date: string; // YYYY-MM-DD
+  rating_before: CaseRating | RiskRating;
+  rating_after: CaseRating | RiskRating;
+  confidence_before: Confidence;
+  confidence_after: Confidence;
+  note: Claim;
+}
+
+// What a rating card adds to its scorecard row. Every field is optional.
+export interface RatingTracker {
+  // An "unclear" claim with reason "search_incomplete" counts as not assessed yet.
+  what_would_change?: Claim | null;
+  last_updated?: string | null; // YYYY-MM-DD
+  history?: RatingChange[]; // oldest first
+  milestone_ids?: string[]; // the milestones this rating informs, in the team's order
+  // True while the tracker is an example the team hasn't checked. Shown, with a mark.
+  placeholder?: boolean;
+}
+
 export interface ScorecardRow {
+  // Stable and the same on every page. Never changes once public: the row's
+  // anchor (#scorecard-<id>), the evidence register's links and the compare
+  // address all use it.
+  id: string;
   dimension: string;
   problem: Problem | null;
   scale: "case" | "risk";
@@ -153,6 +182,7 @@ export interface ScorecardRow {
   // Risk rows only: how bad it could be while the rating is still Unclear.
   potential_severity?: "high" | "medium" | "low" | null;
   basis: Claim;
+  tracker?: RatingTracker | null;
 }
 
 // ---------- The populated scorecard (scorecard v0.1 sections 1 to 6) ----------
@@ -177,6 +207,7 @@ export interface EvidenceRow {
   limitation: string;
   independence: string;
   provenance: "team" | "ai";
+  scorecard_ids?: string[]; // the ids of the scorecard rows on this page it bears on
 }
 
 export interface AssessmentQuestion {

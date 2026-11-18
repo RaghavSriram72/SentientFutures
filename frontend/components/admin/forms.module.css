@@ -40,6 +40,15 @@
   color: var(--ink);
 }
 
+/* iPhone Safari zooms the page in on any field set smaller than 16px. */
+@media (pointer: coarse) {
+  .input,
+  .select,
+  .textarea {
+    font-size: 1rem;
+  }
+}
+
 .select {
   padding-right: 2rem;
 }
@@ -114,8 +123,11 @@
   opacity: 0.6;
 }
 
-/* Buttons: the global .btn styles plus a proper disabled state */
-.button:disabled {
+/* Buttons: the global .btn styles plus a proper disabled state. A button
+   that keeps its focus while it works uses aria-disabled instead of
+   disabled (the queue's "Show the next ..."), and looks the same. */
+.button:disabled,
+.button[aria-disabled="true"] {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;

@@ -3,7 +3,7 @@ import { describe, test } from "node:test";
 
 import { readTriageConfigured } from "@/lib/api";
 
-import { kindFilterApplies, readQueueFilters } from "../adminFormat";
+import { kindFilterApplies, kindFilterReadsDecision, kindFilterShown, readQueueFilters } from "../adminFormat";
 import { describePublishProblem } from "../publishProblemText";
 
 function params(query: string) {
@@ -20,6 +20,37 @@ describe("readQueueFilters", () => {
   test("drops the kind filter in the New tab", () => {
     assert.equal(readQueueFilters(params("status=new&kind=argument")).kind, "");
     assert.equal(kindFilterApplies("new"), false);
+  });
+});
+
+describe("kindFilterShown", () => {
+  // Approved and Rejected filter on the decision's kind, so hand-added papers match there.
+  test("reads the decision in Approved and Rejected, and is offered there with the AI off", () => {
+    assert.equal(kindFilterReadsDecision("approved"), true);
+    assert.equal(kindFilterReadsDecision("rejected"), true);
+    assert.equal(kindFilterReadsDecision("pending_review"), false);
+    assert.equal(kindFilterShown("approved", true), true);
+    assert.equal(kindFilterShown("rejected", true), true);
+  });
+
+  test("hides the AI's kind in Pending review and Triaged out while the AI is off", () => {
+    assert.equal(kindFilterShown("pending_review", false), true);
+    assert.equal(kindFilterShown("triaged_out", false), true);
+    assert.equal(kindFilterShown("pending_review", true), false);
+    assert.equal(kindFilterShown("triaged_out", true), false);
+  });
+
+  // null: the pipeline status hasn't said yet whether the AI is on.
+  test("waits for the pipeline status in Pending review and Triaged out", () => {
+    assert.equal(kindFilterShown("pending_review", null), false);
+    assert.equal(kindFilterShown("triaged_out", null), false);
+    assert.equal(kindFilterShown("approved", null), true);
+    assert.equal(kindFilterShown("rejected", null), true);
+  });
+
+  test("never shows it in New", () => {
+    assert.equal(kindFilterShown("new", false), false);
+    assert.equal(kindFilterShown("new", true), false);
   });
 });
 

@@ -36,13 +36,16 @@ const CARD_GAP = 48;
 export const ROW_COUNT = 3;
 
 // ---------- The floor ----------
-// Depths are distances from the floor's front edge, in world pixels. Rows 0
-// and 2 are far enough apart that a card in one never covers a card in the
-// other. Row 1 sits between them and would cover the bottom of a row 2 card,
-// so the layout never lets it share x with rows 0 or 2.
+// Depths are distances from the floor's front edge, in world pixels. Row 2
+// stands far enough behind row 0 that a front card's top stays below the
+// back row's feet, so it never covers a back card's stage line. That depends
+// on how tall the cards are: tests/trackLayout.test.ts checks the budget with
+// the teaser's camera, the tightest one (see frontRowClearance). Row 1 sits
+// between them and would cover the bottom of a row 2 card, so the layout
+// never lets it share x with rows 0 or 2.
 export const FLOOR_DEPTH = 1000;
 export const AXIS_DEPTH = 70;
-export const ROW_DEPTHS = [200, 455, 710];
+export const ROW_DEPTHS = [200, 510, 820];
 
 // The y inside the floor element (0 is the back edge) where a row stands.
 export function rowY(row: number): number {
@@ -558,29 +561,157 @@ export function projectedCardTop(view: FloorView, scale: number, depth: number, 
   return originY + ((y - originY) * view.perspective) / (view.perspective - z);
 }
 
-// The largest world scale (up to maxScale) at which every card stays below
-// safeTop. rowHeights[r] is the tallest card in row r, or 0 for an empty row.
-export function fitScale(view: FloorView, rowHeights: number[], safeTop: number, maxScale: number): number {
-  function fits(scale: number): boolean {
-    for (let row = 0; row < rowHeights.length; row++) {
-      if (rowHeights[row] > 0 && projectedCardTop(view, scale, ROW_DEPTHS[row], rowHeights[row]) < safeTop) {
-        return false;
-      }
+// How far below the back row's feet the top of a front-row card of the given
+// height lands on screen, in screen pixels. A negative value means the front
+// card covers the bottom of the back cards, where their stage line is.
+export function frontRowClearance(view: FloorView, scale: number, frontHeight: number): number {
+  const frontTop = projectedCardTop(view, scale, ROW_DEPTHS[0], frontHeight);
+  const backFeet = projectedCardTop(view, scale, ROW_DEPTHS[ROW_COUNT - 1], 0);
+  return frontTop - backFeet;
+}
+
+// The home page teaser's camera: the floor tilted well back and seen from
+// close up, so the track reads as deep. A close perspective draws the back
+// row smaller, so the teaser is `height` tall: the least (with a few pixels
+// to spare) at which the back row's small lines still draw at
+// MIN_DRAWN_TEXT, every card stays under the top, and a front card's top
+// stays below the back row's feet. At 420px this camera drew the back row's
+// small lines at about 10px. The tests in tests/trackLayout.test.ts check all
+// three. It lives here, not in TrackTeaser.tsx, so the tests can use it.
+export const TEASER_CAMERA = {
+  tiltDeg: 56,
+  perspective: 1000,
+  horizon: 0.04,
+  floorBottom: 0, // the floor runs right to the teaser's bottom edge
+  safeTop: 16,
+  maxScale: 0.7,
+  height: 480,
+};
+
+// The teaser's camera on a window too short for TEASER_CAMERA.height (the
+// CSS caps the teaser under the site header): the gentler tilt and farther
+// perspective the full track uses on a phone (TrackScene's geometryFor).
+// The back row shrinks less from far away, so the cards fit in about 420px
+// with every small line still at MIN_DRAWN_TEXT.
+export const TEASER_SHORT_CAMERA = {
+  ...TEASER_CAMERA,
+  tiltDeg: 50,
+  perspective: 2400,
+};
+
+// The smallest world scale fitScale tries, unless it's given another. Below
+// it the cards can't be read.
+const MIN_FIT_SCALE = 0.3;
+
+// Whether every card stays below safeTop at this world scale. rowHeights[r]
+// is the tallest card in row r, or 0 for an empty row.
+export function cardsFit(view: FloorView, rowHeights: number[], safeTop: number, scale: number): boolean {
+  for (let row = 0; row < rowHeights.length; row++) {
+    if (rowHeights[row] > 0 && projectedCardTop(view, scale, ROW_DEPTHS[row], rowHeights[row]) < safeTop) {
+      return false;
     }
-    return true;
   }
-  if (fits(maxScale)) {
+  return true;
+}
+
+// The largest world scale (up to maxScale) at which every card stays below
+// safeTop. When nothing fits, it returns minScale anyway; cardsFit says
+// whether that happened.
+export function fitScale(
+  view: FloorView,
+  rowHeights: number[],
+  safeTop: number,
+  maxScale: number,
+  minScale = MIN_FIT_SCALE,
+): number {
+  if (cardsFit(view, rowHeights, safeTop, maxScale)) {
     return maxScale;
   }
-  let low = 0.3;
+  let low = minScale;
   let high = maxScale;
   for (let i = 0; i < 20; i++) {
     const middle = (low + high) / 2;
-    if (fits(middle)) {
+    if (cardsFit(view, rowHeights, safeTop, middle)) {
       low = middle;
     } else {
       high = middle;
     }
   }
   return low;
+}
+
+// The highest the floor's front edge can sit (as a floorBottom, at most the
+// view's own) with every card still below safeTop at this world scale.
+// Lowering the floor by a pixel lowers a card's top by less than a pixel,
+// because perspective draws the far rows smaller.
+export function highestFloorBottom(view: FloorView, rowHeights: number[], safeTop: number, scale: number): number {
+  const tilt = (view.tiltDeg * Math.PI) / 180;
+  let highest = view.floorBottom;
+  for (let row = 0; row < rowHeights.length; row++) {
+    if (rowHeights[row] === 0) {
+      continue;
+    }
+    const top = projectedCardTop(view, scale, ROW_DEPTHS[row], rowHeights[row]);
+    const shrink = view.perspective / (view.perspective + scale * ROW_DEPTHS[row] * Math.sin(tilt));
+    highest = Math.min(highest, view.floorBottom - (safeTop - top) / shrink);
+  }
+  return highest;
+}
+
+// How much a card in this row is drawn at, compared with its size in world
+// pixels: the world scale times the perspective shrink at the row's depth.
+// Cards stand facing the reader, so every part of one shrinks by the same amount.
+export function rowDrawScale(view: FloorView, scale: number, row: number): number {
+  const tilt = (view.tiltDeg * Math.PI) / 180;
+  const depth = ROW_DEPTHS[Math.min(row, ROW_DEPTHS.length - 1)];
+  const z = -scale * depth * Math.sin(tilt);
+  return (scale * view.perspective) / (view.perspective - z);
+}
+
+// The small lines on a card (its code, its type and its stage) should draw at
+// least this big on screen, whatever row the card stands in.
+export const MIN_DRAWN_TEXT = 11;
+// The largest those small lines may grow to get there, in CSS pixels. At
+// 28px "Deployment" no longer fits beside its glyph on a 250px card, and
+// "Welfare and governance" takes three lines, so this stays a little under.
+const MAX_TEXT_FLOOR = 26;
+
+// The smallest CSS size for a card's small lines in each row, so they draw at
+// MIN_DRAWN_TEXT or more. Far rows draw smaller, so they get bigger minimums.
+// The cards' CSS reads them as --text-floor-0 to --text-floor-2, with one
+// decimal, so each is rounded up to a tenth of a pixel.
+export function textFloors(view: FloorView, scale: number): number[] {
+  const floors: number[] = [];
+  for (let row = 0; row < ROW_COUNT; row++) {
+    const floor = Math.min(MAX_TEXT_FLOOR, MIN_DRAWN_TEXT / rowDrawScale(view, scale, row));
+    floors.push(Math.ceil(floor * 10) / 10);
+  }
+  return floors;
+}
+
+// At most this many rounds of setting the floors and fitting again.
+const MAX_FIT_ROUNDS = 6;
+// The scale counts as settled once a round moves it by less than this.
+const SETTLED_SCALE_CHANGE = 0.001;
+
+// The world scale once the text floors are in place. Bigger floors make the
+// far rows' cards taller, which can lower the scale that fits, which raises
+// the floors again, so this goes round until the scale stops moving (two or
+// three rounds in practice). If it stopped after a fixed number of rounds,
+// the last fit could leave the floors set for a slightly larger scale, and
+// the small lines would draw a little under MIN_DRAWN_TEXT.
+// fitCards measures the cards as they are now and returns the scale that
+// fits them; applyFloors sets the floors (textFloors) for a scale.
+export function settleScale(fitCards: () => number, applyFloors: (scale: number) => void): number {
+  let scale = fitCards();
+  for (let round = 0; round < MAX_FIT_ROUNDS; round++) {
+    applyFloors(scale);
+    const next = fitCards();
+    const settled = Math.abs(next - scale) < SETTLED_SCALE_CHANGE;
+    scale = next;
+    if (settled) {
+      break;
+    }
+  }
+  return scale;
 }

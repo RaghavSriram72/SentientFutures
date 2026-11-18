@@ -1,9 +1,11 @@
 /* The milestone dossier: a paper card with grain, a paperclip and ruled sections. */
 
 .dossier {
+  /* The side padding, which the pinned top row (below) also reaches across */
+  --dossier-pad-x: 24px;
   position: relative;
   container-type: inline-size;
-  padding: 26px 24px 30px;
+  padding: 26px var(--dossier-pad-x) 30px;
   background-color: var(--paper-2);
   background-image: var(--grain);
   border: 1px solid var(--rule-soft);
@@ -14,7 +16,8 @@
 
 @media (min-width: 720px) {
   .dossier {
-    padding: 30px 32px 36px;
+    --dossier-pad-x: 32px;
+    padding: 30px var(--dossier-pad-x) 36px;
   }
 }
 
@@ -38,19 +41,33 @@
   gap: 0.25rem;
 }
 
+/* The id line, then the stage chip under it, with the close button (when
+   there is one) on the right. The button's own margin keeps the gap, so a
+   dossier with no button gives the id line the whole row. */
 .idRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "id close"
+    "stage close";
+  align-items: start;
+  row-gap: 0.4rem;
+  margin-bottom: 0.25rem;
   padding-left: 26px;
 }
 
+/* In a narrow dossier (a phone) the chip takes the whole row, under the close
+   button too, so "Stage 2: Widely available" stays on one line. */
+@container (max-width: 19rem) {
+  .idRow {
+    grid-template-areas:
+      "id close"
+      "stage stage";
+  }
+}
+
 .idLine {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 0.75rem;
+  grid-area: id;
   padding-top: 0.4rem;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
@@ -61,7 +78,8 @@
 }
 
 .close {
-  flex: none;
+  grid-area: close;
+  margin-left: 1rem;
   display: grid;
   place-items: center;
   width: 36px;
@@ -77,6 +95,39 @@
   background: var(--grape-tint-2);
 }
 
+/* A bigger target for fingers */
+@media (pointer: coarse) {
+  .close {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* On the timeline at phone and tablet sizes the dossier is a sheet that
+   scrolls. Its top row, with the close button, stays pinned to the top of
+   the sheet, on paper the same color as the dossier so text scrolls under it. */
+@media (max-width: 900px) {
+  .idRowPinned {
+    position: sticky;
+    /* Sticky counts from inside the sheet's 20px top padding (TrackScene's
+       .panel), so this pins the row flush with the sheet's top edge. */
+    top: -20px;
+    z-index: 1;
+    margin-inline: calc(-1 * var(--dossier-pad-x));
+    padding: 8px var(--dossier-pad-x) 8px calc(var(--dossier-pad-x) + 26px);
+    background-color: var(--paper-2);
+    background-image: var(--grain);
+  }
+
+  /* A link or button below the pinned row, reached with Tab, scrolls clear
+     of the row instead of stopping underneath it. The row is 91px tall at
+     most (a phone, with the stage chip on its own line), plus room for the
+     focus ring. */
+  .idRowPinned ~ * :is(a, button) {
+    scroll-margin-top: 104px;
+  }
+}
+
 .close svg {
   width: 14px;
   height: 14px;
@@ -84,6 +135,20 @@
   stroke: var(--ink);
   stroke-width: 1.6;
   stroke-linecap: round;
+}
+
+/* The stage chip's meaning, under the id row and lined up with it */
+.stageNote {
+  max-width: 40em;
+  padding-left: 26px;
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
+/* "Our read unless marked", once for the whole dossier, just above the title */
+.defaultLine {
+  margin-top: 0.85rem;
 }
 
 .title {
@@ -94,6 +159,40 @@
 
 .title:focus {
   outline: none;
+}
+
+/* "TECHNICAL · Reliability and robustness", under the title. TypeMark takes
+   its baseline from its name, so the two halves line up as one line. */
+.typeLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  /* The column gap holds the dot (see .typeDot) */
+  gap: 0.35rem 1.6rem;
+  margin-top: 0.55rem;
+  color: var(--ink-muted);
+  /* Clips the dot when the category wraps onto a line of its own */
+  overflow: hidden;
+}
+
+/* The dot between the type and the category, set like the one in the id
+   line, so it sits at the middle of the small caps. It hangs in the gap
+   before the category, centred, so on a narrow screen, when the category
+   wraps onto its own line, the dot falls outside the line and is clipped
+   instead of dangling at the end of the line above. */
+.typeDot {
+  display: inline-block;
+  width: 1.6rem;
+  margin-left: -1.6rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+.category {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
 }
 
 .chips {
@@ -166,6 +265,8 @@
 }
 
 .stageChip {
+  grid-area: stage;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 0.45em;
@@ -178,6 +279,17 @@
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* In a narrow dossier, slightly tighter letters and padding leave the
+   longest labels ("Stage 2: Widely available", "Stage 3: Actually helping")
+   a few px of room on a 320px phone. This follows the rule above so it wins. */
+@container (max-width: 19rem) {
+  .stageChip {
+    padding-inline: 0.6em;
+    letter-spacing: 0.05em;
+  }
 }
 
 .stageDot {

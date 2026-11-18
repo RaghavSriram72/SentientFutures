@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useEffect, useEffectEvent, useRef } from "react";
 
+import type { PipelineRun } from "@/lib/adminTypes";
 import { getRun } from "@/lib/api";
 
-import { formatDateTime, formatDuration, isRunActive, runHref, timeZoneLabel } from "./adminFormat";
+import { formatDateTime, formatDuration, isRunActive, queueStatusHref, runHref, timeZoneLabel } from "./adminFormat";
 import { RunStatusChip } from "./Chips";
 import styles from "./Dashboard.module.css";
 import { ApiErrorNotice } from "./Notice";
-import { POLL_INTERVAL_MS, RunCounts, RunLog, stagesText, startedByText } from "./RunParts";
+import { POLL_INTERVAL_MS, RunCounts, RunLog, stagesText, startedByText, triageRan } from "./RunParts";
 import { useApiData } from "./useApiData";
 
 // How many of the newest log lines the dashboard shows.
@@ -24,10 +25,21 @@ interface LiveRunProps {
   onFinished: () => void;
 }
 
+// Where the papers a finished run added wait now, or null when it added none
+// (or was a dry run, which saves nothing). The AI sorts what it reads into
+// Pending review, so a run that triaged points there. Otherwise they're in New.
+function newPapersHref(run: PipelineRun): string | null {
+  if (isRunActive(run) || run.options.dry_run === true || run.counts.new === 0) {
+    return null;
+  }
+  return queueStatusHref(triageRan(run) ? "pending_review" : "new");
+}
+
 // The current (or most recent) run, refreshed every few seconds while it's going.
 export function LiveRun({ runId, statusSaysRunning, onFinished }: LiveRunProps) {
   const { data: run, error, reload } = useApiData(`run:${runId}`, () => getRun(runId));
   const active = run !== null && isRunActive(run);
+  const papersHref = run !== null ? newPapersHref(run) : null;
   const announceFinished = useEffectEvent(onFinished);
   const sawActive = useRef(false);
 
@@ -96,9 +108,16 @@ export function LiveRun({ runId, statusSaysRunning, onFinished }: LiveRunProps) 
             <p className="eyebrow">Latest log lines ({timeZoneLabel()})</p>
             <RunLog run={run} last={LIVE_LOG_LINES} />
           </div>
-          <Link href={runHref(run.id)} className={styles.detailLink}>
-            Full log and details
-          </Link>
+          <div className={styles.detailLinks}>
+            <Link href={runHref(run.id)} className={styles.detailLink}>
+              Full log and details
+            </Link>
+            {papersHref && (
+              <Link href={papersHref} className={styles.detailLink}>
+                {run.counts.new === 1 ? "Review the new paper" : "Review the new papers"}
+              </Link>
+            )}
+          </div>
         </>
       )}
     </section>

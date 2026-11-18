@@ -47,7 +47,7 @@ export function estimateText(milestone: Milestone): string {
   if (count > 0) {
     parts.push(count === 1 ? "1 forecast" : `${count} forecasts`);
   }
-  return parts.length > 0 ? parts.join(" · ") : "No estimate yet";
+  return parts.length > 0 ? parts.join(" · ") : "No date yet";
 }
 
 interface Group {

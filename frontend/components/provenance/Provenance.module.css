@@ -58,12 +58,15 @@
   color: var(--ink-body);
 }
 
-/* AI: the whole claim sits in a dashed frame */
+/* AI: a dashed rule down the claim's left side. Every AI claim, checked or
+   not, keeps it, so dashed always means AI. A rule instead of a full frame
+   keeps cards from nesting boxes and leaves the text its width on phones. */
 .claim_ai {
-  padding: 0.9rem 1rem;
-  border: 1.5px dashed var(--rule-strong);
-  border-radius: var(--radius-md);
-  background: var(--grape-tint);
+  padding: 0.1rem 0 0.1rem 1rem;
+  border: 0;
+  border-left: 2px dashed var(--prov-ai);
+  border-radius: 0;
+  background: none;
 }
 
 /* Unclear: hatched paper */
@@ -107,7 +110,7 @@
 .citation {
   margin-top: 0.35rem;
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.04em;
   color: var(--ink-muted);
 }
@@ -118,7 +121,7 @@
 
 /* Quiet: the claim matches its section's default kind, so the label goes and
    the glyph moves into a narrow margin column beside the text. The line
-   style (dashed frame, hatching, quote rule) stays as it is. */
+   style (dashed rule, hatching, quote rule) stays as it is. */
 .quiet {
   grid-template-columns: auto minmax(0, 1fr);
   column-gap: 0.65rem;
@@ -167,7 +170,6 @@
   font-size: var(--text-sm);
 }
 
-.compact.claim_ai,
 .compact.claim_unclear {
   padding: 0.6rem 0.75rem;
 }
@@ -239,11 +241,14 @@
   list-style: none;
 }
 
+/* Tabular figures give the narrow "1" the same width as "2" and "3", so
+   "1 Possible" isn't cramped beside the others. */
 .stageItem {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
   color: var(--ink-body);
 }
 
@@ -263,6 +268,93 @@
 
 .stage_actually_helping {
   background: var(--stage-helping);
+}
+
+/* The milestone types: one row per type, the glyph in its own column, then
+   "Technical. Technical capability · High-level fidelity · ...". A parent can
+   set --type-glyph-column to widen that column: the timeline's Key uses 52px,
+   the width of its other marks. The glyphs are ink, so they print as they are. */
+.typeLegend {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.typeItem {
+  display: grid;
+  grid-template-columns: var(--type-glyph-column, 14px) minmax(0, 1fr);
+  align-items: start;
+  column-gap: 0.6rem;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
+/* Centred on the first line of its text: 1lh is the line's height */
+.typeGlyph {
+  justify-self: center;
+  width: 14px;
+  height: 14px;
+  margin-top: calc((1lh - 14px) / 2);
+  color: var(--ink-body);
+}
+
+/* The same weight as the stage names beside it in the timeline's Key */
+.typeName {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* The text beside the glyph. Clips the dot of a category that wraps onto a
+   new line (see .typeDot). */
+.typeText {
+  overflow: hidden;
+}
+
+/* The space between two categories, widened to 0.5em (a space is about
+   0.2em in Instrument Sans): the width " · " had as plain text. Like any
+   space, it disappears where the line breaks. */
+.typeGap {
+  word-spacing: 0.3em;
+}
+
+/* Holds its dot, which is placed from the category's start */
+.typeCategory {
+  position: relative;
+}
+
+/* The dot hangs in the gap before its category, centred, and takes no room
+   in the line. When the category starts a new line, the gap goes with the
+   line break and the dot falls left of the text, where .typeText clips it,
+   so no line starts or ends with a dot. The dossier's type line does the
+   same (MilestonePanel.module.css .typeDot). */
+.typeDot {
+  position: absolute;
+  left: -0.5em;
+  width: 0.5em;
+  text-align: center;
+}
+
+/* "High-level" stays on one line (see CategoryName in Legends.tsx) */
+.typeNoBreak {
+  white-space: nowrap;
+}
+
+/* Printers skip background colors by default, which would leave the stage
+   names with no color key. A legend card or a claim never splits across two
+   pages: split, a framed claim's last line was cut off by the next one. */
+@media print {
+  .stageSwatch {
+    /* The prefixed line goes first: the CSS minifier keeps only the last of
+       the pair, and the unprefixed one is the standard. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .legendItem,
+  .claim {
+    break-inside: avoid;
+  }
 }
 
 /* ---------- Section default ---------- */

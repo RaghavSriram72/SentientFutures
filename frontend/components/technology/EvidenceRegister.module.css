@@ -132,10 +132,57 @@
   text-decoration-color: var(--grape);
 }
 
+/* On touch screens a transparent layer makes each chip easier to hit. It
+   reaches 10px above and below but only 2px to the sides, because the chips
+   sit about 5px apart. In the wide table the chips can also stack, so the
+   layers sit behind every chip in the list (z-index -1 inside the isolated
+   list): a tap on a chip you can see always opens that chip, and only the
+   space around it falls to the layers. */
+@media (pointer: coarse) {
+  .ids {
+    isolation: isolate;
+  }
+
+  .idLink {
+    position: relative;
+  }
+
+  .idLink::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -10px -2px;
+  }
+}
+
 .none {
   font-size: var(--text-sm);
   font-style: italic;
   color: var(--ink-muted);
+}
+
+/* On paper a claim's card never splits across two pages. The cards stack as
+   plain blocks there, as in the Scorecard, because Chrome lays out a grid of
+   unbreakable cards wrongly across pages. The head moves with the first
+   card, so a page never ends on the head above an empty register. This
+   comes before the wide table rules, so a page wide enough for the table
+   keeps its table display. */
+@media print {
+  .cardHead {
+    break-after: avoid;
+  }
+
+  .table tbody {
+    display: block;
+  }
+
+  .row {
+    break-inside: avoid;
+  }
+
+  .row + .row {
+    margin-top: 0.75rem;
+  }
 }
 
 /* ---------- Ruled table (wide) ---------- */
@@ -179,16 +226,19 @@
     padding-right: clamp(16px, 2.5vw, 28px);
   }
 
+  /* The claim gets the most room, since it is the row's heading. The short
+     columns are only as wide as their headings and values need: Independence
+     fits "Independent" on one line down to the 820px this table starts at. */
   .colClaim {
-    width: 19%;
+    width: 23%;
   }
 
   .colIds {
-    width: 9%;
+    width: 10%;
   }
 
   .colType {
-    width: 12%;
+    width: 11%;
   }
 
   .colDirectness {
@@ -196,11 +246,11 @@
   }
 
   .colLimitation {
-    width: 24%;
+    width: 21%;
   }
 
   .colIndependence {
-    width: 17%;
+    width: 15%;
   }
 
   .table tbody {
@@ -235,6 +285,14 @@
 
   .cell::before {
     content: none;
+  }
+
+  /* "None in our current sources" is the quietest thing in a row, so in the
+     narrow source columns it takes the small size and wraps to three lines
+     instead of four. */
+  .none {
+    font-size: var(--text-xs);
+    line-height: 1.4;
   }
 }
 

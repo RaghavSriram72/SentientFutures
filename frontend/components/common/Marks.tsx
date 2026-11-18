@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import styles from "./Marks.module.css";
 
 // On records with sample: true (fictional placeholders for the prototype).
@@ -6,11 +8,13 @@ export function SampleChip({ label = "Sample" }: { label?: string }) {
 }
 
 // A tiny marker next to the name of a category that is still being decided.
+// It links to where the methodology explains drafts, since a touch screen
+// can't show the title.
 export function DraftMark() {
   return (
-    <span className={styles.draftMark} title="Draft category: the values may change">
+    <Link href="/methodology/#versions" className={styles.draftMark} title="Draft category: the values may change">
       draft
-    </span>
+    </Link>
   );
 }
 

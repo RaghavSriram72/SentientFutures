@@ -16,7 +16,7 @@ from api_helpers import (
     write_content,
 )
 
-from sf_api import create_app, reviews, runner, site_routes
+from sf_api import create_app, posts, reviews, runner, site_routes
 from sf_api.config import Config
 from sf_shared.db import now
 
@@ -100,6 +100,80 @@ def test_changes_are_counted_until_the_next_publish(client, db, headers, monkeyp
     monkeypatch.setattr(reviews, "now", lambda: later)
     approve_one(client, db, headers, "arxiv-2610.00002")
     assert status(client, headers)["waiting"]["sources_approved"] == 1
+
+
+def post_fields(slug: str, status: str) -> dict:
+    return {
+        "slug": slug,
+        "title": "Notes",
+        "date": "2026-10-27",
+        "author": "Rae",
+        "summary": "Short.",
+        "body": "Text.",
+        "status": status,
+    }
+
+
+def create_post(client, headers, slug: str, status: str) -> None:
+    assert client.post("/api/posts", json=post_fields(slug, status), headers=headers).status_code == 201
+
+
+def update_post(client, headers, slug: str, new_slug: str, status: str) -> None:
+    version = client.get(f"/api/posts/{slug}", headers=headers).get_json()["post"]["version"]
+    body = post_fields(new_slug, status)
+    body["version"] = version
+    response = client.put(f"/api/posts/{slug}", json=body, headers=headers)
+    assert response.status_code == 200, response.get_json()
+
+
+def test_a_draft_post_isnt_waiting(client, headers):
+    # Drafts don't get published, so saving one changes nothing the next publish would put out.
+    create_post(client, headers, "private-notes", "draft")
+    update_post(client, headers, "private-notes", "private-notes", "draft")
+    assert status(client, headers)["waiting"]["posts_saved"] == 0
+
+
+def test_a_renamed_draft_counts_once_when_published(client, headers):
+    create_post(client, headers, "notes", "draft")
+    update_post(client, headers, "notes", "notes-renamed", "draft")
+    assert status(client, headers)["waiting"]["posts_saved"] == 0
+
+    update_post(client, headers, "notes-renamed", "notes-renamed", "published")
+    assert status(client, headers)["waiting"]["posts_saved"] == 1
+
+
+def test_a_published_post_moved_back_to_draft_counts(client, headers, monkeypatch):
+    create_post(client, headers, "notes", "published")
+    assert client.post("/api/site/publish", headers=headers).status_code == 200
+    assert status(client, headers)["waiting"]["posts_saved"] == 0
+
+    # After the publish, a draft post isn't waiting, but taking a published one off the site is.
+    later = now() + timedelta(seconds=1)
+    monkeypatch.setattr(posts, "now", lambda: later)
+    create_post(client, headers, "private-notes", "draft")
+    assert status(client, headers)["waiting"]["posts_saved"] == 0
+    update_post(client, headers, "notes", "notes", "draft")
+    assert status(client, headers)["waiting"]["posts_saved"] == 1
+
+
+def test_a_draft_milestone_isnt_waiting(client, headers):
+    body = {"milestone": valid_milestone("wbe-second"), "published": False}
+    assert client.post("/api/milestones", json=body, headers=headers).status_code == 201
+    assert status(client, headers)["waiting"]["milestones_saved"] == 0
+
+    # Unpublishing the seeded milestone takes it off the site, so that one counts.
+    record = client.get("/api/milestones/wbe-first", headers=headers).get_json()["milestone"]
+    body = {"milestone": record, "version": record["version"], "published": False}
+    assert client.put("/api/milestones/wbe-first", json=body, headers=headers).status_code == 200
+    assert status(client, headers)["waiting"]["milestones_saved"] == 1
+
+
+def test_a_sample_milestone_isnt_waiting(client, headers):
+    # The public site leaves samples out, even published ones.
+    body = {"milestone": valid_milestone("sample-wbe", sample=True), "published": True}
+    response = client.post("/api/milestones", json=body, headers=headers)
+    assert response.status_code == 201, response.get_json()
+    assert status(client, headers)["waiting"]["milestones_saved"] == 0
 
 
 def test_publish_mode():

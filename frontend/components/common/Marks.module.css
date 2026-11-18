@@ -14,8 +14,14 @@
   letter-spacing: 0;
   text-transform: none;
   color: var(--mauve);
+  /* A link to what "draft" means. Dotted, so it reads as a quiet aside. */
+  text-decoration: underline dotted 1px;
+  text-underline-offset: 0.18em;
   vertical-align: 0.1em;
-  cursor: help;
+}
+
+.draftMark:hover {
+  text-decoration-style: solid;
 }
 
 .draftBadge:global(.chip) {

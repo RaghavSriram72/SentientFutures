@@ -263,10 +263,27 @@ hr {
 }
 
 /* A printout never scrolls, so a section still waiting to fade in would
-   print blank. */
+   print blank. A printout can't be clicked either, so folded sections print
+   open: the rubric, the full assessment and the source cards all reach the
+   paper. This changes only the printout, not what's open on screen.
+   PrintOpenDetails does the same for browsers that ignore this rule.
+   Components hide their own controls (menus, chevrons, contents lists) in
+   their CSS modules. */
 @media print {
   .reveal {
     animation: none;
+  }
+
+  details::details-content {
+    content-visibility: visible;
+  }
+
+  /* A heading stays on the same page as what follows it */
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid;
   }
 }
 

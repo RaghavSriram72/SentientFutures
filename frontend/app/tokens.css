@@ -107,3 +107,15 @@
   /* Space between a page's last section and the footer */
   --footer-gap: clamp(48px, 8vw, 96px);
 }
+
+/* On paper the soft drop shadows only add smudges of ink around the cards
+   (some PDF viewers draw them as solid blocks), so cards keep only their
+   borders. */
+@media print {
+  :root {
+    --shadow-card: none;
+    --shadow-lift: none;
+    --shadow-paper: none;
+    --shadow-button: none;
+  }
+}

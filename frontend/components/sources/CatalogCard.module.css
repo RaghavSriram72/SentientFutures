@@ -113,7 +113,7 @@
 .alsoAtLabel {
   margin-right: 0.5em;
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -146,6 +146,17 @@
   border-bottom: 1px solid var(--rule-soft);
 }
 
+/* On the sources page the row's chips already show the technology and claim
+   direction, so only a cell or two is left. One full-width rule closes them,
+   instead of a short rule under each cell. */
+.fieldsCompact {
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.fieldsCompact .field {
+  border-bottom: 0;
+}
+
 /* Claim direction can hold all four values, so it gets a row to itself */
 .field.fieldWide {
   grid-column: 1 / -1;
@@ -153,7 +164,7 @@
 
 .fieldLabel {
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -211,7 +222,7 @@
   gap: 0.35em;
   width: 100%;
   font-family: var(--font-mono);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.04em;
   line-height: 1.35;
   color: var(--grape);
@@ -257,4 +268,13 @@
 
 .openLink a {
   overflow-wrap: anywhere;
+}
+
+/* Chrome can't split a grid inside a <details> at a page break: it prints the
+   next row's rule through the last one. A card's ruled fields are short, so
+   on paper they move to the next page together instead. */
+@media print {
+  .fields {
+    break-inside: avoid;
+  }
 }

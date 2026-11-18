@@ -19,3 +19,19 @@
 .toggle:hover {
   text-decoration-color: var(--grape);
 }
+
+.printedList {
+  display: none;
+}
+
+/* Paper gets every name, and no button to press */
+@media print {
+  .shortened,
+  .toggle {
+    display: none;
+  }
+
+  .printedList {
+    display: inline;
+  }
+}

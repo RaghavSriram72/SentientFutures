@@ -149,12 +149,34 @@ def em_dash_problems(milestone: Milestone, prefix: str = "milestone") -> list[st
     return problems
 
 
+def loop_message(cycle: list[str], milestone_id: str, names: dict[str, str]) -> str:
+    """'That makes a loop: this milestone depends on "A", which depends on this one. ...'
+
+    cycle is one of find_cycles' lists, like ["a", "b", "a"]. The chain
+    starts at the milestone being edited, and names the others the way the
+    depends-on picker does.
+    """
+    nodes = cycle[:-1]
+    start = nodes.index(milestone_id)
+    quoted = []
+    for node in nodes[start + 1 :] + nodes[:start]:
+        quoted.append(f'"{names[node]}"')
+    chain = ", which depends on ".join(quoted)
+    return (
+        f"That makes a loop: this milestone depends on {chain}, which depends on this one. "
+        "Remove one of these links."
+    )
+
+
 def link_problems(milestone: Milestone, published: bool, others: list[dict]) -> list[str]:
     """Problems with depends_on and with publishing, given every other milestone."""
     known_ids = set()
     published_ids = set()
+    # What the editor calls each milestone: its name, or its id if it has none.
+    names: dict[str, str] = {}
     for other in others:
         known_ids.add(other["_id"])
+        names[other["_id"]] = other.get("name") or other["_id"]
         if other.get("published"):
             published_ids.add(other["_id"])
 
@@ -170,7 +192,8 @@ def link_problems(milestone: Milestone, published: bool, others: list[dict]) -> 
             edges.append(dependency)
             if published and dependency not in published_ids:
                 problems.append(
-                    f'{path}: "{dependency}" isn\'t published yet. Publish it first, or keep this milestone as a draft'
+                    f'{path}: "{names[dependency]}" isn\'t published yet. '
+                    "Publish it first, or keep this milestone as a draft."
                 )
 
     # The whole graph with this milestone's new links swapped in.
@@ -184,9 +207,7 @@ def link_problems(milestone: Milestone, published: bool, others: list[dict]) -> 
     graph[milestone.id] = edges
     for cycle in find_cycles(graph):
         if milestone.id in cycle:
-            problems.append(
-                f"milestone.depends_on: dependency cycle: {' -> '.join(cycle)}. Remove one of these links"
-            )
+            problems.append(f"milestone.depends_on: {loop_message(cycle, milestone.id, names)}")
 
     if not published:
         dependents = []
@@ -223,7 +244,7 @@ def source_problems(milestone: Milestone, known_source_ids: set[str], prefix: st
 def other_milestones(db, milestone_id: str) -> list[dict]:
     return list(
         db["milestones"].find(
-            {"_id": {"$ne": milestone_id}}, projection={"depends_on": 1, "published": 1, "sample": 1}
+            {"_id": {"$ne": milestone_id}}, projection={"name": 1, "depends_on": 1, "published": 1, "sample": 1}
         )
     )
 

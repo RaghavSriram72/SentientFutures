@@ -14,6 +14,7 @@ import { ApiErrorNotice, Notice } from "./Notice";
 import styles from "./Settings.module.css";
 import { useUnsavedWork } from "./unsavedWork";
 import { useApiData } from "./useApiData";
+import { useClearAfterSignIn } from "./useClearAfterSignIn";
 
 // The limits from SearchConfig in shared/sf_shared/pipeline_models.py. The API
 // checks them too; checking here means people see the problem next to the field.
@@ -152,9 +153,8 @@ function validate(draft: ConfigDraft): { errors: Errors; config: SearchConfigInp
 // The top-level fields with errors, in page order. Their input ids match the keys.
 const TOP_LEVEL_FIELDS = ["lookback_days", "max_items_per_run", "max_cost_usd_per_run", "spot_check_rate", "model"];
 
-// Puts focus on the first field with an error, in page order, so a keyboard
-// or screen reader user lands on what needs fixing.
-function focusFirstError(errors: Errors, queryCount: number): void {
+// The input of the first field with an error, in page order.
+function firstErrorId(errors: Errors, queryCount: number): string | null {
   const ids: string[] = [];
   for (let index = 0; index < queryCount; index += 1) {
     if (errors[`queries.${index}.label`]) {
@@ -172,8 +172,15 @@ function focusFirstError(errors: Errors, queryCount: number): void {
       ids.push(key);
     }
   }
-  if (ids.length > 0) {
-    document.getElementById(ids[0])?.focus();
+  return ids.length > 0 ? ids[0] : null;
+}
+
+// Puts focus on the first field with an error, in page order, so a keyboard
+// or screen reader user lands on what needs fixing.
+function focusFirstError(errors: Errors, queryCount: number): void {
+  const id = firstErrorId(errors, queryCount);
+  if (id !== null) {
+    document.getElementById(id)?.focus();
   }
 }
 
@@ -264,9 +271,53 @@ function SettingsForm({ initial, savedMessage, onSaved, onEdited }: SettingsForm
   const [saveError, setSaveError] = useState<ApiError | null>(null);
   // The last search removed, and where it was, until it's put back or another goes.
   const [removed, setRemoved] = useState<{ query: QueryDraft; index: number } | null>(null);
+  // A field to move focus to once saving is over. Every input is disabled
+  // while saving, so a problem the API finds can't take focus right away.
+  const focusAfterSave = useRef<string | null>(null);
+  // The Save button is disabled while saving, so focus would drop to the
+  // page. When the API finds a problem that isn't on a field, focus goes to
+  // the title of the notice that says what it is.
+  const resultRef = useRef<HTMLParagraphElement>(null);
+  const focusResultAfterSave = useRef(false);
+  // After a save this form starts afresh (SettingsView), and focus starts on "Saved".
+  const savedRef = useRef<HTMLParagraphElement>(null);
+  // "Discard changes" goes away with the changes, so focus would drop to the
+  // page. It moves to the "No unsaved changes." that takes its place.
+  const noChangesRef = useRef<HTMLSpanElement>(null);
+  const focusAfterDiscard = useRef(false);
 
   const dirty = comparable(draft) !== baseline;
   useUnsavedWork(dirty);
+  // A save that ended the session leaves "Your session ended." on screen.
+  // Once someone signs in again over the form, it goes.
+  useClearAfterSignIn(saveError, () => setSaveError(null));
+
+  useEffect(() => {
+    if (saving) {
+      return;
+    }
+    if (focusAfterSave.current !== null) {
+      document.getElementById(focusAfterSave.current)?.focus();
+    } else if (focusResultAfterSave.current) {
+      resultRef.current?.focus();
+    }
+    focusAfterSave.current = null;
+    focusResultAfterSave.current = false;
+  }, [saving]);
+
+  useEffect(() => {
+    if (savedMessage !== null) {
+      savedRef.current?.focus();
+    }
+  }, [savedMessage]);
+
+  useEffect(() => {
+    if (!dirty && focusAfterDiscard.current) {
+      noChangesRef.current?.focus();
+    }
+    focusAfterDiscard.current = false;
+  }, [dirty]);
+
   let enabledCount = 0;
   for (const query of draft.queries) {
     if (query.enabled) {
@@ -350,6 +401,7 @@ function SettingsForm({ initial, savedMessage, onSaved, onEdited }: SettingsForm
     setErrors({});
     setServerProblems([]);
     setSaveError(null);
+    focusAfterDiscard.current = true;
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -363,6 +415,7 @@ function SettingsForm({ initial, savedMessage, onSaved, onEdited }: SettingsForm
       return;
     }
     setSaving(true);
+    focusResultAfterSave.current = true;
     try {
       const stored = await saveSearchConfig(result.config);
       // If the API doesn't echo the config back, what we sent is what it stored.
@@ -383,7 +436,8 @@ function SettingsForm({ initial, savedMessage, onSaved, onEdited }: SettingsForm
         }
         setErrors(mapped);
         setServerProblems(unplaced);
-        focusFirstError(mapped, draft.queries.length);
+        // Called while saving, so the focus waits for the inputs to come back.
+        focusAfterSave.current = firstErrorId(mapped, draft.queries.length);
       }
       setSaveError(apiError);
     } finally {
@@ -537,7 +591,11 @@ function SettingsForm({ initial, savedMessage, onSaved, onEdited }: SettingsForm
 
       <div className={styles.saveBar}>
         {errorCount > 0 && (
-          <Notice tone="error" title={errorCount === 1 ? "One thing to fix before saving." : `${errorCount} things to fix before saving.`}>
+          <Notice
+            tone="error"
+            title={errorCount === 1 ? "One thing to fix before saving." : `${errorCount} things to fix before saving.`}
+            titleRef={resultRef}
+          >
             {serverProblems.length > 0 && (
               <ul className={styles.problemList}>
                 {serverProblems.map((problem) => (
@@ -548,8 +606,10 @@ function SettingsForm({ initial, savedMessage, onSaved, onEdited }: SettingsForm
             {Object.keys(errors).length > 0 && <p>Each one is marked next to its field.</p>}
           </Notice>
         )}
-        {saveError && errorCount === 0 && <ApiErrorNotice error={saveError} title="The settings weren't saved" />}
-        {savedMessage && !dirty && <Notice tone="success" title={savedMessage} />}
+        {saveError && errorCount === 0 && (
+          <ApiErrorNotice error={saveError} title="The settings weren't saved" titleRef={resultRef} />
+        )}
+        {savedMessage && !dirty && <Notice tone="success" title={savedMessage} titleRef={savedRef} />}
         <div className={forms.actions}>
           <button type="submit" className={`btn btn-primary ${forms.button}`} disabled={saving || !dirty}>
             {saving ? "Saving…" : "Save the settings"}
@@ -559,7 +619,11 @@ function SettingsForm({ initial, savedMessage, onSaved, onEdited }: SettingsForm
               Discard changes
             </button>
           )}
-          {!dirty && !savedMessage && <span className={detail.muted}>No unsaved changes.</span>}
+          {!dirty && !savedMessage && (
+            <span ref={noChangesRef} tabIndex={-1} className={detail.muted}>
+              No unsaved changes.
+            </span>
+          )}
         </div>
       </div>
     </form>

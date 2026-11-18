@@ -146,11 +146,13 @@ def create_run():
     stages = stages_in_order(body.stages)
     if len(stages) == 0:
         raise ApiError(400, "invalid_body", "Pick at least one stage: collect, triage or both.")
+    user = current_user()
     run_request = RunRequest(
         stages=stages,
         limit=body.limit,
         dry_run=body.dry_run,
-        requested_by=current_user()["email"],
+        requested_by=user["email"],
+        requested_by_name=user["name"],
     )
     run = start_run(app_db(), app_config(), run_request)
     return jsonify({"run": run_json(run)}), 202

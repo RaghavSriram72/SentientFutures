@@ -4,9 +4,11 @@ import { EmphasisText } from "@/components/common/Emphasis";
 import { ARTIFICIAL_MINDS_DEFINITION, INTELLIGENCE_CURSE_DEFINITION } from "@/components/common/keyTerms";
 import { StageLegend } from "@/components/provenance/Legends";
 import { ProvenanceGlyph } from "@/components/provenance/ProvenanceTag";
-import { unclearReasonSentence } from "@/components/technology/text";
+import { RatingChip } from "@/components/technology/Scorecard";
+import { stillNeedsClauses, unclearReasonSentence } from "@/components/technology/text";
 import { TrackTeaser } from "@/components/timeline3d/TrackTeaser";
 import { getPublicMilestones, getSiteData, getSources, getTechnologies } from "@/lib/data";
+import { COMPARE_MINDS_KEY, compareHref } from "@/lib/dimensions";
 import { enumDescription, enumLabel } from "@/lib/enums";
 import { realSources } from "@/lib/sources";
 import type { Claim, Milestone, ScorecardRow, TechnologyPage } from "@/lib/types";
@@ -84,6 +86,16 @@ function ratingsSentence(rows: ScorecardRow[]): string {
   return `Its ${numberWord(rows.length)} scorecard ratings: ${joinWithAnd(parts)}.`;
 }
 
+// When every rating is held back by a gap the team has found, say what's
+// missing rather than "All six of its ratings are Unclear".
+function statusSentence(rows: ScorecardRow[]): string {
+  const stillNeeds = stillNeedsClauses(rows);
+  if (stillNeeds !== null) {
+    return `Each of its ${numberWord(rows.length)} ratings names what's missing: ${stillNeeds}.`;
+  }
+  return `${ratingsSentence(rows)} ${unclearReasonSentence(rows)}`.trim();
+}
+
 function WhereThingsStand({
   technologies,
   milestones,
@@ -106,9 +118,13 @@ function WhereThingsStand({
   for (const tech of drafts) {
     draftNames.push(lowerFirst(tech.name));
   }
+  const dated = countDated(milestones);
 
+  // A section, not an <aside>: the box sits inside <main>, and an <aside>
+  // there is a complementary landmark nested in another landmark, which axe
+  // flags. A named section is still a region screen readers can jump to.
   return (
-    <aside className={`paper ${styles.standing}`} aria-labelledby="standing-heading">
+    <section className={`paper ${styles.standing}`} aria-labelledby="standing-heading">
       <p id="standing-heading" className={`eyebrow ${styles.standingTitle}`}>
         Where things stand
       </p>
@@ -116,9 +132,9 @@ function WhereThingsStand({
         {reviewed.map((tech) => (
           <li key={tech.id}>
             {reviewed.length === 1
-              ? `${tech.name} is the one proposal the team has scored in full.`
-              : `The team has scored ${lowerFirst(tech.name)} in full.`}{" "}
-            {ratingsSentence(tech.scorecard)} {unclearReasonSentence(tech.scorecard)}
+              ? `${tech.name} is the only proposal the team has rated so far.`
+              : `The team has rated ${lowerFirst(tech.name)}.`}{" "}
+            {statusSentence(tech.scorecard)}
           </li>
         ))}
         {drafts.length > 0 && (
@@ -128,21 +144,38 @@ function WhereThingsStand({
           </li>
         )}
       </ul>
+      {/* Each stat links to the page that lists what it counts. "With a date"
+          only shows once a milestone has one, since a big 0 reads as "nothing
+          done". */}
       <dl className={styles.standingStats}>
-        <div>
-          <dt>Milestones</dt>
+        <div className={styles.stat}>
+          <dt>
+            <Link href="/timeline/" className={styles.statLink}>
+              Milestones
+            </Link>
+          </dt>
           <dd>{milestones.length}</dd>
         </div>
-        <div>
-          <dt>With a date</dt>
-          <dd>{countDated(milestones)}</dd>
-        </div>
-        <div>
-          <dt>Sources</dt>
+        {dated > 0 && (
+          <div className={styles.stat}>
+            <dt>
+              <Link href="/timeline/" className={styles.statLink}>
+                With a date
+              </Link>
+            </dt>
+            <dd>{dated}</dd>
+          </div>
+        )}
+        <div className={styles.stat}>
+          <dt>
+            <Link href="/sources/" className={styles.statLink}>
+              Sources
+            </Link>
+          </dt>
           <dd>{sourceCount}</dd>
         </div>
       </dl>
-    </aside>
+    </section>
   );
 }
 
@@ -156,17 +189,15 @@ const KEY_TERMS = [
 
 // ---------- Proposal cards ----------
 
-interface RatingChip {
+interface HeadlineRating {
   label: string;
-  rating: string;
-  isUnclear: boolean;
-  severity: string | null;
+  row: ScorecardRow;
 }
 
 // The three scorecard rows that answer the central question directly: the two
 // positive cases and the risk to any minds created. The full six are on each page.
-function headlineRatings(rows: ScorecardRow[]): RatingChip[] {
-  const chips: RatingChip[] = [];
+function headlineRatings(rows: ScorecardRow[]): HeadlineRating[] {
+  const ratings: HeadlineRating[] = [];
   for (const row of rows) {
     let label = "";
     if (row.scale === "case" && row.problem === "alignment") {
@@ -179,15 +210,9 @@ function headlineRatings(rows: ScorecardRow[]): RatingChip[] {
     } else {
       continue;
     }
-    const scale = row.scale === "case" ? "CaseRating" : "RiskRating";
-    chips.push({
-      label,
-      rating: enumLabel(scale, row.rating),
-      isUnclear: row.rating === "unclear",
-      severity: row.scale === "risk" && row.rating === "unclear" && row.potential_severity ? row.potential_severity : null,
-    });
+    ratings.push({ label, row });
   }
-  return chips;
+  return ratings;
 }
 
 interface OpenQuestion {
@@ -232,13 +257,19 @@ function ProposalCard({ tech, number }: { tech: TechnologyPage; number: number }
         <EmphasisText text={tech.headline} />
       </p>
 
+      {/* The scorecard's own chips, so an Unclear shows its reason and an
+          Unclear risk that could be severe shows the warning beside the chip. */}
       <dl className={styles.ratings}>
-        {ratings.map((chip) => (
-          <div key={chip.label} className={styles.ratingRow}>
-            <dt>{chip.label}</dt>
-            <dd className={chip.isUnclear ? styles.ratingUnclear : styles.rating}>
-              {chip.rating}
-              {chip.severity && <span className={styles.severity}>, potentially {chip.severity}</span>}
+        {ratings.map((item) => (
+          <div key={item.label} className={styles.ratingRow}>
+            <dt>{item.label}</dt>
+            <dd>
+              <RatingChip
+                scale={item.row.scale}
+                rating={item.row.rating}
+                unclearReason={item.row.unclear_reason}
+                potentialSeverity={item.row.scale === "risk" ? item.row.potential_severity : null}
+              />
             </dd>
           </div>
         ))}
@@ -329,14 +360,14 @@ export default function HomePage() {
               Could brain tech keep humans in the loop, and what <em>minds</em> might it create?
             </h1>
             <p className={`lede ${styles.heroLede}`}>
-              How strong is the case that whole brain emulation, brain computer interfaces or neuromorphic AI could
+              How strong is the case that whole brain emulation, brain-computer interfaces or neuromorphic AI could
               help with AI alignment, or keep people&rsquo;s work and political voice from losing value as AI
               improves? And what new welfare and governance problems would each bring, including for any artificial
               minds made along the way?
             </p>
             <div className={styles.heroActions}>
               <Link href="/wbe/" className="btn btn-primary">
-                Read the WBE assessment
+                Read the brain emulation assessment
               </Link>
               <Link href="/timeline/" className="btn btn-secondary">
                 Explore the timeline
@@ -365,6 +396,14 @@ export default function HomePage() {
             <h2 id="proposals-heading">
               Where each one <em>stands</em>
             </h2>
+            <p className={styles.headLink}>
+              <Link href="/methodology/#ratings">
+                How we rate<span aria-hidden="true"> &rarr;</span>
+              </Link>
+              <Link href={compareHref(null)}>
+                Compare side by side<span aria-hidden="true"> &rarr;</span>
+              </Link>
+            </p>
           </div>
           <ul className={styles.proposals}>
             {technologies.map((tech, index) => (
@@ -407,6 +446,13 @@ export default function HomePage() {
               ))}
             </ul>
           </nav>
+          {/* The three side by side on the same questions */}
+          <p className={styles.mindsCompare}>
+            <Link href={compareHref(COMPARE_MINDS_KEY)}>
+              Compare side by side<span className="visually-hidden">: Artificial minds</span>
+              <span aria-hidden="true"> &rarr;</span>
+            </Link>
+          </p>
         </div>
       </section>
 
@@ -427,6 +473,9 @@ export default function HomePage() {
           <div className={styles.stageKey}>
             <span className={styles.stageKeyLabel}>Color shows the stage</span>
             <StageLegend />
+            <Link href="/methodology/#stages" className={styles.stageKeyLink}>
+              What the stages mean<span aria-hidden="true"> &rarr;</span>
+            </Link>
           </div>
           <div className={styles.teaser}>
             <TrackTeaser milestones={milestones} nowYear={nowYear} />

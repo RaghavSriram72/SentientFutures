@@ -27,6 +27,11 @@
   font-size: var(--text-2xl);
 }
 
+/* Focus lands on the heading after signing out, as on AdminPageHead's. */
+.title:focus {
+  outline: none;
+}
+
 .text {
   max-width: 44ch;
   color: var(--ink-muted);

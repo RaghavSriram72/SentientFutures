@@ -7,7 +7,7 @@ import { realSources, sourceRefsById } from "@/lib/sources";
 export const metadata: Metadata = {
   title: "Timeline",
   description:
-    "When might the milestones for whole brain emulation, brain computer interfaces and neuromorphic AI happen? Every forecast is shown on its own, and milestones without a defensible date say so.",
+    "When might the milestones for whole brain emulation, brain-computer interfaces and neuromorphic AI happen? Every forecast is shown on its own, and milestones without a date say so.",
 };
 
 // The timeline is a full-screen scene that covers the site header and footer.

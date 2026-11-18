@@ -21,6 +21,7 @@ Each press inserts a site_publishes document (insert-only), whatever the mode.
 """
 
 import uuid
+from collections.abc import Callable
 
 import httpx
 from flask import Blueprint, jsonify, request
@@ -84,15 +85,53 @@ def last_publish(db) -> dict | None:
     )
 
 
-def count_saved_since(collection, id_field: str, since) -> int:
-    """How many different records got a revision since then. The in-memory seed doesn't count."""
+def milestone_is_public(revision: dict) -> bool:
+    """Whether the site shows the milestone as this revision saved it. Samples never show."""
+    return revision.get("published") is True and revision["milestone"].get("sample") is not True
+
+
+def post_is_public(revision: dict) -> bool:
+    """Whether the site shows the post as this revision saved it."""
+    return revision["post"].get("status") == "published"
+
+
+def newest_revision(collection, filters: dict) -> dict | None:
+    return collection.find_one(filters, sort=[("saved_at", -1), ("version", -1)])
+
+
+def count_saved_since(collection, id_field: str, since, is_public: Callable[[dict], bool]) -> int:
+    """How many records the next publish would change on the site.
+
+    A record counts when it got a revision since then (the in-memory seed
+    doesn't count) and the site shows it now, or showed it at the last
+    publish. So a draft that has never been public doesn't count, and a
+    published record moved back to draft does, because publishing takes it
+    off the site. Before the first publish, "showed it" means as seeded.
+
+    A post can only be renamed while it has never been published, so the
+    revisions under its old slug are all drafts and don't count.
+    """
     filters: dict = {"action": {"$ne": "seed"}}
     if since is not None:
         filters["saved_at"] = {"$gt": since}
     ids = set()
     for revision in collection.find(filters, projection={id_field: 1}):
         ids.add(revision[id_field])
-    return len(ids)
+
+    count = 0
+    for record_id in ids:
+        latest = newest_revision(collection, {id_field: record_id})
+        before_filters: dict = {id_field: record_id}
+        if since is not None:
+            before_filters["saved_at"] = {"$lte": since}
+        else:
+            before_filters["action"] = "seed"
+        before = newest_revision(collection, before_filters)
+        if latest is not None and is_public(latest):
+            count += 1
+        elif before is not None and is_public(before):
+            count += 1
+    return count
 
 
 def count_approved_since(db, since) -> int:
@@ -112,8 +151,8 @@ def count_approved_since(db, since) -> int:
 def waiting_counts(db, since) -> dict:
     return {
         "sources_approved": count_approved_since(db, since),
-        "milestones_saved": count_saved_since(db["milestone_revisions"], "milestone_id", since),
-        "posts_saved": count_saved_since(db["post_revisions"], "post_slug", since),
+        "milestones_saved": count_saved_since(db["milestone_revisions"], "milestone_id", since, milestone_is_public),
+        "posts_saved": count_saved_since(db["post_revisions"], "post_slug", since, post_is_public),
     }
 
 

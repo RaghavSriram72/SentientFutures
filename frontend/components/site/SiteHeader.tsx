@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { IS_DRAFT, PRIMARY_NAV, SITE_NAME } from "@/lib/site";
 
+import { BrandLink } from "./BrandLink";
 import { NavLinks } from "./NavLinks";
 import styles from "./SiteHeader.module.css";
 
@@ -21,12 +20,12 @@ export function SiteHeader() {
       )}
       <header className={styles.header} data-site-chrome="header">
         <div className={`container ${styles.bar}`}>
-          <Link href="/" className={styles.brand} aria-label={`${SITE_NAME} home`}>
+          <BrandLink className={styles.brand} label={`${SITE_NAME} home`}>
             <BrandMark />
             <span className={styles.wordmark}>
               Minds <em>in the</em> Loop
             </span>
-          </Link>
+          </BrandLink>
           <NavLinks items={PRIMARY_NAV} />
         </div>
       </header>

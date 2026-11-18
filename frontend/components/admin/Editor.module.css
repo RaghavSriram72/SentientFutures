@@ -28,6 +28,11 @@
   }
 }
 
+/* A field that runs long (a milestone's name) takes the whole row. */
+.spanAll {
+  grid-column: 1 / -1;
+}
+
 .shortText {
   min-height: 4.5rem;
 }
@@ -78,12 +83,13 @@
   min-width: 0;
 }
 
-/* On wide screens the preview stays in view while the form scrolls. */
+/* On wide screens the preview stays in view while the form scrolls, below the
+   site's sticky header (its height plus its 1px border). */
 @media (min-width: 1180px) {
   .previewColumn {
     position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 2rem);
+    top: calc(var(--header-height) + 1px + 1rem);
+    max-height: calc(100vh - var(--header-height) - 1px - 2rem);
     overflow: auto;
     overscroll-behavior: contain;
   }
@@ -171,6 +177,35 @@
   gap: 0.9rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--rule);
+}
+
+/* What stopped a save, just above the save row. Brought into view clear of
+   the sticky save row below it. */
+.saveNotices {
+  display: grid;
+  gap: 0.9rem;
+  scroll-margin-bottom: 7rem;
+}
+
+/* A long form's save row. With .stickySave it stays at the bottom of the
+   screen until the form ends, so Save is always in reach. */
+.saveRow {
+  padding-bottom: 0.9rem;
+  background: var(--paper);
+}
+
+.stickySave {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  box-shadow: 0 -10px 24px -22px #533a7180;
+}
+
+/* Tabbing to a field near the bottom of the screen scrolls it clear of the
+   sticky save row, instead of leaving it underneath. The milestone editor
+   measures the row into --save-row-height, since a saved notice makes it taller. */
+:global(html):has(.stickySave) {
+  scroll-padding-bottom: calc(var(--save-row-height, 5rem) + 1rem);
 }
 
 .savedLine {

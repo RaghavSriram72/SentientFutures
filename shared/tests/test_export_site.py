@@ -127,6 +127,41 @@ def test_milestones_come_from_content_until_the_collection_is_live(content_dir, 
     assert any("the database has none yet" in line for line in lines)
 
 
+def test_scorecard_links_to_unpublished_milestones_are_left_out(content_dir, out_dir):
+    pages = read_json(content_dir / "technologies.json")
+    pages[0]["scorecard"][0]["tracker"] = {"milestone_ids": ["wbe-reliability", "wbe-legal"]}
+    write_json(content_dir / "technologies.json", pages)
+    # Only wbe-reliability is published, so the API sends only that one.
+    published = None
+    for milestone in read_json(content_dir / "milestones.json"):
+        if milestone["id"] == "wbe-reliability":
+            published = milestone
+    lines: list[str] = []
+
+    assert run_export(content_dir, out_dir, FakeApi(milestones=[published]), lines.append) is True
+
+    exported = read_json(out_dir / "technologies.json")
+    assert exported[0]["scorecard"][0]["tracker"]["milestone_ids"] == ["wbe-reliability"]
+    assert (
+        '  Left out the link from technologies[0] (wbe).scorecard[0] to milestone "wbe-legal": '
+        "it isn't published."
+    ) in lines
+    assert lines[-1].startswith("OK:")
+
+
+def test_scorecard_links_to_published_milestones_are_kept(content_dir, out_dir):
+    pages = read_json(content_dir / "technologies.json")
+    pages[0]["scorecard"][0]["tracker"] = {"milestone_ids": ["wbe-reliability", "wbe-legal"]}
+    write_json(content_dir / "technologies.json", pages)
+    lines: list[str] = []
+
+    assert run_export(content_dir, out_dir, None, lines.append) is True
+
+    exported = read_json(out_dir / "technologies.json")
+    assert exported[0]["scorecard"][0]["tracker"]["milestone_ids"] == ["wbe-reliability", "wbe-legal"]
+    assert not any("Left out the link" in line for line in lines)
+
+
 def test_published_posts_are_written_with_quoted_frontmatter(content_dir, out_dir):
     assert run_export(content_dir, out_dir, FakeApi(posts=[api_post("field-notes")]), print) is True
 

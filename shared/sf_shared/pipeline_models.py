@@ -255,6 +255,7 @@ class PipelineRun(BaseModel):
     trigger: Literal["schedule", "admin", "cli"]
     runner: Literal["local", "github"]
     requested_by: str | None = None
+    requested_by_name: str | None = None  # shown on the dashboard; runs started elsewhere have none
     status: Literal["queued", "running", "succeeded", "failed", "partial"]
     stages: list[Literal["collect", "triage"]]
     options: dict = {}  # limit, dry_run, lookback_days

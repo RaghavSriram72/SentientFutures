@@ -93,11 +93,14 @@
   box-shadow: 0 0 0 1px var(--grape), var(--shadow-card);
 }
 
+/* The code (and a Sample chip) on the first line, the stage tag always on
+   its own line under them, so every row has the same shape whether the tag
+   is "Stage 1: Possible" or the longer "Stage 2: Widely available". */
 .topLine {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem 0.7rem;
+  gap: 0.35rem 0.7rem;
 }
 
 .code {
@@ -109,6 +112,8 @@
 }
 
 .stage {
+  order: 1;
+  flex-basis: 100%;
   display: inline-flex;
   align-items: center;
   gap: 0.4em;
@@ -187,6 +192,12 @@
 .row:hover .rowButton,
 .rowSelected .rowButton {
   color: var(--grape);
+}
+
+/* The type, close under the name it belongs to */
+.type {
+  justify-self: start;
+  margin-top: -0.25rem;
 }
 
 .estimate {

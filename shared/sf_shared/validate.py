@@ -10,27 +10,42 @@ What it checks:
   1. Each file parses and each record matches its model in models.py.
   2. Cross-record rules: unique ids, every source id exists, every
      depends_on exists, no dependency cycles, and nothing real links to a
-     sample (the public site leaves samples out).
-  3. Blog posts: valid frontmatter, unique slugs, at least one post.
-  4. No em dashes (U+2014) in any content file.
+     sample (the public site leaves samples out). Every technology page has
+     the same scorecard rows (same ids, dimensions, scales and problems, in
+     the same order), and each scorecard row's milestone links point to real
+     milestones of that page's technology.
+  3. Scorecard history dates and last_updated aren't in the future (a typo
+     guard for the year).
+  4. Every milestone category belongs to exactly one milestone type.
+  5. Blog posts: valid frontmatter, unique slugs, at least one post.
+  6. No em dashes (U+2014) in any content file.
 
-It also prints warnings, which don't fail the check: right now, a count of the
-AI-suggested claims in sample records that nobody has reviewed yet.
+It also prints warnings, which don't fail the check: a count of the
+AI-suggested claims in sample records that nobody has reviewed yet, and the
+scorecard rows whose tracker is still a placeholder.
 """
 
 import difflib
 import json
 import sys
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, ValidationError
 
 from sf_shared.claims import RULES_ERROR_TYPE, find_claims, is_blank, join_path
-from sf_shared.enums import Provenance
-from sf_shared.models import ALL_MODELS, Milestone, PostFrontmatter, Source, TechnologyPage
+from sf_shared.enums import Provenance, milestone_type_problems
+from sf_shared.models import (
+    ALL_MODELS,
+    Milestone,
+    PostFrontmatter,
+    ScorecardRow,
+    Source,
+    TechnologyPage,
+    quoted_or_null,
+)
 
 TECHNOLOGY_PAGE_IDS = ["wbe", "bci", "neuromorphic"]
 EM_DASH = "\u2014"
@@ -389,6 +404,132 @@ def check_technology_pages(records: list[Record], path: Path, errors: list[str])
             )
 
 
+def check_matching_scorecards(records: list[Record], errors: list[str]) -> None:
+    """Every page has the same scorecard rows as the first page: the same ids, in
+    the same order, each with the same dimension, scale and problem. The compare
+    page lines the pages up by row id.
+
+    The first page that passed its model check is the reference. Pages that
+    failed are skipped, so one broken page doesn't cause a cascade of errors.
+    """
+    pages: list[tuple[str, TechnologyPage]] = []
+    for record in records:
+        if isinstance(record.model, TechnologyPage):
+            pages.append((record.label, record.model))
+    if len(pages) == 0:
+        return
+
+    reference_label, reference_page = pages[0]
+    reference_ids: list[str] = []
+    reference_rows: dict[str, ScorecardRow] = {}
+    for row in reference_page.scorecard:
+        reference_ids.append(row.id)
+        reference_rows[row.id] = row
+    same_rows_hint = f"Every page needs the same scorecard rows as {reference_label}, in the same order"
+
+    for label, page in pages[1:]:
+        page_ids: list[str] = []
+        for row in page.scorecard:
+            page_ids.append(row.id)
+
+        for reference_id in reference_ids:
+            if reference_id not in page_ids:
+                errors.append(f'{label}.scorecard: no row with id "{reference_id}". {same_rows_hint}')
+
+        for index, row in enumerate(page.scorecard):
+            if row.id not in reference_rows:
+                errors.append(
+                    f'{label}.scorecard[{index}].id: "{row.id}" isn\'t on {reference_label}. {same_rows_hint}'
+                )
+                continue
+            reference_row = reference_rows[row.id]
+            for field_name in ("dimension", "scale", "problem"):
+                value = getattr(row, field_name)
+                reference_value = getattr(reference_row, field_name)
+                if value != reference_value:
+                    errors.append(
+                        f"{label}.scorecard[{index}].{field_name}: {quoted_or_null(value)} differs from "
+                        f"{reference_label}, which has {quoted_or_null(reference_value)}. A row means the same "
+                        "thing on every page, so change it on all of them at once"
+                    )
+
+        # Compare only the rows both pages have, so a missing row isn't also reported as a reordering.
+        shared_in_page_order: list[str] = []
+        for row_id in page_ids:
+            if row_id in reference_rows:
+                shared_in_page_order.append(row_id)
+        shared_in_reference_order: list[str] = []
+        for row_id in reference_ids:
+            if row_id in page_ids:
+                shared_in_reference_order.append(row_id)
+        if shared_in_page_order != shared_in_reference_order:
+            errors.append(
+                f"{label}.scorecard: the rows are in a different order from {reference_label}. "
+                f"Use: {', '.join(reference_ids)}"
+            )
+
+
+def check_scorecard_milestones(report: Report) -> None:
+    """A scorecard row's milestone_ids must be real milestones of this page's
+    technology. Samples are refused on every page, since the public site leaves
+    them out. Works from the raw milestones, so a milestone that failed its own
+    check isn't also reported missing here."""
+    technology_of: dict[str, object] = {}
+    for record in report.milestones:
+        milestone_id = raw_id(record)
+        if milestone_id is not None and isinstance(record.raw, dict):
+            technology_of[milestone_id] = record.raw.get("technology")
+    sample_milestone_ids = sample_ids(report.milestones)
+
+    for record in report.technologies:
+        page = record.model
+        if not isinstance(page, TechnologyPage):
+            continue
+        for row_index, row in enumerate(page.scorecard):
+            if row.tracker is None:
+                continue
+            for link_index, milestone_id in enumerate(row.tracker.milestone_ids):
+                location = f"{record.label}.scorecard[{row_index}].tracker.milestone_ids[{link_index}]"
+                if milestone_id not in technology_of:
+                    report.errors.append(f'{location}: no milestone with id "{milestone_id}" in milestones.json')
+                    continue
+                technology = technology_of[milestone_id]
+                if isinstance(technology, str) and technology != page.id:
+                    report.errors.append(
+                        f'{location}: "{milestone_id}" is a {technology} milestone, and this is the {page.id} page'
+                    )
+                if milestone_id in sample_milestone_ids:
+                    report.errors.append(
+                        f'{location}: "{milestone_id}" is a sample milestone. The public site leaves samples out, '
+                        "so a scorecard row can only link to real milestones"
+                    )
+
+
+# One day of slack, so a date written in a time zone ahead of the checker's isn't refused.
+FUTURE_DATE_SLACK = timedelta(days=1)
+
+
+def check_tracker_dates(report: Report, today: date) -> None:
+    """A history date or last_updated after tomorrow is almost always a typo in the year."""
+    latest_allowed = today + FUTURE_DATE_SLACK
+    for record in report.technologies:
+        page = record.model
+        if not isinstance(page, TechnologyPage):
+            continue
+        for row_index, row in enumerate(page.scorecard):
+            if row.tracker is None:
+                continue
+            dated: list[tuple[str, str]] = []
+            for change_index, change in enumerate(row.tracker.history):
+                dated.append((f"history[{change_index}].date", change.date))
+            if row.tracker.last_updated is not None:
+                dated.append(("last_updated", row.tracker.last_updated))
+            for path, value in dated:
+                if date.fromisoformat(value) > latest_allowed:
+                    location = f"{record.label}.scorecard[{row_index}].tracker.{path}"
+                    report.errors.append(f"{location}: {value} is in the future. Check the year")
+
+
 # ---------------------------------------------------------------------------
 # Warnings
 
@@ -423,6 +564,31 @@ def check_unreviewed_sample_claims(report: Report) -> None:
         report.warnings.append(
             f"Warning: {count} AI-suggested claims in sample records have no reviewer. The site shows them as "
             "unchecked, and they must be reviewed before the sample flag comes off."
+        )
+
+
+def check_placeholder_trackers(report: Report) -> None:
+    """Scorecard rows whose tracker is an example the team hasn't checked. The
+    site marks them, so this is only a reminder that the flag is still on."""
+    locations: list[str] = []
+    for record in report.technologies:
+        page = record.model
+        if not isinstance(page, TechnologyPage):
+            continue
+        for index, row in enumerate(page.scorecard):
+            if row.tracker is not None and row.tracker.placeholder:
+                locations.append(f"{record.label}.scorecard[{index}] ({row.id})")
+    if len(locations) == 0:
+        return
+    if len(locations) == 1:
+        report.warnings.append(
+            f"Warning: 1 scorecard row has a placeholder tracker: {locations[0]}. "
+            "The site labels it as a placeholder until the flag comes off."
+        )
+    else:
+        report.warnings.append(
+            f"Warning: {len(locations)} scorecard rows have placeholder trackers: {', '.join(locations)}. "
+            "The site labels them as placeholders until the flag comes off."
         )
 
 
@@ -656,8 +822,15 @@ def check_em_dashes(content_dir: Path, errors: list[str]) -> None:
 # Putting it together
 
 
-def validate_content(content_dir: Path) -> Report:
+def validate_content(content_dir: Path, today: date | None = None) -> Report:
+    """Check a content folder. `today` is for tests; it defaults to the real date."""
+    if today is None:
+        today = date.today()
     report = Report()
+
+    # Deploys run this check but not export_schema --check, so the type grouping is guarded here too.
+    for problem in milestone_type_problems():
+        report.errors.append(f"shared/sf_shared/enums.py: {problem}")
 
     milestones = load_records(content_dir / "milestones.json", "milestones", Milestone, report.errors)
     sources = load_records(content_dir / "sources.json", "sources", Source, report.errors)
@@ -687,8 +860,14 @@ def validate_content(content_dir: Path) -> Report:
     check_dependencies(report.milestones, report.errors)
     if technologies is not None:
         check_technology_pages(report.technologies, technologies_path, report.errors)
+        check_matching_scorecards(report.technologies, report.errors)
+        check_tracker_dates(report, today)
+    # If milestones.json couldn't be read, every link would look broken.
+    if milestones is not None:
+        check_scorecard_milestones(report)
     check_em_dashes(content_dir, report.errors)
     check_unreviewed_sample_claims(report)
+    check_placeholder_trackers(report)
     return report
 
 

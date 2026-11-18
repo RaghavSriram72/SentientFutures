@@ -39,6 +39,7 @@ def technology_page(tech_id: str) -> dict:
         "strongest_objections": [team_claim("Fixture objection.")],
         "scorecard": [
             {
+                "id": "alignment-benefit",
                 "dimension": "Alignment benefit",
                 "problem": "alignment",
                 "scale": "case",

@@ -16,6 +16,7 @@ from sf_pipeline import runs
 from sf_pipeline.run import load_search_config, main, parse_stages, run_pipeline
 from sf_pipeline.runs import RunAlreadyRunning, RunRecorder, start_run
 from sf_pipeline.store import ensure_pipeline_indexes, from_doc, to_doc
+from sf_pipeline.text import cost_text
 
 
 class FakeCollector:
@@ -112,6 +113,30 @@ def test_a_dry_run_writes_no_candidates_and_calls_no_model(db, settings):
     assert db["sources"].count_documents({}) == 0
     assert db["ai_assessments"].count_documents({}) == 0
     assert client.messages.calls == []
+    # The log says papers, like every admin screen.
+    would_add = "Dry run: would add 2 new papers. Already known or found twice: 0. Nothing was written."
+    assert any(line.endswith(would_add) for line in run.log)
+    assert any("Dry run: would triage 2 of 2 papers with" in line for line in run.log)
+
+
+def test_the_log_says_papers_and_costs_like_the_dashboard(db, settings):
+    one_search_config(db)
+    collectors = fake_collectors(arxiv_papers=[paper(arxiv_id="2610.11111"), paper(arxiv_id="2610.22222", title="Other")])
+
+    run_id = run_pipeline(db, stages="collect", trigger="cli", runner="local", settings=settings, collectors=collectors)
+
+    log = get_run(db, run_id).log
+    assert any(line.endswith("Added 2 new papers. Already known or found twice: 0.") for line in log)
+    assert log[-1].endswith("Finished: succeeded. Cost $0.00.")
+
+
+@pytest.mark.parametrize(
+    ("usd", "text"),
+    [(0, "$0.00"), (0.004, "$0.0040"), (0.0123, "$0.012"), (0.125, "$0.125"), (2.5, "$2.50")],
+)
+def test_costs_keep_the_digits_the_dashboard_shows(usd, text):
+    # The same rules as formatCost in frontend/components/admin/adminFormat.ts.
+    assert cost_text(usd) == text
 
 
 def test_limit_caps_each_search(db, settings):
@@ -174,6 +199,7 @@ def test_triage_without_a_key_is_skipped_and_the_run_still_succeeds(db, settings
     assert run.status == "succeeded"
     assert run.counts.skipped == 1
     assert any("ANTHROPIC_API_KEY isn't set" in line for line in run.log)
+    assert any(line.endswith("1 new paper is waiting for a run that has a key.") for line in run.log)
 
 
 def test_an_unexpected_error_is_recorded_on_the_run(db, settings):

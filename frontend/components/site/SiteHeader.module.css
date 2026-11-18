@@ -2,12 +2,15 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  /* Nearly opaque: page text scrolling underneath must never read through the nav */
-  background: color-mix(in srgb, var(--paper) 97%, transparent);
-  backdrop-filter: saturate(1.2) blur(12px);
-  -webkit-backdrop-filter: saturate(1.2) blur(12px);
+  /* Fully opaque: page text scrolling underneath must never read through the
+     nav. A blur would need backdrop-filter, which the CSS minifier keeps only
+     in its -webkit- form, so Chrome and Firefox never drew it. */
+  background: var(--paper);
   border-bottom: 1px solid var(--rule-soft);
   box-shadow: 0 10px 24px -22px #533a7180;
+  /* No transform, filter or backdrop-filter here either: any of them would
+     hold the open menu's position: fixed scrim inside the header, so it would
+     stop covering the page and a tap outside the menu would reach the page. */
 }
 
 .draftBanner {
@@ -101,8 +104,14 @@
   background: var(--grape-tint-2);
 }
 
-/* Methodology and Contact: in the phone menu only */
+/* Compare, Methodology and Contact: in the phone menu only */
 .menuOnly {
+  display: none;
+}
+
+/* NavLinks adds this while the menu is open. It only shows where the menu
+   does, so a menu left open while the window widened can't cover the page. */
+.scrim {
   display: none;
 }
 
@@ -149,6 +158,25 @@
   top: 4.5px;
 }
 
+/* While the menu is open the three bars fold into an X. The label stays
+   "Menu"; aria-expanded already tells screen readers the state. */
+.menuIcon::before,
+.menuIcon::after {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.menuButton[aria-expanded="true"] .menuIcon {
+  background: transparent;
+}
+
+.menuButton[aria-expanded="true"] .menuIcon::before {
+  transform: translateY(4.5px) rotate(45deg);
+}
+
+.menuButton[aria-expanded="true"] .menuIcon::after {
+  transform: translateY(-4.5px) rotate(-45deg);
+}
+
 /* Below this the seven links no longer fit on one line, so they fold into Menu */
 @media (max-width: 1023px) {
   .menuButton {
@@ -163,8 +191,24 @@
     flex-direction: column;
     align-items: stretch;
     min-width: 220px;
+    /* On a phone held sideways the ten links are taller than the screen, so
+       the list scrolls inside itself. The 9rem leaves room for the header and
+       the draft banner above it at the top of the page, with a small margin
+       below. On a short phone the links close up to fit (see below). */
+    max-height: calc(100dvh - 9rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 0.5rem;
-    background: var(--paper-2);
+    /* Phones hide the scrollbar, so a soft shadow at the bottom edge (and at
+       the top once scrolled) shows there are more links. The paper-colored
+       covers scroll with the links and hide each shadow once that end is
+       reached, so a list that fits shows none. */
+    background:
+      linear-gradient(var(--paper-2) 50%, transparent) top / 100% 3rem no-repeat local,
+      linear-gradient(transparent, var(--paper-2) 50%) bottom / 100% 3rem no-repeat local,
+      radial-gradient(farthest-side at 50% 0, #533a7166, transparent) top / 100% 1.5rem no-repeat,
+      radial-gradient(farthest-side at 50% 100%, #533a7166, transparent) bottom / 100% 1.5rem no-repeat,
+      var(--paper-2);
     border: 1px solid var(--rule);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lift);
@@ -174,12 +218,24 @@
     display: flex;
   }
 
+  /* Clear, and the size of the screen. z-index -1 puts it behind everything
+     in the header (the logo, the Menu button and the list stay usable) but,
+     since the header is its own stacking layer above the page, in front of
+     the page and the draft banner. */
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   .menuOnly {
     display: block;
   }
 
-  /* A hairline between the main pages and the menu-only ones */
-  li:not(.menuOnly) + .menuOnly {
+  /* A hairline above the menu-only pages at the end (see startsMenuOnlyEnd) */
+  .menuEndStart {
     margin-top: 0.35rem;
     padding-top: 0.35rem;
     border-top: 1px solid var(--rule-soft);
@@ -191,8 +247,40 @@
   }
 }
 
+/* A short phone, such as 320 x 640, where the draft banner takes three lines.
+   Without the 0.25rem gaps between them the ten links fit below the header
+   without scrolling, and each link keeps its full height (about 45px) to tap. */
+@media (max-width: 1023px) and (max-height: 700px) {
+  .navList {
+    gap: 0;
+  }
+}
+
 @media (max-width: 420px) {
   .wordmark {
     font-size: 1.2rem;
+  }
+}
+
+/* On paper the header keeps only the site's name. The banner prints as dark
+   text in a box, since printers skip background colors by default. */
+@media print {
+  .nav {
+    display: none;
+  }
+
+  .header {
+    position: static;
+    box-shadow: none;
+  }
+
+  .draftBanner {
+    background: none;
+    color: var(--ink);
+    border: 1px solid currentColor;
+  }
+
+  .draftDot {
+    display: none;
   }
 }

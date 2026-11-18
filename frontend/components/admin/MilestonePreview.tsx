@@ -68,11 +68,17 @@ export function MilestonePreview({ milestone, others, catalog, nowYear }: Milest
 }
 
 function PreviewPanel({ milestone, others, catalog, nowYear }: MilestonePreviewProps) {
+  const waitingForName = <p className={styles.muted}>The preview shows up once the milestone has a name.</p>;
+  // The name is the dossier's heading. Without one the panel would draw an
+  // empty heading, with the stage and type lines around it.
+  if (milestone.name.trim() === "") {
+    return waitingForName;
+  }
   const groups = buildTimeline(withDraft(milestone, others), nowYear);
   const itemsById = indexItems(groups);
   const item = itemsById[milestone.id];
   if (!item) {
-    return <p className={styles.muted}>The preview shows up once the milestone has a name.</p>;
+    return waitingForName;
   }
   return (
     <MilestonePanel

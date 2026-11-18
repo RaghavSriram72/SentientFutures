@@ -8,6 +8,7 @@ import { startRun, toApiError, type ApiError } from "@/lib/api";
 import styles from "./Dashboard.module.css";
 import forms from "./forms.module.css";
 import { ApiErrorNotice, Notice } from "./Notice";
+import { useClearAfterSignIn } from "./useClearAfterSignIn";
 
 interface RunPanelProps {
   // False until the pipeline status has loaded.
@@ -40,6 +41,9 @@ export function RunPanel({ ready, runIsGoing, runner, triageConfigured, onStarte
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<ApiError | null>(null);
+  // A start that ended the session leaves "Your session ended." on screen.
+  // Once someone signs in again over the page, it goes.
+  useClearAfterSignIn(apiError, () => setApiError(null));
   const limitRef = useRef<HTMLInputElement>(null);
 
   const disabled = !ready || runIsGoing || submitting;
@@ -152,9 +156,11 @@ export function RunPanel({ ready, runIsGoing, runner, triageConfigured, onStarte
               disabled={disabled}
               aria-describedby="run-limit-hint"
             />
+            {/* The triage half only matters when the run will triage. */}
             <p id="run-limit-hint" className={forms.hint}>
-              At most this many papers from each search on each site, and at most this many triaged. Leave it
-              empty to fetch up to 500 from each search on each site, and to triage up to the limit in Settings.
+              {triageChosen
+                ? "Most papers to fetch per search on each site, and most to triage overall. Empty means up to 500 per search, and the triage limit in Settings."
+                : "Most papers to fetch per search on each site. Empty means up to 500."}
             </p>
           </div>
 

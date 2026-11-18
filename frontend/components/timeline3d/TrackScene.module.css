@@ -58,7 +58,9 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 6;
+  /* Above the dossier (7) and the notice (8), so the Key, the Show popover
+     and the site menu open on top of them. Below the list view (10). */
+  z-index: 9;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -100,6 +102,134 @@
 
 .backNarrow {
   display: none;
+}
+
+/* ---------- Site menu (the pill at the top left) ---------- */
+.siteMenu {
+  position: relative;
+  flex: none;
+}
+
+.back {
+  cursor: pointer;
+}
+
+.back[aria-expanded="true"] {
+  border-color: var(--grape);
+  background: var(--grape-tint-2);
+}
+
+/* Three bars, which fold into an X while the menu is open */
+.menuIcon,
+.menuIcon::before,
+.menuIcon::after {
+  display: block;
+  width: 14px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.menuIcon {
+  position: relative;
+  flex: none;
+}
+
+.menuIcon::before,
+.menuIcon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.menuIcon::before {
+  top: -4.5px;
+}
+
+.menuIcon::after {
+  top: 4.5px;
+}
+
+.back[aria-expanded="true"] .menuIcon {
+  background: transparent;
+}
+
+.back[aria-expanded="true"] .menuIcon::before {
+  transform: translateY(4.5px) rotate(45deg);
+}
+
+.back[aria-expanded="true"] .menuIcon::after {
+  transform: translateY(-4.5px) rotate(-45deg);
+}
+
+.menuList {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  /* The room from where the list starts down to the bottom of the screen. It
+     hangs from the menu button, not from the bottom of the top bar: on a
+     phone the bar wraps the readout onto a second row, and the open list
+     covers that row. 100% is the button's height (the list is placed against
+     the button's box, .siteMenu). The 50px is the top bar's padding above
+     the button (16px at most), the 10px gap above the list, and about 24px
+     left free at the bottom. */
+  max-height: calc(100dvh - 100% - 50px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.5rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  /* On a screen too short for every link (a phone held sideways, say) the
+     list scrolls, and phones hide the scrollbar. So a soft shadow at the
+     bottom edge (and at the top once scrolled) shows there are more links.
+     The paper-colored covers scroll with the links and hide each shadow once
+     that end is reached, so a list that fits shows none. The same as the
+     site header's phone menu (.navList in SiteHeader.module.css), with the
+     paper grain kept on top. */
+  background:
+    var(--grain),
+    linear-gradient(var(--paper-2) 50%, transparent) top / 100% 3rem no-repeat local,
+    linear-gradient(transparent, var(--paper-2) 50%) bottom / 100% 3rem no-repeat local,
+    radial-gradient(farthest-side at 50% 0, #533a7166, transparent) top / 100% 1.5rem no-repeat,
+    radial-gradient(farthest-side at 50% 100%, #533a7166, transparent) bottom / 100% 1.5rem no-repeat,
+    var(--paper-2);
+  box-shadow: var(--shadow-lift);
+  list-style: none;
+  cursor: auto;
+}
+
+.menuLink {
+  display: block;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.menuLink:hover {
+  background: var(--grape-tint);
+  color: var(--ink);
+}
+
+.menuLink[aria-current="page"] {
+  background: var(--grape-tint-2);
+  color: var(--grape);
+}
+
+/* A hairline above the menu-only pages at the end of the list
+   (see startsMenuOnlyEnd in lib/site.ts) */
+.menuSecondary {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--rule-soft);
 }
 
 /* The readout sits in the middle of the screen whatever the sides hold, and
@@ -373,13 +503,33 @@
   right: 0;
   z-index: 8;
   width: min(400px, calc(100vw - 32px));
-  max-height: calc(100vh - var(--bar-h) - 130px);
+  /* The room from where the Key starts down to the bottom of the screen,
+     worked out the same way as the site menu's list (.menuList above). The
+     Key hangs from the row of buttons, not from the bottom of the top bar: on
+     a phone the bar wraps the readout onto a second row, and the open Key
+     covers that row. 100% is the height of that row of buttons (the Key is
+     placed against its box, .controls). The 50px is the top bar's padding
+     above the buttons (16px at most), the 10px gap above the Key, and about
+     24px left free at the bottom. */
+  max-height: calc(100dvh - 100% - 50px);
   overflow-y: auto;
-  padding: 16px 18px;
+  overscroll-behavior: contain;
+  padding: 16px 18px 22px;
   border: 1px solid var(--rule);
   border-radius: var(--radius-card);
-  background-color: var(--paper-2);
-  background-image: var(--grain);
+  /* On a screen too short for the whole Key (a small phone, or a phone held
+     sideways) it scrolls, and phones hide the scrollbar. So a soft shadow at
+     the bottom edge (and at the top once scrolled) shows there is more. The
+     paper-colored covers scroll with the Key's content and hide each shadow
+     once that end is reached, so a Key that fits shows none. The same layers
+     as .menuList above, with the paper grain kept on top. */
+  background:
+    var(--grain),
+    linear-gradient(var(--paper-2) 50%, transparent) top / 100% 3rem no-repeat local,
+    linear-gradient(transparent, var(--paper-2) 50%) bottom / 100% 3rem no-repeat local,
+    radial-gradient(farthest-side at 50% 0, #533a7166, transparent) top / 100% 1.5rem no-repeat,
+    radial-gradient(farthest-side at 50% 100%, #533a7166, transparent) bottom / 100% 1.5rem no-repeat,
+    var(--paper-2);
   box-shadow: var(--shadow-lift);
   cursor: auto;
   user-select: text;
@@ -421,35 +571,121 @@
 }
 
 .legendStages {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule-soft);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+/* With no marks on the track yet, the stage colors open the Key */
+.legendStagesFirst {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.legendStagesLabel {
+  color: var(--ink-muted);
+}
+
+.legendStageList {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+/* The dot sits in the same 52px column as the glyphs above, so every row's
+   words start at one edge. It lines up with the first line of its text. */
+.legendStage {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  align-items: start;
+  gap: 10px;
+}
+
+.legendStageName {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.legendDot {
+  display: inline-block;
+  justify-self: center;
+  width: 10px;
+  height: 10px;
+  margin-top: 0.35em;
+  border-radius: 50%;
+  background: var(--stage-color);
+}
+
+/* "Milestone types:", set like the stage block above. Its glyphs sit in the
+   same 52px column as the dots and marks, so every row's words start at one
+   edge. */
+.legendTypes {
+  --type-glyph-column: 52px;
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule-soft);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.legendTypes li {
+  column-gap: 10px;
+  line-height: inherit;
+}
+
+/* "Not on the track yet": the marks nothing on the track uses, folded away */
+.legendOther {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--rule-soft);
   font-size: var(--text-sm);
 }
 
-.legendStagesLabel {
-  white-space: nowrap;
-  color: var(--ink-muted);
-}
-
-/* Each dot stays on the same line as its label */
-.legendStage {
+.legendOtherSummary {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  white-space: nowrap;
+  gap: 8px;
+  list-style: none;
+  color: var(--ink-body);
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.legendDot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--stage-color);
+.legendOtherSummary::-webkit-details-marker {
+  display: none;
+}
+
+/* A small chevron that turns down when the part is open */
+.legendOtherSummary::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-inline: 2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.legendOther[open] > .legendOtherSummary::before {
+  transform: rotate(45deg);
+}
+
+.legendOther > .legendList {
+  margin-top: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legendOtherSummary::before {
+    transition: none;
+  }
 }
 
 .legendMore {
@@ -501,6 +737,11 @@
 .introTitle em {
   font-style: italic;
   color: var(--grape);
+}
+
+/* Focus lands here when the intro is shown again; the title needs no ring */
+.introTitle:focus {
+  outline: none;
 }
 
 .introText {
@@ -582,10 +823,13 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  /* max-content, or the centering would cap the width at half the screen
+     and squeeze the text into a tall column */
+  width: max-content;
   max-width: calc(100vw - 32px);
   padding: 8px 8px 8px 16px;
   border: 1px solid var(--rule-strong);
-  border-radius: 999px;
+  border-radius: 20px;
   background: var(--paper-2);
   box-shadow: var(--shadow-card);
   font-size: var(--text-sm);
@@ -707,8 +951,10 @@
   color: var(--ink-muted);
 }
 
+/* The note stands in the front row, so its small text takes that row's
+   minimum (set by the scene, as for the cards' small lines). */
 .emptyText {
-  font-size: 15px;
+  font-size: max(15px, var(--text-floor-0, 0px));
   line-height: 1.4;
   color: var(--ink-muted);
 }
@@ -722,9 +968,15 @@
   background: var(--paper);
   color: var(--ink);
   font: inherit;
-  font-size: 15px;
+  font-size: max(15px, var(--text-floor-0, 0px));
   font-weight: 500;
   cursor: pointer;
+}
+
+/* When the label wraps, the arrow goes with the last word instead of
+   standing alone on a line of its own. */
+.emptyButtonEnd {
+  white-space: nowrap;
 }
 
 .emptyButton:hover {
@@ -763,6 +1015,10 @@
   color: var(--ink-muted);
 }
 
+.hintWaiting {
+  visibility: hidden;
+}
+
 .miniMap {
   position: relative;
   width: 100%;
@@ -796,22 +1052,37 @@
   background: var(--hatch), var(--lavender-soft);
 }
 
+/* On solid paper above the window frame and the dots, so it stays readable.
+   A tight line box keeps that paper clear of the dots just above it. */
 .miniZoneLabel {
   position: absolute;
   right: 6px;
   bottom: 4px;
+  z-index: 2;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--paper-2);
   font-family: var(--font-mono);
   font-size: 10px;
+  line-height: 1.2;
   color: var(--ink-muted);
 }
 
+/* Above the window frame, with a paper halo, so the frame's edge never
+   runs through a year */
 .miniMark {
   position: absolute;
   bottom: 4px;
+  z-index: 1;
   transform: translateX(-50%);
   font-family: var(--font-mono);
   font-size: 10px;
+  line-height: 1.2;
   color: var(--ink-muted);
+  text-shadow:
+    0 0 2px var(--paper-2),
+    0 0 2px var(--paper-2),
+    0 0 3px var(--paper-2);
 }
 
 .miniNow {
@@ -970,6 +1241,20 @@
   }
 }
 
+/* A phone held sideways has room beside the buttons but not below them, so
+   the readout stays up in their row and the cards get the height. */
+@media (max-width: 900px) and (max-height: 500px) {
+  .titleBlock {
+    position: absolute;
+    transform: translateX(-50%);
+  }
+
+  /* The Show button keeps to its short phone form, to leave the readout room */
+  .filterValue {
+    display: none;
+  }
+}
+
 @media (max-width: 600px) {
   .backWide {
     display: none;
@@ -997,17 +1282,19 @@
     display: none;
   }
 
-  /* On a phone the list is often the easier way in, so its button stands out */
-  .listButton {
-    border-color: var(--grape);
-    background: var(--grape);
-    color: var(--paper);
+  .listSheet {
+    padding: 18px 16px;
   }
 
-  .listButton:hover {
-    background: var(--grape-deep);
+  /* The front row's text floor is larger on a phone, which makes the label
+     wider. A little less side padding keeps it on one line on most phones. */
+  .emptyButton {
+    padding-inline: 12px;
   }
+}
 
+/* Phones, and tablets of any width: the touch wording */
+@media (max-width: 600px), (pointer: coarse) {
   .hintWide {
     display: none;
   }
@@ -1015,9 +1302,26 @@
   .hintNarrow {
     display: inline;
   }
+}
 
-  .listSheet {
-    padding: 18px 16px;
+/* Bigger targets for fingers. Desktop sizes stay as they are. */
+@media (pointer: coarse) {
+  .back,
+  .toolButton {
+    min-height: 44px;
+  }
+
+  .showText {
+    min-height: 44px;
+  }
+
+  /* It stands in the 3D floor, which draws it smaller than its CSS size. The
+     front row's text floor is 11px divided by how much that row shrinks, so
+     four floors draw at about 44px (a little less on the smallest phones,
+     where the floor reaches its cap). */
+  .emptyButton {
+    min-height: max(44px, calc(4 * var(--text-floor-0, 11px)));
+    padding-block: 14px;
   }
 }
 
@@ -1025,5 +1329,17 @@
   .panel,
   .links {
     animation: none;
+  }
+}
+
+/* On paper, with background graphics turned on, the scroll shadows of the
+   site menu and the Key (the paper-colored covers and the soft shadows in
+   their backgrounds above) print as dark bars over the first and last lines.
+   Nothing scrolls on paper, so the printout keeps only the grain on plain
+   paper. The screen keeps its shadows. */
+@media print {
+  .menuList,
+  .legend {
+    background: var(--grain), var(--paper-2);
   }
 }

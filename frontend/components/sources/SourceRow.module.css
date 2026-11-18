@@ -15,11 +15,27 @@
   box-shadow: var(--shadow-paper);
 }
 
-/* Linked to from elsewhere, e.g. /sources/#s02 from the evidence register */
-.row:target {
+/* Linked to from elsewhere, e.g. /sources/#s02 from the evidence register.
+   data-highlight gives the same ring after a link from another page, where
+   :target stays false (see SourceDatabase). */
+.row:target,
+.row[data-highlight] {
   outline: 2px solid var(--grape);
   outline-offset: 2px;
   border-radius: var(--radius-card);
+}
+
+/* Once the list's script runs, data-highlight alone rings a row. Next changes
+   the address without updating :target, so it kept ringing a row the address
+   no longer names. */
+:global([data-rows-live]) .row:target:not([data-highlight]) {
+  outline: none;
+}
+
+/* The ring's rounded corners go with it. Kept on a closed row, they bent its
+   bottom rule up at both ends. An open row keeps its card's corners. */
+:global([data-rows-live]) .row:target:not([data-highlight]):not([open]) {
+  border-radius: 0;
 }
 
 .summary {
@@ -118,7 +134,7 @@
 }
 
 .tags :global(.chip) {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
 }
 
 .tech {
@@ -159,5 +175,12 @@
 @media (min-width: 900px) {
   .body {
     padding: 0 3.25rem 1.1rem calc(1rem + 3rem + 1.25rem);
+  }
+}
+
+/* Every card prints open, so the open-or-closed arrow means nothing on paper. */
+@media print {
+  .chevron {
+    display: none;
   }
 }

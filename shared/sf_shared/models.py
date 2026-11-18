@@ -11,6 +11,7 @@ Numbers and booleans are strict on purpose: "2030" in quotes would pass a
 lenient check, but the site reads the raw JSON and would get a string.
 """
 
+import difflib
 import re
 from datetime import date
 from typing import Annotated, Literal
@@ -28,6 +29,7 @@ from sf_shared.claims import (
     raise_problems,
 )
 from sf_shared.enums import (
+    ENUM_INFO,
     CaseRating,
     ClaimDirection,
     Confidence,
@@ -47,6 +49,7 @@ from sf_shared.enums import (
     Technology,
     UnclearReason,
 )
+from sf_shared.normalize import is_web_link
 
 SLUG_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 DATE_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -292,9 +295,14 @@ class Source(BaseModel):
 
         if not (self.url.startswith("https://") or self.url.startswith("http://")):
             problems.append(("url", "must start with https:// or http://"))
+        elif not is_web_link(self.url):
+            # "https://", a missing slash ("https://doi.org10.1234") or a space.
+            problems.append(("url", "looks incomplete. Copy it from the browser's address bar"))
         for index, other_url in enumerate(self.other_urls):
             if not (other_url.startswith("https://") or other_url.startswith("http://")):
                 problems.append((f"other_urls[{index}]", "must start with https:// or http://"))
+            elif not is_web_link(other_url):
+                problems.append((f"other_urls[{index}]", "looks incomplete. Copy it from the browser's address bar"))
 
         if self.register_id is not None and re.fullmatch(r"S\d{2,}", self.register_id) is None:
             problems.append(("register_id", 'must look like "S02": a capital S and at least two digits'))
@@ -339,23 +347,89 @@ class Source(BaseModel):
 
 CASE_RATING_VALUES = [member.value for member in CaseRating]
 RISK_RATING_VALUES = [member.value for member in RiskRating]
+# Every value a rating field can hold on either scale, for the JSON Schema.
+ANY_RATING_VALUES = sorted(set(CASE_RATING_VALUES + RISK_RATING_VALUES))
+
+
+def rating_problems(scale: str, value: str, path: str) -> list[RuleProblem]:
+    """A CaseRating on a "case" row, a RiskRating on a "risk" row. Shared by a
+    row's rating and the ratings in its history, so both get the same message."""
+    if scale == "case" and value not in CASE_RATING_VALUES:
+        return [(path, f'"{value}" is not a case rating. Use one of: {", ".join(CASE_RATING_VALUES)}')]
+    if scale == "risk" and value not in RISK_RATING_VALUES:
+        return [(path, f'"{value}" is not a risk rating. Use one of: {", ".join(RISK_RATING_VALUES)}')]
+    return []
+
+
+class RatingChange(BaseModel):
+    """One change to a scorecard rating. The previous assessment stays visible.
+
+    An entry where nothing changed is allowed: a re-review after new evidence
+    that leaves both values as they were is a real record too.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    date: IsoDate
+    # On the row's scale, like ScorecardRow.rating. The row checks them,
+    # since only the row knows its scale.
+    rating_before: str = Field(json_schema_extra={"enum": ANY_RATING_VALUES})
+    rating_after: str = Field(json_schema_extra={"enum": ANY_RATING_VALUES})
+    confidence_before: Confidence
+    confidence_after: Confidence
+    note: Claim  # what changed and why; note.source_ids names the sources that caused it
+
+    @model_validator(mode="after")
+    def check_note(self) -> "RatingChange":
+        problems: list[RuleProblem] = []
+        if len(self.note.source_ids) == 0:
+            problems.append(("note.source_ids", "name the source or sources that caused this change"))
+        if self.note.provenance == Provenance.UNCLEAR:
+            problems.append(("note.provenance", 'can\'t be "unclear". Say what changed'))
+        raise_problems(problems)
+        return self
+
+
+class RatingTracker(BaseModel):
+    """What a rating card adds to its scorecard row. Every field is optional,
+    and the card says which ones aren't assessed yet."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # A claim with provenance "unclear" and unclear_reason "search_incomplete"
+    # counts as not assessed yet (is_not_assessed below), as it does on a milestone.
+    what_would_change: Claim | None = None
+    last_updated: IsoDate | None = None
+    history: list[RatingChange] = []  # oldest first; new changes go at the end
+    # The milestones this rating informs, in the team's order. Written by the
+    # team, never inferred.
+    milestone_ids: list[Slug] = []
+    # True while this tracker (its register links, what_would_change,
+    # milestone_ids and last_updated) is an example the team hasn't checked.
+    # It isn't `sample`: a placeholder is shown, with a mark.
+    placeholder: StrictBool = False
 
 
 class ScorecardRow(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    # Stable and the same on every page. Never changes once public: the row's
+    # anchor (#scorecard-<id>), the evidence register's links and the compare
+    # address all use it.
+    id: Slug
     dimension: NonEmptyStr
     problem: Problem | None
     scale: Literal["case", "risk"]
     # A CaseRating when scale is "case", a RiskRating when scale is "risk".
     # Typed as a plain string so the check below can say which list to use.
-    rating: str = Field(json_schema_extra={"enum": sorted(set(CASE_RATING_VALUES + RISK_RATING_VALUES))})
+    rating: str = Field(json_schema_extra={"enum": ANY_RATING_VALUES})
     confidence: Confidence
     unclear_reason: UnclearReason | None = None
     # Risk rows only: how bad it could be, when the rating itself is still
     # Unclear ("Unclear, with potentially high severity" in the scorecard).
     potential_severity: Literal["high", "medium", "low"] | None = None
     basis: Claim
+    tracker: RatingTracker | None = None
 
     @model_validator(mode="after")
     def check_rating(self) -> "ScorecardRow":
@@ -364,14 +438,7 @@ class ScorecardRow(BaseModel):
         if self.potential_severity is not None and self.scale != "risk":
             problems.append(("potential_severity", 'only risk rows (scale "risk") can have a potential severity'))
 
-        if self.scale == "case" and self.rating not in CASE_RATING_VALUES:
-            problems.append(
-                ("rating", f'"{self.rating}" is not a case rating. Use one of: {", ".join(CASE_RATING_VALUES)}')
-            )
-        if self.scale == "risk" and self.rating not in RISK_RATING_VALUES:
-            problems.append(
-                ("rating", f'"{self.rating}" is not a risk rating. Use one of: {", ".join(RISK_RATING_VALUES)}')
-            )
+        problems.extend(rating_problems(self.scale, self.rating, "rating"))
 
         if self.rating == "unclear" and self.unclear_reason is None:
             problems.append(("unclear_reason", 'required when rating is "unclear"'))
@@ -393,8 +460,93 @@ class ScorecardRow(BaseModel):
                 )
             )
 
+        if self.tracker is not None:
+            problems.extend(self.tracker_problems(self.tracker))
+
         raise_problems(problems)
         return self
+
+    def tracker_problems(self, tracker: RatingTracker) -> list[RuleProblem]:
+        """The history has to be a chain: oldest first, each change starting where
+        the one before it ended, and the newest ending at the row's current values."""
+        problems: list[RuleProblem] = []
+        history = tracker.history
+
+        for index, change in enumerate(history):
+            path = f"tracker.history[{index}]"
+            problems.extend(rating_problems(self.scale, change.rating_before, f"{path}.rating_before"))
+            problems.extend(rating_problems(self.scale, change.rating_after, f"{path}.rating_after"))
+            if index == 0:
+                continue
+
+            before = history[index - 1]
+            before_path = f"tracker.history[{index - 1}]"
+            if change.date < before.date:
+                problems.append(
+                    (
+                        f"{path}.date",
+                        f"{change.date} is before {before_path}.date ({before.date}). "
+                        "Keep the history oldest first and add new changes at the end",
+                    )
+                )
+            if change.rating_before != before.rating_after:
+                problems.append(
+                    (
+                        f"{path}.rating_before",
+                        f'"{change.rating_before}" doesn\'t match {before_path}.rating_after '
+                        f'("{before.rating_after}"). Each change starts where the one before it ended',
+                    )
+                )
+            if change.confidence_before != before.confidence_after:
+                problems.append(
+                    (
+                        f"{path}.confidence_before",
+                        f'"{change.confidence_before}" doesn\'t match {before_path}.confidence_after '
+                        f'("{before.confidence_after}"). Each change starts where the one before it ended',
+                    )
+                )
+
+        if len(history) > 0:
+            newest = history[-1]
+            newest_path = f"tracker.history[{len(history) - 1}]"
+            if newest.rating_after != self.rating:
+                problems.append(
+                    (
+                        f"{newest_path}.rating_after",
+                        f'"{newest.rating_after}", but the row\'s rating is "{self.rating}". '
+                        "The newest change has to end at the current rating",
+                    )
+                )
+            if newest.confidence_after != self.confidence:
+                problems.append(
+                    (
+                        f"{newest_path}.confidence_after",
+                        f'"{newest.confidence_after}", but the row\'s confidence is "{self.confidence}". '
+                        "The newest change has to end at the current confidence",
+                    )
+                )
+            if tracker.last_updated is None:
+                problems.append(("tracker.last_updated", "required when there is a history"))
+            elif tracker.last_updated < newest.date:
+                problems.append(
+                    ("tracker.last_updated", f"{tracker.last_updated} is before the newest change ({newest.date})")
+                )
+            if tracker.placeholder:
+                problems.append(
+                    (
+                        "tracker.history",
+                        "must be empty while placeholder is true. A placeholder can't record real changes",
+                    )
+                )
+
+        first_index_of_milestone: dict[str, int] = {}
+        for index, milestone_id in enumerate(tracker.milestone_ids):
+            if milestone_id in first_index_of_milestone:
+                problems.append((f"tracker.milestone_ids[{index}]", f'"{milestone_id}" is listed twice'))
+            else:
+                first_index_of_milestone[milestone_id] = index
+
+        return problems
 
 
 # ---------- The populated scorecard (scorecard v0.1 sections 1 to 6) ----------
@@ -432,6 +584,21 @@ class EvidenceRow(BaseModel):
     limitation: NonEmptyStr
     independence: NonEmptyStr  # e.g. "Independent", "Mixed", "Unclear"
     provenance: Literal["team", "ai"]
+    # The ids of the scorecard rows on this page that this line bears on.
+    # Empty means not linked. TechnologyPage checks that each id exists.
+    scorecard_ids: list[Slug] = []
+
+    @model_validator(mode="after")
+    def check_links(self) -> "EvidenceRow":
+        problems: list[RuleProblem] = []
+        first_index_of_id: dict[str, int] = {}
+        for index, row_id in enumerate(self.scorecard_ids):
+            if row_id in first_index_of_id:
+                problems.append((f"scorecard_ids[{index}]", f'"{row_id}" is listed twice'))
+            else:
+                first_index_of_id[row_id] = index
+        raise_problems(problems)
+        return self
 
 
 class AssessmentQuestion(BaseModel):
@@ -492,6 +659,42 @@ class WelfareGovernance(BaseModel):
     rationale: Claim
 
 
+# The compare page (/compare/?dimension=<key>) uses each scorecard row's id as
+# its key, next to keys of its own for artificial minds and each milestone
+# category, so no row may take one of those. Keep in step with
+# frontend/lib/dimensions.ts.
+COMPARE_MINDS_ID = "artificial-minds"
+
+
+def compare_category_id(category: MilestoneCategory) -> str:
+    """A milestone category's compare key: economic_viability -> "economic-viability"."""
+    return category.value.replace("_", "-")
+
+
+def reserved_id_problem(row_id: str) -> str | None:
+    """Why a scorecard row can't use this id, or None when it can."""
+    if row_id == COMPARE_MINDS_ID:
+        return f'"{row_id}" is taken by the compare page\'s artificial minds view. Pick another id'
+    for category in MilestoneCategory:
+        if row_id == compare_category_id(category):
+            label = ENUM_INFO["MilestoneCategory"]["values"][category.value][0]
+            return f'"{row_id}" is taken by the compare page\'s "{label}" milestone category. Pick another id'
+    return None
+
+
+def quoted_or_null(value: object) -> str:
+    """A value as the JSON file writes it: "weak" in quotes, or null. validate.py uses it too."""
+    if value is None:
+        return "null"
+    return f'"{value}"'
+
+
+def is_not_assessed(claim: Claim) -> bool:
+    """The claim that stands for "not assessed yet": unclear, because the search isn't finished.
+    The rating card lists it in its "Not added yet" line instead of showing it."""
+    return claim.provenance == Provenance.UNCLEAR and claim.unclear_reason == UnclearReason.SEARCH_INCOMPLETE
+
+
 class TechnologyPage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -535,9 +738,119 @@ class TechnologyPage(BaseModel):
                 )
             )
 
+        problems.extend(self.scorecard_id_problems())
+        problems.extend(self.register_link_problems())
+        problems.extend(self.placeholder_problems())
+        problems.extend(self.assessment_match_problems())
         problems.extend(ai_review_problems(self, self.sample))
         raise_problems(problems)
         return self
+
+    def scorecard_id_problems(self) -> list[RuleProblem]:
+        """Row ids and dimension names are unique on a page, and no id is one the compare page keeps for itself."""
+        problems: list[RuleProblem] = []
+        first_index_of_id: dict[str, int] = {}
+        first_index_of_dimension: dict[str, int] = {}
+        for index, row in enumerate(self.scorecard):
+            if row.id in first_index_of_id:
+                earlier = first_index_of_id[row.id]
+                problems.append((f"scorecard[{index}].id", f'"{row.id}" is already used by scorecard[{earlier}]'))
+            else:
+                first_index_of_id[row.id] = index
+
+            if row.dimension in first_index_of_dimension:
+                earlier = first_index_of_dimension[row.dimension]
+                problems.append(
+                    (f"scorecard[{index}].dimension", f'"{row.dimension}" is already used by scorecard[{earlier}]')
+                )
+            else:
+                first_index_of_dimension[row.dimension] = index
+
+            reserved = reserved_id_problem(row.id)
+            if reserved is not None:
+                problems.append((f"scorecard[{index}].id", reserved))
+        return problems
+
+    def register_link_problems(self) -> list[RuleProblem]:
+        """Each evidence register link names a scorecard row on this page."""
+        problems: list[RuleProblem] = []
+        row_ids: list[str] = []
+        for row in self.scorecard:
+            row_ids.append(row.id)
+        for register_index, evidence in enumerate(self.evidence_register):
+            for link_index, row_id in enumerate(evidence.scorecard_ids):
+                if row_id in row_ids:
+                    continue
+                message = f'no scorecard row with id "{row_id}" on this page.'
+                matches = difflib.get_close_matches(row_id, row_ids, n=1, cutoff=0.6)
+                if len(matches) > 0:
+                    message += f' Did you mean "{matches[0]}"?'
+                elif len(row_ids) > 0:
+                    message += f" Use one of: {', '.join(row_ids)}"
+                else:
+                    message += " This page has no scorecard rows yet"
+                problems.append((f"evidence_register[{register_index}].scorecard_ids[{link_index}]", message))
+        return problems
+
+    def register_links_to(self, row_id: str) -> bool:
+        for evidence in self.evidence_register:
+            if row_id in evidence.scorecard_ids:
+                return True
+        return False
+
+    def placeholder_problems(self) -> list[RuleProblem]:
+        """A placeholder flag has to cover at least one example field, or it marks nothing on the site."""
+        problems: list[RuleProblem] = []
+        for index, row in enumerate(self.scorecard):
+            tracker = row.tracker
+            if tracker is None or not tracker.placeholder:
+                continue
+            # A what_would_change that is itself "not assessed" leaves the box empty, so it doesn't count.
+            has_example = (
+                (tracker.what_would_change is not None and not is_not_assessed(tracker.what_would_change))
+                or tracker.last_updated is not None
+                or len(tracker.milestone_ids) > 0
+                or self.register_links_to(row.id)
+            )
+            if not has_example:
+                problems.append(
+                    (
+                        f"scorecard[{index}].tracker.placeholder",
+                        "true, but the row has nothing to mark. Add the example fields, or remove the flag",
+                    )
+                )
+        return problems
+
+    def assessment_match_problems(self) -> list[RuleProblem]:
+        """The alignment and Intelligence Curse assessments repeat their scorecard
+        row's rating, so the two copies have to agree. Skipped when the row is missing."""
+        problems: list[RuleProblem] = []
+        pairs = [
+            ("alignment_assessment", self.alignment_assessment, Problem.ALIGNMENT),
+            ("intelligence_curse_assessment", self.intelligence_curse_assessment, Problem.INTELLIGENCE_CURSE),
+        ]
+        for field_name, assessment, problem in pairs:
+            if assessment is None:
+                continue
+            case_row = None
+            for row in self.scorecard:
+                if row.scale == "case" and row.problem == problem:
+                    case_row = row
+                    break
+            if case_row is None:
+                continue
+            for key in ("rating", "confidence", "unclear_reason"):
+                assessment_value = getattr(assessment, key)
+                row_value = getattr(case_row, key)
+                if assessment_value != row_value:
+                    problems.append(
+                        (
+                            f"{field_name}.{key}",
+                            f"{quoted_or_null(assessment_value)} doesn't match the scorecard row "
+                            f'"{case_row.id}" ({quoted_or_null(row_value)}). Change both together',
+                        )
+                    )
+        return problems
 
 
 class PostFrontmatter(BaseModel):
@@ -561,6 +874,8 @@ ALL_MODELS: list[type[BaseModel]] = [
     DisagreementOverride,
     Milestone,
     Source,
+    RatingChange,
+    RatingTracker,
     ScorecardRow,
     Scope,
     EvidenceRow,

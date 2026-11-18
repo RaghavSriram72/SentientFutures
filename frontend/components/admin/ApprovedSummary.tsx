@@ -77,7 +77,7 @@ export function ApprovedSummary({ candidateId, review, skippedByExport }: Approv
       value: labels("Technology", final.technology, final.general_background ? "General background" : "None picked"),
     },
     { label: "Problem", value: oneLabel("Problem", final.problem, "Not set") },
-    { label: "Claim direction", value: labels("ClaimDirection", final.claim_directions, "None") },
+    { label: "Claim direction", value: labels("ClaimDirection", final.claim_directions, "Not set") },
     { label: "Source type", value: oneLabel("SourceType", final.source_type, "From the paper's details") },
   ];
   for (const item of RUBRIC_FIELDS) {

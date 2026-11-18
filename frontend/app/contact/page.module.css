@@ -3,6 +3,21 @@
   gap: clamp(2.5rem, 6vw, 5rem);
 }
 
+/* On paper narrower than 960px the grid is a single column, and Chrome
+   moved it to the next page whole when a break fell inside it, leaving page
+   1 with only the page header (US Legal with 20mm margins). As a plain block
+   it splits like the rest of the page. The margin stands in for the grid's
+   gap. Wider paper keeps the two columns. */
+@media print and (max-width: 959px) {
+  .grid {
+    display: block;
+  }
+
+  .grid > * + * {
+    margin-top: clamp(2.5rem, 6vw, 5rem);
+  }
+}
+
 @media (min-width: 960px) {
   .grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -72,6 +87,15 @@
   gap: 1rem;
   padding-block: 1.35rem;
   border-bottom: 1px solid var(--rule);
+}
+
+/* Each item is short, so on paper it moves to the next page whole. Split
+   inside its grid, an item's last line printed over the next item's heading
+   (US Letter with no margins, A4 with 12.7mm). */
+@media print {
+  .welcomeItem {
+    break-inside: avoid;
+  }
 }
 
 .welcomeNumber {

@@ -13,7 +13,8 @@ import { MultiPicker, type PickerOption } from "./Pickers";
 
 const PROVENANCES: Provenance[] = ["source", "team", "ai", "unclear"];
 
-// What each kind asks for, in a few words, under its name.
+// What each kind asks for, in a few words: under the choices for the chosen
+// kind, and as a tooltip on each choice.
 const PROVENANCE_HINTS: Record<Provenance, string> = {
   source: "Quoted from a source, with its exact words.",
   team: "The team's own judgment.",
@@ -68,6 +69,7 @@ export function ClaimEditor({
   action,
 }: ClaimEditorProps) {
   const textId = fieldId(`${path}.text`);
+  const kindHintId = `${fieldId(`${path}.provenance`)}-hint`;
   const quote = claim.quote ?? "";
   const textErrors = messagesAt(errors, `${path}.text`);
   const provenanceErrors = messagesAt(errors, `${path}.provenance`);
@@ -119,25 +121,35 @@ export function ClaimEditor({
           <ProvenanceGlyph kind="source" /> {enumLabel("Provenance", "source")}. Saying it happened needs a quote.
         </p>
       ) : (
-        <div className={styles.kinds} role="radiogroup" aria-label={`Where "${label}" comes from`}>
-          {PROVENANCES.map((kind, index) => (
-            <label key={kind} className={`${styles.kind} ${claim.provenance === kind ? styles.kindChosen : ""}`}>
-              <input
-                id={index === 0 ? fieldId(`${path}.provenance`) : undefined}
-                type="radio"
-                className={styles.radio}
-                name={`${path}-provenance`}
-                value={kind}
-                checked={claim.provenance === kind}
-                onChange={() => update({ provenance: kind })}
-              />
-              <span className={`${styles.kindName} ${styles[`kind_${kind}`]}`}>
-                <ProvenanceGlyph kind={kind} />
-                {enumLabel("Provenance", kind)}
-              </span>
-              <span className={styles.kindHint}>{PROVENANCE_HINTS[kind]}</span>
-            </label>
-          ))}
+        <div className={styles.kindPicker}>
+          {/* Four short choices side by side; only the chosen one's hint shows, once, below them. */}
+          <div className={styles.kinds} role="radiogroup" aria-label={`Where "${label}" comes from`}>
+            {PROVENANCES.map((kind, index) => (
+              <label
+                key={kind}
+                className={`${styles.kind} ${claim.provenance === kind ? styles.kindChosen : ""}`}
+                title={PROVENANCE_HINTS[kind]}
+              >
+                <input
+                  id={index === 0 ? fieldId(`${path}.provenance`) : undefined}
+                  type="radio"
+                  className={styles.radio}
+                  name={`${path}-provenance`}
+                  value={kind}
+                  checked={claim.provenance === kind}
+                  onChange={() => update({ provenance: kind })}
+                  aria-describedby={claim.provenance === kind ? kindHintId : undefined}
+                />
+                <span className={`${styles.kindName} ${styles[`kind_${kind}`]}`}>
+                  <ProvenanceGlyph kind={kind} />
+                  {enumLabel("Provenance", kind)}
+                </span>
+              </label>
+            ))}
+          </div>
+          <p id={kindHintId} className={styles.kindHint}>
+            {PROVENANCE_HINTS[claim.provenance]}
+          </p>
         </div>
       )}
       <FieldError id={`${fieldId(`${path}.provenance`)}-error`} messages={[...provenanceErrors, ...ownErrors]} />

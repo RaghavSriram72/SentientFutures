@@ -4,14 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type FocusEvent } from "react";
 
-import type { NavItem } from "@/lib/site";
+import { startsMenuOnlyEnd, type NavItem } from "@/lib/site";
 
+import { backToTop } from "./backToTop";
+import { isActive } from "./isActive";
 import styles from "./SiteHeader.module.css";
-
-function isActive(pathname: string, href: string): boolean {
-  // usePathname() returns the path without the base path.
-  return pathname === href || pathname.startsWith(href);
-}
 
 export function NavLinks({ items }: { items: NavItem[] }) {
   const pathname = usePathname() ?? "/";
@@ -29,7 +26,8 @@ export function NavLinks({ items }: { items: NavItem[] }) {
   }
 
   // While the menu is open, Esc closes it and puts focus back on the button,
-  // and a tap or click anywhere outside the nav closes it.
+  // and a tap or click anywhere outside the nav closes it. A tap on the page
+  // lands on the scrim, which is inside the nav, so it closes the menu itself.
   useEffect(() => {
     if (!open) {
       return;
@@ -65,6 +63,19 @@ export function NavLinks({ items }: { items: NavItem[] }) {
 
   return (
     <nav ref={navRef} className={styles.nav} aria-label="Main" onBlur={onBlur}>
+      {/* A clear layer over the page while the menu is open, so the tap that
+          closes the menu doesn't also follow the link under it. It closes the
+          menu on the click, not on pointerdown: gone any sooner, it would let
+          that click through. A swipe that starts on it never clicks, so it
+          closes the menu when the swipe takes over. */}
+      {open && (
+        <div
+          className={styles.scrim}
+          aria-hidden="true"
+          onClick={() => setOpen(false)}
+          onPointerCancel={() => setOpen(false)}
+        />
+      )}
       <button
         ref={buttonRef}
         type="button"
@@ -77,18 +88,34 @@ export function NavLinks({ items }: { items: NavItem[] }) {
         Menu
       </button>
       <ul id="primary-nav" className={`${styles.navList} ${open ? styles.navOpen : ""}`}>
-        {items.map((item) => (
-          <li key={item.href} className={item.menuOnly ? styles.menuOnly : undefined}>
-            <Link
-              href={item.href}
-              className={styles.navLink}
-              aria-current={isActive(pathname, item.href) ? "page" : undefined}
-              onClick={() => setOpen(false)}
-            >
-              {item.label}
-            </Link>
-          </li>
-        ))}
+        {items.map((item, index) => {
+          // A link to the page you're already on goes back to its top, the
+          // same as the footer's. Next's own scroll is off so it doesn't
+          // fight backToTop.
+          const isThisPage = pathname === item.href;
+          let className: string | undefined = undefined;
+          if (item.menuOnly) {
+            className = startsMenuOnlyEnd(items, index) ? `${styles.menuOnly} ${styles.menuEndStart}` : styles.menuOnly;
+          }
+          return (
+            <li key={item.href} className={className}>
+              <Link
+                href={item.href}
+                className={styles.navLink}
+                aria-current={isActive(pathname, item.href) ? "page" : undefined}
+                scroll={isThisPage ? false : undefined}
+                onClick={(event) => {
+                  setOpen(false);
+                  if (isThisPage) {
+                    backToTop(event);
+                  }
+                }}
+              >
+                {item.label}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );

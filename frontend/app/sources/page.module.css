@@ -1,21 +1,11 @@
+/* Less space under the compact header than other pages have, so the first
+   sources fit on a laptop's first screen */
 .body {
-  display: grid;
-  gap: 1.25rem;
-  padding-block: clamp(28px, 4vw, 48px) 0;
+  padding-block: clamp(24px, 3vw, 32px) 0;
 }
 
-/* The marks disclosure and the key to the plus and minus glyphs */
-.help {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.75rem 1.5rem;
-}
-
+/* The key to the plus and minus glyphs, between the filters and the list */
 .helpNote {
-  flex: 1 1 32ch;
-  max-width: 70ch;
-  padding-top: 0.3rem;
   font-size: var(--text-sm);
   color: var(--ink-muted);
 }

@@ -1,14 +1,14 @@
 // Groups milestones by technology, gives each one its display code ("WBE-01")
 // and sorts them. Shared by the 3D track, the home page teaser, the list, the
 // dossier and the technology pages, so all of them agree. Pure functions, no React.
-import { enumLabel } from "@/lib/enums";
+import { enumLabel, enumValues, milestoneTypeOf } from "@/lib/enums";
 import {
   computeMilestoneView,
   earliestRelevantYear,
   type ForecastView,
   type MilestoneView,
 } from "@/lib/estimates";
-import type { Milestone, Stage, Technology } from "@/lib/types";
+import type { Milestone, MilestoneCategory, Stage, Technology } from "@/lib/types";
 
 // Group order on the timeline. Hybrid only shows up when there is a hybrid milestone.
 export const TECHNOLOGY_ORDER: Technology[] = ["wbe", "bci", "neuromorphic", "hybrid"];
@@ -32,6 +32,30 @@ export function stageKey(stage: Stage): StageKey {
     return "helping";
   }
   return "possible";
+}
+
+// "Stage 2: Widely available". The number is the stage's place in the
+// Stage list, as on the stage legends and the Stage 1 to 3 cards on
+// /methodology/, so a bare "Widely available" can't read as a claim.
+export function stageTag(stage: Stage): string {
+  const values = enumValues("Stage");
+  for (let index = 0; index < values.length; index++) {
+    if (values[index].value === stage) {
+      return `Stage ${index + 1}: ${values[index].label}`;
+    }
+  }
+  return enumLabel("Stage", stage);
+}
+
+// "Type: Welfare and governance", for the cards' aria-labels next to stageTag.
+// The type comes from the category. With a stale enums.json there is no type,
+// and callers leave it out of the label.
+export function typeTag(category: MilestoneCategory): string | null {
+  const type = milestoneTypeOf(category);
+  if (type === null) {
+    return null;
+  }
+  return `Type: ${type.label}`;
 }
 
 export interface TimelineItem {
@@ -210,7 +234,7 @@ export function estimateSummary(item: TimelineItem): string {
     const count = view.forecastCount === 1 ? "1 forecast" : `${view.forecastCount} forecasts`;
     return `${count}, ${forecastRangeText(view)}`;
   }
-  return "No estimate yet";
+  return "No date yet";
 }
 
 // "2030 to 2038", "2035 onward", "until 2045"

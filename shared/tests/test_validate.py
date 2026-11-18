@@ -1,10 +1,13 @@
 """The whole-folder validator: file handling, cross-record rules, posts and em dashes."""
 
+from datetime import date
 from pathlib import Path
 
 import pytest
-from helpers import POST_TEXT, REAL_CONTENT, milestone_index, read_json, run, write_json
+from helpers import POST_TEXT, REAL_CONTENT, milestone_index, read_json, run, team_claim, write_json
 
+from sf_shared import enums
+from sf_shared.enums import MilestoneCategory, MilestoneType, MilestoneTypeInfo
 from sf_shared.validate import em_dash_line_numbers, em_dash_paths, main, validate_content
 
 FIRST = "milestones[0] (bci-sample-medical-approval)"
@@ -261,6 +264,222 @@ def test_missing_technology_page(content_dir: Path):
 
     assert run(content_dir) == [
         f'{path}: no page with id "neuromorphic" (the site has a page for each of wbe, bci, neuromorphic)'
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Every page has the same scorecard rows
+
+
+def scorecard_row(row_id: str, dimension: str, scale: str, problem: str | None) -> dict:
+    return {
+        "id": row_id,
+        "dimension": dimension,
+        "problem": problem,
+        "scale": scale,
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "search_incomplete",
+        "basis": team_claim("Fixture basis."),
+    }
+
+
+def three_rows() -> list[dict]:
+    return [
+        scorecard_row("alignment-case", "Alignment case", "case", "alignment"),
+        scorecard_row("governance-risk", "Governance risk", "risk", None),
+        scorecard_row("safeguard-adequacy", "Safeguard adequacy", "case", None),
+    ]
+
+
+def pages_with_three_rows(content_dir: Path) -> list[dict]:
+    pages = read_json(content_dir / "technologies.json")
+    for page in pages:
+        page["scorecard"] = three_rows()
+    return pages
+
+
+SAME_ROWS = "Every page needs the same scorecard rows as technologies[0] (wbe), in the same order"
+SAME_MEANING = "A row means the same thing on every page, so change it on all of them at once"
+
+
+def test_matching_scorecards_pass(content_dir: Path):
+    write_json(content_dir / "technologies.json", pages_with_three_rows(content_dir))
+    assert run(content_dir) == []
+
+
+def test_a_missing_or_extra_row_is_reported(content_dir: Path):
+    pages = pages_with_three_rows(content_dir)
+    pages[1]["scorecard"].pop()
+    pages[2]["scorecard"].append(scorecard_row("foo", "Foo", "case", None))
+    write_json(content_dir / "technologies.json", pages)
+
+    assert run(content_dir) == [
+        f'technologies[1] (bci).scorecard: no row with id "safeguard-adequacy". {SAME_ROWS}',
+        f'technologies[2] (neuromorphic).scorecard[3].id: "foo" isn\'t on technologies[0] (wbe). {SAME_ROWS}',
+    ]
+
+
+def test_rows_in_a_different_order_are_reported(content_dir: Path):
+    pages = pages_with_three_rows(content_dir)
+    pages[2]["scorecard"].reverse()
+    write_json(content_dir / "technologies.json", pages)
+
+    assert run(content_dir) == [
+        "technologies[2] (neuromorphic).scorecard: the rows are in a different order from technologies[0] (wbe). "
+        "Use: alignment-case, governance-risk, safeguard-adequacy"
+    ]
+
+
+def test_a_row_means_the_same_thing_on_every_page(content_dir: Path):
+    pages = pages_with_three_rows(content_dir)
+    pages[1]["scorecard"][0]["dimension"] = "Alignment Case"
+    pages[1]["scorecard"][2]["scale"] = "risk"
+    pages[2]["scorecard"][2]["problem"] = "both"
+    write_json(content_dir / "technologies.json", pages)
+
+    assert run(content_dir) == [
+        'technologies[1] (bci).scorecard[0].dimension: "Alignment Case" differs from technologies[0] (wbe), '
+        f'which has "Alignment case". {SAME_MEANING}',
+        'technologies[1] (bci).scorecard[2].scale: "risk" differs from technologies[0] (wbe), '
+        f'which has "case". {SAME_MEANING}',
+        'technologies[2] (neuromorphic).scorecard[2].problem: "both" differs from technologies[0] (wbe), '
+        f"which has null. {SAME_MEANING}",
+    ]
+
+
+def test_a_broken_first_page_isnt_the_reference(content_dir: Path):
+    pages = pages_with_three_rows(content_dir)
+    pages[0]["headline"] = "No italics here"
+    pages[0]["scorecard"].pop()  # would be a mismatch, if wbe were the reference
+    write_json(content_dir / "technologies.json", pages)
+
+    errors = run(content_dir)
+    assert len(errors) == 1
+    assert errors[0].startswith("technologies[0] (wbe).headline: needs exactly one *italic* word or phrase")
+
+
+# ---------------------------------------------------------------------------
+# Rating trackers: milestone links, dates, sources and the placeholder warning
+
+
+def set_tracker(content_dir: Path, page_index: int, tracker: dict, sample: bool = True) -> None:
+    path = content_dir / "technologies.json"
+    pages = read_json(path)
+    pages[page_index]["scorecard"][0]["tracker"] = tracker
+    pages[page_index]["sample"] = sample
+    write_json(path, pages)
+
+
+def test_a_scorecard_row_links_real_milestones(content_dir: Path):
+    set_tracker(content_dir, 0, {"milestone_ids": ["wbe-legal", "wbe-access"]})
+    assert run(content_dir) == []
+
+
+def test_an_unknown_milestone_link(content_dir: Path):
+    set_tracker(content_dir, 0, {"milestone_ids": ["wbe-legl"]})
+    assert run(content_dir) == [
+        'technologies[0] (wbe).scorecard[0].tracker.milestone_ids[0]: no milestone with id "wbe-legl" '
+        "in milestones.json"
+    ]
+
+
+def test_a_link_to_another_technologys_milestone(content_dir: Path):
+    set_tracker(content_dir, 1, {"milestone_ids": ["wbe-legal"]})
+    assert run(content_dir) == [
+        'technologies[1] (bci).scorecard[0].tracker.milestone_ids[0]: "wbe-legal" is a wbe milestone, '
+        "and this is the bci page"
+    ]
+
+
+@pytest.mark.parametrize("page_is_sample", [False, True])
+def test_a_link_to_a_sample_milestone(content_dir: Path, page_is_sample: bool):
+    # Refused on every page: the public site leaves sample milestones out.
+    set_tracker(content_dir, 1, {"milestone_ids": ["bci-sample-agency"]}, sample=page_is_sample)
+    assert run(content_dir) == [
+        'technologies[1] (bci).scorecard[0].tracker.milestone_ids[0]: "bci-sample-agency" is a sample milestone. '
+        "The public site leaves samples out, so a scorecard row can only link to real milestones"
+    ]
+
+
+def history_entry(day: str, source_id: str = "s13") -> dict:
+    # The fixture row is rated weak with low confidence.
+    return {
+        "date": day,
+        "rating_before": "unclear",
+        "rating_after": "weak",
+        "confidence_before": "low",
+        "confidence_after": "low",
+        "note": {"text": "What changed, and which source caused it.", "provenance": "team", "source_ids": [source_id]},
+    }
+
+
+def test_a_change_note_cites_a_known_source(content_dir: Path):
+    entry = history_entry("2026-11-02", "no-such-source")
+    set_tracker(content_dir, 0, {"last_updated": "2026-11-02", "history": [entry]})
+    errors = validate_content(content_dir, today=date(2026, 11, 16)).errors
+    assert errors == [
+        'technologies[0] (wbe).scorecard[0].tracker.history[0].note.source_ids[0]: no source with id '
+        '"no-such-source" in sources.json'
+    ]
+
+
+def test_dates_in_the_future_are_refused(content_dir: Path):
+    today = date(2026, 11, 16)
+    set_tracker(content_dir, 0, {"last_updated": "2027-11-18", "history": [history_entry("2027-11-18")]})
+    assert validate_content(content_dir, today=today).errors == [
+        "technologies[0] (wbe).scorecard[0].tracker.history[0].date: 2027-11-18 is in the future. Check the year",
+        "technologies[0] (wbe).scorecard[0].tracker.last_updated: 2027-11-18 is in the future. Check the year",
+    ]
+
+    # Tomorrow passes: a day of slack covers a writer in a time zone ahead of the checker.
+    set_tracker(content_dir, 0, {"last_updated": "2026-11-17", "history": [history_entry("2026-11-17")]})
+    assert validate_content(content_dir, today=today).errors == []
+
+
+def test_a_placeholder_tracker_prints_a_warning(content_dir: Path, capsys: pytest.CaptureFixture[str]):
+    set_tracker(content_dir, 0, {"last_updated": "2026-11-01", "placeholder": True})
+
+    assert main(["validate", str(content_dir)]) == 0  # a warning doesn't fail the check
+    lines = capsys.readouterr().out.strip().splitlines()
+    assert lines == [
+        "Warning: 1 scorecard row has a placeholder tracker: technologies[0] (wbe).scorecard[0] (alignment-benefit). "
+        "The site labels it as a placeholder until the flag comes off.",
+        ok_line(content_dir),
+    ]
+
+
+def test_placeholder_warning_counts_every_row(content_dir: Path):
+    path = content_dir / "technologies.json"
+    pages = read_json(path)
+    pages[0]["scorecard"][0]["tracker"] = {"last_updated": "2026-11-01", "placeholder": True}
+    pages[2]["scorecard"][0]["tracker"] = {"last_updated": "2026-11-01", "placeholder": True}
+    write_json(path, pages)
+
+    assert validate_content(content_dir, today=date(2026, 11, 16)).warnings == [
+        "Warning: 2 scorecard rows have placeholder trackers: technologies[0] (wbe).scorecard[0] (alignment-benefit), "
+        "technologies[2] (neuromorphic).scorecard[0] (alignment-benefit). The site labels them as placeholders until "
+        "the flag comes off."
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Milestone types
+
+
+def test_a_category_without_a_type_fails_the_check(content_dir: Path, monkeypatch: pytest.MonkeyPatch):
+    technical = enums.MILESTONE_TYPES[MilestoneType.TECHNICAL]
+    without_fidelity = []
+    for category in technical.categories:
+        if category != MilestoneCategory.HIGH_LEVEL_FIDELITY:
+            without_fidelity.append(category)
+    patched = dict(enums.MILESTONE_TYPES)
+    patched[MilestoneType.TECHNICAL] = MilestoneTypeInfo(label=technical.label, categories=tuple(without_fidelity))
+    monkeypatch.setattr(enums, "MILESTONE_TYPES", patched)
+
+    assert run(content_dir) == [
+        'shared/sf_shared/enums.py: category "high_level_fidelity" has no milestone type. '
+        "Add it to one of MILESTONE_TYPES"
     ]
 
 

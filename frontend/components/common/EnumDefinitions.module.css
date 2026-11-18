@@ -22,6 +22,9 @@
 
 .title {
   font-size: 1.625rem;
+  /* It carries the category-* id, so a link to it lands clear of the sticky
+     header, where the methodology section links land. */
+  scroll-margin-top: calc(var(--header-height) + 2.5rem);
 }
 
 .note {
@@ -72,6 +75,25 @@
   font-size: var(--text-sm);
   line-height: 1.55;
   color: var(--ink-body);
+}
+
+/* ---------- Grouped values (the milestone categories by type) ---------- */
+.groups {
+  display: grid;
+  gap: 1.25rem;
+}
+
+/* The group's name sits on a hairline, like a column head over its rows */
+.groupTitle {
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--rule);
+  /* It carries an id: a link to it lands clear of the sticky header */
+  scroll-margin-top: calc(var(--header-height) + 2.5rem);
+}
+
+/* The first row sits under the title's rule, so it gets the full padding */
+.group .row:first-child {
+  padding-top: 0.7rem;
 }
 
 /* Draft categories sit on a faint dotted rule so they read as provisional */
@@ -143,4 +165,41 @@
 
 .collapsibleBody .note {
   max-width: 64ch;
+}
+
+/* On paper every category prints open (see globals.css), so the chevron goes,
+   and a definition never splits across two pages. Chrome can't split a grid
+   inside a <details> cleanly at a page break: it prints the next row on top
+   of the last one. So the folded body lays out as plain blocks on paper, with
+   a margin in place of the gap, and a category's name stays with its first
+   line. A group of values stays on one page with its title. */
+@media print {
+  .chevron {
+    display: none;
+  }
+
+  .collapsibleBody,
+  .values,
+  .groups {
+    display: block;
+  }
+
+  .collapsibleBody > * + * {
+    margin-top: 0.75rem;
+  }
+
+  .groups > * + * {
+    margin-top: 1.25rem;
+  }
+
+  .summary,
+  .collapsibleBody .note,
+  .groupTitle {
+    break-after: avoid;
+  }
+
+  .row,
+  .group {
+    break-inside: avoid;
+  }
 }

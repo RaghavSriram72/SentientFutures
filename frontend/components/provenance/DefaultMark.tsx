@@ -5,8 +5,8 @@ import styles from "./Provenance.module.css";
 
 const DEFAULT_TEXT: Record<Provenance, string> = {
   source: "From the cited sources unless marked",
-  team: "The team's read unless marked",
-  ai: "AI-suggested and not yet reviewed, unless marked",
+  team: "Our read unless marked",
+  ai: "AI-suggested, not yet reviewed",
   unclear: "Unclear unless marked",
 };
 

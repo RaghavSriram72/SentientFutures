@@ -287,6 +287,9 @@ export interface QueueFilters {
 export interface QueueItem {
   source: Candidate;
   assessment: AiAssessment | null;
+  // The reason its current decision gave when that was a rejection (null
+  // otherwise), so the Rejected tab can show it.
+  reject_reason: RejectReason | null;
 }
 
 // One page of GET /api/queue. `total` counts every match, not just this page.
@@ -295,6 +298,19 @@ export interface QueuePage {
   total: number;
   // Papers in every status, ignoring the filters. null if the API didn't say.
   counts: Partial<Record<ReviewStatus, number>> | null;
+}
+
+// Which of the link ("url"), title and year a re-add changed.
+export type ReAddedDetail = "url" | "title" | "year";
+
+// A rejected paper someone added again, which put it back into Pending
+// review. The API keeps every one, like reviews.
+export interface ReAdd {
+  id: string;
+  added_by: string;
+  added_by_name: string;
+  added_at: IsoDateTime;
+  changed: ReAddedDetail[];
 }
 
 // GET /api/queue/<id>
@@ -306,6 +322,8 @@ export interface QueueItemDetail {
   // Every assessment, the current one included.
   assessments: AiAssessment[];
   reviews: Review[];
+  // Newest first.
+  re_adds: ReAdd[];
 }
 
 export interface ReviewRequest {
@@ -398,7 +416,7 @@ export interface DuplicateSource {
   // True when the match is in content/sources.json (already on the public
   // site), false when it's a paper in admin.
   in_content: boolean;
-  // What matched: "doi", "arxiv_id" or "title".
+  // What matched: "doi", "arxiv_id", "url" or "title".
   match: string | null;
   title: string | null;
 }
@@ -513,6 +531,9 @@ export interface PublishStatus {
   // local: this server can't rebuild the site, so Publish shows a command.
   mode: PublishMode;
   waiting: PublishWaiting;
+  // Local mode: the command that rebuilds the site on this computer, the same
+  // one a publish answers with, so the dashboard can show it after a reload too.
+  command: string | null;
 }
 
 export interface PublishResult {

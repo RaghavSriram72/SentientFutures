@@ -4,7 +4,18 @@ import pytest
 from helpers import model_errors, sample_milestone, sample_source, team_claim, technology_page
 
 from sf_shared.claims import Claim, compact_dump
-from sf_shared.models import Estimate, Forecast, Milestone, PostFrontmatter, ScorecardRow, Source, TechnologyPage
+from sf_shared.enums import ENUM_INFO, MilestoneCategory
+from sf_shared.models import (
+    COMPARE_MINDS_ID,
+    Estimate,
+    Forecast,
+    Milestone,
+    PostFrontmatter,
+    ScorecardRow,
+    Source,
+    TechnologyPage,
+    compare_category_id,
+)
 
 # ---------------------------------------------------------------------------
 # Claim
@@ -244,12 +255,33 @@ def test_ai_claim_inside_a_list_reports_its_index():
     assert errors[0].startswith("record.would_move_later[1].reviewed_by: required")
 
 
+def test_high_level_fidelity_is_a_milestone_category():
+    milestone = sample_milestone()
+    milestone["category"] = "high_level_fidelity"
+    assert model_errors(Milestone, milestone) == []
+
+    milestone["category"] = "high_fidelity"
+    errors = model_errors(Milestone, milestone)
+    assert len(errors) == 1
+    assert errors[0].startswith("record.category: Input should be 'technical_capability', 'high_level_fidelity',")
+
+
 # ---------------------------------------------------------------------------
 # Source
 
 
 def test_sample_sources_are_valid():
     assert model_errors(Source, sample_source()) == []
+
+
+def test_source_links_must_be_complete():
+    source = sample_source()
+    source["url"] = "https://doi.org10.1234/abc"
+    source["other_urls"] = ["https://"]
+    assert model_errors(Source, source) == [
+        "record.url: looks incomplete. Copy it from the browser's address bar",
+        "record.other_urls[0]: looks incomplete. Copy it from the browser's address bar",
+    ]
 
 
 def test_unclear_credibility_needs_a_reason():
@@ -331,6 +363,7 @@ def scorecard_row(scale: str, rating: str, provenance: str = "team") -> dict:
         basis["source_ids"] = ["sample-bci-trial"]
         basis["quote"] = "Sample quote."
     return {
+        "id": "welfare-risk",
         "dimension": "Welfare risk",
         "problem": None,
         "scale": scale,
@@ -385,6 +418,383 @@ def test_technology_page_rules():
     errors = model_errors(TechnologyPage, page)
     assert len(errors) == 1
     assert errors[0].startswith("record.headline: needs exactly one *italic* word or phrase")
+
+
+# ---------------------------------------------------------------------------
+# Rating trackers: what a rating card adds to its row
+
+
+def change(day: str, rating: tuple[str, str], confidence: tuple[str, str]) -> dict:
+    """One history entry: change("2026-11-02", ("unclear", "weak"), ("low", "low"))."""
+    return {
+        "date": day,
+        "rating_before": rating[0],
+        "rating_after": rating[1],
+        "confidence_before": confidence[0],
+        "confidence_after": confidence[1],
+        "note": {"text": "What changed, and which source caused it.", "provenance": "team", "source_ids": ["s13"]},
+    }
+
+
+def tracked_row(tracker: dict, scale: str = "case") -> dict:
+    """An Unclear row with Low confidence, carrying the given tracker."""
+    row = scorecard_row(scale, "unclear")
+    row["unclear_reason"] = "search_incomplete"
+    row["tracker"] = tracker
+    return row
+
+
+def test_a_full_tracker_is_valid():
+    tracker = {
+        "what_would_change": team_claim("A direct test against a non-WBE comparator."),
+        "last_updated": "2026-12-03",
+        "history": [
+            change("2026-10-01", ("weak", "unclear"), ("medium", "low")),
+            change("2026-12-03", ("unclear", "unclear"), ("low", "low")),  # nothing changed: still a record
+        ],
+        "milestone_ids": ["wbe-legal", "wbe-access"],
+        "placeholder": False,
+    }
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == []
+    assert model_errors(ScorecardRow, tracked_row({})) == []
+
+
+def test_history_ratings_must_be_on_the_row_scale():
+    tracker = {"last_updated": "2026-11-02", "history": [change("2026-11-02", ("high", "unclear"), ("low", "low"))]}
+    assert model_errors(ScorecardRow, tracked_row(tracker, "case")) == [
+        'record.tracker.history[0].rating_before: "high" is not a case rating. '
+        "Use one of: strong, moderate, weak, unclear, not_claimed"
+    ]
+
+    tracker = {"last_updated": "2026-11-02", "history": [change("2026-11-02", ("strong", "unclear"), ("low", "low"))]}
+    assert model_errors(ScorecardRow, tracked_row(tracker, "risk")) == [
+        'record.tracker.history[0].rating_before: "strong" is not a risk rating. Use one of: high, medium, low, unclear'
+    ]
+
+
+def test_history_must_be_oldest_first():
+    tracker = {
+        "last_updated": "2026-11-02",
+        "history": [
+            change("2026-11-02", ("unclear", "unclear"), ("low", "low")),
+            change("2026-10-01", ("unclear", "unclear"), ("low", "low")),
+        ],
+    }
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        "record.tracker.history[1].date: 2026-10-01 is before tracker.history[0].date (2026-11-02). "
+        "Keep the history oldest first and add new changes at the end"
+    ]
+
+
+def test_each_change_starts_where_the_one_before_it_ended():
+    tracker = {
+        "last_updated": "2026-11-02",
+        "history": [
+            change("2026-10-01", ("weak", "unclear"), ("low", "low")),
+            change("2026-11-02", ("weak", "unclear"), ("low", "low")),
+        ],
+    }
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        'record.tracker.history[1].rating_before: "weak" doesn\'t match tracker.history[0].rating_after '
+        '("unclear"). Each change starts where the one before it ended'
+    ]
+
+    tracker["history"] = [
+        change("2026-10-01", ("unclear", "unclear"), ("medium", "low")),
+        change("2026-11-02", ("unclear", "unclear"), ("medium", "low")),
+    ]
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        'record.tracker.history[1].confidence_before: "medium" doesn\'t match tracker.history[0].confidence_after '
+        '("low"). Each change starts where the one before it ended'
+    ]
+
+
+def test_the_newest_change_ends_at_the_current_values():
+    tracker = {
+        "last_updated": "2026-11-02",
+        "history": [
+            change("2026-10-01", ("weak", "unclear"), ("low", "low")),
+            change("2026-11-02", ("unclear", "moderate"), ("low", "medium")),
+        ],
+    }
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        'record.tracker.history[1].rating_after: "moderate", but the row\'s rating is "unclear". '
+        "The newest change has to end at the current rating",
+        'record.tracker.history[1].confidence_after: "medium", but the row\'s confidence is "low". '
+        "The newest change has to end at the current confidence",
+    ]
+
+
+def test_a_history_needs_a_last_updated_date_after_it():
+    tracker = {"history": [change("2026-12-03", ("weak", "unclear"), ("low", "low"))]}
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        "record.tracker.last_updated: required when there is a history"
+    ]
+
+    tracker["last_updated"] = "2026-11-01"
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        "record.tracker.last_updated: 2026-11-01 is before the newest change (2026-12-03)"
+    ]
+
+
+def test_a_placeholder_cant_have_a_history():
+    tracker = {
+        "last_updated": "2026-11-02",
+        "history": [change("2026-11-02", ("weak", "unclear"), ("low", "low"))],
+        "placeholder": True,
+    }
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        "record.tracker.history: must be empty while placeholder is true. A placeholder can't record real changes"
+    ]
+
+
+def test_milestone_ids_are_slugs_listed_once():
+    tracker = {"milestone_ids": ["wbe-access", "wbe-legal", "wbe-legal"]}
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        'record.tracker.milestone_ids[2]: "wbe-legal" is listed twice'
+    ]
+
+    tracker = {"milestone_ids": ["Not A Slug"]}
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        "record.tracker.milestone_ids[0]: must be lowercase letters, numbers and single hyphens, like "
+        'bci-medical-approval (got "Not A Slug")'
+    ]
+
+
+def test_a_change_note_names_its_sources_and_says_what_changed():
+    entry = change("2026-11-02", ("weak", "unclear"), ("low", "low"))
+    entry["note"]["source_ids"] = []
+    tracker = {"last_updated": "2026-11-02", "history": [entry]}
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        "record.tracker.history[0].note.source_ids: name the source or sources that caused this change"
+    ]
+
+    entry["note"] = {
+        "text": "We can't tell what changed.",
+        "provenance": "unclear",
+        "unclear_reason": "search_incomplete",
+        "source_ids": ["s13"],
+    }
+    assert model_errors(ScorecardRow, tracked_row(tracker)) == [
+        'record.tracker.history[0].note.provenance: can\'t be "unclear". Say what changed'
+    ]
+
+
+def test_an_ai_change_note_needs_a_reviewer_on_a_real_page():
+    # find_claims reaches into the history, so the usual AI review rule applies there too.
+    page = technology_page("wbe")
+    entry = change("2026-11-02", ("unclear", "weak"), ("low", "low"))
+    entry["note"] = {"text": "Suggested by a model.", "provenance": "ai", "source_ids": ["s13"]}
+    page["scorecard"][0]["tracker"] = {"last_updated": "2026-11-02", "history": [entry]}
+    assert page["sample"] is True
+    assert model_errors(TechnologyPage, page) == []
+
+    page["sample"] = False
+    errors = model_errors(TechnologyPage, page)
+    assert len(errors) == 1
+    assert errors[0].startswith(
+        "record.scorecard[0].tracker.history[0].note.reviewed_by: required when provenance is ai."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Scorecard rules that need the whole page
+
+
+def case_row(row_id: str, dimension: str, problem: str | None) -> dict:
+    return {
+        "id": row_id,
+        "dimension": dimension,
+        "problem": problem,
+        "scale": "case",
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "underspecified_proposal",
+        "basis": team_claim("Fixture basis."),
+    }
+
+
+def assessment() -> dict:
+    return {
+        "mechanism": team_claim("Fixture mechanism."),
+        "questions": [],
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "underspecified_proposal",
+        "reason": team_claim("Fixture reason."),
+        "decisive_question": team_claim("Fixture question."),
+    }
+
+
+def evidence_row(scorecard_ids: list[str]) -> dict:
+    return {
+        "claim": "Fixture claim.",
+        "supporting_ids": ["S02"],
+        "contrary_ids": [],
+        "evidence_type": "Argument",
+        "directness": "remote",
+        "limitation": "Fixture limitation.",
+        "independence": "Unclear",
+        "provenance": "team",
+        "scorecard_ids": scorecard_ids,
+    }
+
+
+def scored_page() -> dict:
+    """A page with the two case rows the assessments repeat, plus a risk row."""
+    page = technology_page("wbe")
+    governance = case_row("governance-risk", "Governance risk", None)
+    governance["scale"] = "risk"
+    page["scorecard"] = [
+        case_row("alignment-case", "Alignment case", "alignment"),
+        case_row("intelligence-curse-case", "Intelligence Curse case", "intelligence_curse"),
+        governance,
+    ]
+    page["alignment_assessment"] = assessment()
+    page["intelligence_curse_assessment"] = assessment()
+    return page
+
+
+def test_a_scored_page_is_valid():
+    assert model_errors(TechnologyPage, scored_page()) == []
+
+
+def test_a_row_needs_an_id_that_is_a_slug():
+    page = scored_page()
+    del page["scorecard"][0]["id"]
+    assert model_errors(TechnologyPage, page) == ["record.scorecard[0].id: required"]
+
+    page["scorecard"][0]["id"] = "Alignment case"
+    assert model_errors(TechnologyPage, page) == [
+        "record.scorecard[0].id: must be lowercase letters, numbers and single hyphens, like bci-medical-approval "
+        '(got "Alignment case")'
+    ]
+
+
+def test_row_ids_and_dimensions_are_unique_on_a_page():
+    page = scored_page()
+    repeat = case_row("governance-risk", "Governance risk", None)
+    repeat["scale"] = "risk"
+    page["scorecard"].append(repeat)
+    assert model_errors(TechnologyPage, page) == [
+        'record.scorecard[3].id: "governance-risk" is already used by scorecard[2]',
+        'record.scorecard[3].dimension: "Governance risk" is already used by scorecard[2]',
+    ]
+
+
+def test_a_row_id_cant_be_the_compare_pages_minds_key():
+    page = scored_page()
+    page["scorecard"][2]["id"] = COMPARE_MINDS_ID
+    assert model_errors(TechnologyPage, page) == [
+        'record.scorecard[2].id: "artificial-minds" is taken by the compare page\'s artificial minds view. '
+        "Pick another id"
+    ]
+
+
+def test_economic_viability_is_a_reserved_id():
+    page = scored_page()
+    page["scorecard"][2]["id"] = "economic-viability"
+    assert model_errors(TechnologyPage, page) == [
+        'record.scorecard[2].id: "economic-viability" is taken by the compare page\'s "Economic viability" '
+        "milestone category. Pick another id"
+    ]
+
+
+@pytest.mark.parametrize("category", list(MilestoneCategory))
+def test_no_row_id_can_be_a_milestone_category_key(category: MilestoneCategory):
+    key = compare_category_id(category)
+    assert key == category.value.replace("_", "-")
+    page = scored_page()
+    page["scorecard"][2]["id"] = key
+    label = ENUM_INFO["MilestoneCategory"]["values"][category.value][0]
+    assert model_errors(TechnologyPage, page) == [
+        f'record.scorecard[2].id: "{key}" is taken by the compare page\'s "{label}" milestone category. Pick another id'
+    ]
+
+
+def test_register_links_name_a_row_on_this_page():
+    page = scored_page()
+    page["evidence_register"] = [evidence_row(["alignment-case"]), evidence_row(["alignment", "welfare"])]
+    assert model_errors(TechnologyPage, page) == [
+        'record.evidence_register[1].scorecard_ids[0]: no scorecard row with id "alignment" on this page. '
+        'Did you mean "alignment-case"?',
+        'record.evidence_register[1].scorecard_ids[1]: no scorecard row with id "welfare" on this page. '
+        "Use one of: alignment-case, intelligence-curse-case, governance-risk",
+    ]
+
+
+def test_register_links_on_a_page_with_no_rows():
+    page = scored_page()
+    page["scorecard"] = []
+    page["evidence_register"] = [evidence_row(["alignment-case"])]
+    assert model_errors(TechnologyPage, page) == [
+        'record.evidence_register[0].scorecard_ids[0]: no scorecard row with id "alignment-case" on this page. '
+        "This page has no scorecard rows yet"
+    ]
+
+
+def test_a_register_row_links_each_row_once():
+    page = scored_page()
+    page["evidence_register"] = [evidence_row(["alignment-case", "governance-risk", "alignment-case"])]
+    assert model_errors(TechnologyPage, page) == [
+        'record.evidence_register[0].scorecard_ids[2]: "alignment-case" is listed twice'
+    ]
+
+
+def test_a_placeholder_has_to_mark_something():
+    page = scored_page()
+    page["scorecard"][0]["tracker"] = {"placeholder": True}
+    assert model_errors(TechnologyPage, page) == [
+        "record.scorecard[0].tracker.placeholder: true, but the row has nothing to mark. "
+        "Add the example fields, or remove the flag"
+    ]
+
+    # A what_would_change that is itself "not assessed" isn't shown in the box, so it marks nothing either.
+    page["scorecard"][0]["tracker"]["what_would_change"] = {
+        "text": "Not assessed yet.",
+        "provenance": "unclear",
+        "unclear_reason": "search_incomplete",
+    }
+    assert model_errors(TechnologyPage, page) == [
+        "record.scorecard[0].tracker.placeholder: true, but the row has nothing to mark. "
+        "Add the example fields, or remove the flag"
+    ]
+
+    # Any other unclear reason is an assessment, so it counts.
+    page["scorecard"][0]["tracker"]["what_would_change"]["unclear_reason"] = "conflicting_evidence"
+    assert model_errors(TechnologyPage, page) == []
+
+    # A register row linking it is enough: the card shows that link inside the placeholder box.
+    page["scorecard"][0]["tracker"] = {"placeholder": True}
+    page["evidence_register"] = [evidence_row(["alignment-case"])]
+    assert model_errors(TechnologyPage, page) == []
+
+
+@pytest.mark.parametrize(
+    "field_name, row_id",
+    [("alignment_assessment", "alignment-case"), ("intelligence_curse_assessment", "intelligence-curse-case")],
+)
+def test_an_assessment_matches_its_scorecard_row(field_name: str, row_id: str):
+    page = scored_page()
+    page[field_name]["rating"] = "weak"
+    page[field_name]["confidence"] = "medium"
+    page[field_name]["unclear_reason"] = "no_relevant_evidence"
+    assert model_errors(TechnologyPage, page) == [
+        f'record.{field_name}.rating: "weak" doesn\'t match the scorecard row "{row_id}" ("unclear"). '
+        "Change both together",
+        f'record.{field_name}.confidence: "medium" doesn\'t match the scorecard row "{row_id}" ("low"). '
+        "Change both together",
+        f'record.{field_name}.unclear_reason: "no_relevant_evidence" doesn\'t match the scorecard row "{row_id}" '
+        '("underspecified_proposal"). Change both together',
+    ]
+
+    # Without the row there is nothing to match.
+    remaining = []
+    for row in page["scorecard"]:
+        if row["id"] != row_id:
+            remaining.append(row)
+    page["scorecard"] = remaining
+    assert model_errors(TechnologyPage, page) == []
 
 
 # ---------------------------------------------------------------------------

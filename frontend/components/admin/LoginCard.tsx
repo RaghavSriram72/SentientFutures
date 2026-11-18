@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode, type Ref } from "react";
 
 import type { AuthResult } from "@/lib/adminTypes";
 import {
@@ -53,6 +53,18 @@ export function LoginCard({ resuming = false }: { resuming?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<SignInProblem | null>(null);
   const [devEmail, setDevEmail] = useState("");
+  // The email box and its button are disabled while signing in, so focus
+  // drops to the page. When it doesn't work, focus goes to what went wrong.
+  const problemRef = useRef<HTMLParagraphElement>(null);
+  const focusProblemAfterSignIn = useRef(false);
+
+  useEffect(() => {
+    if (busy || !focusProblemAfterSignIn.current) {
+      return;
+    }
+    problemRef.current?.focus();
+    focusProblemAfterSignIn.current = false;
+  }, [busy]);
 
   async function finishSignIn(attempt: Promise<AuthResult>, email: string | null) {
     setBusy(true);
@@ -63,6 +75,7 @@ export function LoginCard({ resuming = false }: { resuming?: boolean }) {
       saveSession(result.token, result.user, result.expires_at);
     } catch (error) {
       setProblem(describeProblem(toApiError(error), email));
+      focusProblemAfterSignIn.current = true;
       setBusy(false);
     }
   }
@@ -172,7 +185,8 @@ export function LoginCard({ resuming = false }: { resuming?: boolean }) {
         <LockIcon />
         <p className="eyebrow">For the team</p>
       </div>
-      <h1 id="login-heading" className={styles.title}>
+      {/* Focusable so signing out can move focus here (AdminShell). */}
+      <h1 id="login-heading" tabIndex={-1} className={styles.title}>
         Team <em>login</em>
       </h1>
       <p className={styles.text}>
@@ -188,7 +202,13 @@ export function LoginCard({ resuming = false }: { resuming?: boolean }) {
           Signing you in&hellip;
         </p>
       )}
-      {problem && <ProblemNotice problem={problem} inMemoryDatabase={health.data ? health.data.db_in_memory : false} />}
+      {problem && (
+        <ProblemNotice
+          problem={problem}
+          inMemoryDatabase={health.data ? health.data.db_in_memory : false}
+          titleRef={problemRef}
+        />
+      )}
     </section>
   );
 }
@@ -198,12 +218,13 @@ interface ProblemNoticeProps {
   // With an in-memory database the team list comes from DEV_USERS, and the
   // users CLI can't change it (its change is gone when the command ends).
   inMemoryDatabase: boolean;
+  titleRef: Ref<HTMLParagraphElement>;
 }
 
-function ProblemNotice({ problem, inMemoryDatabase }: ProblemNoticeProps) {
+function ProblemNotice({ problem, inMemoryDatabase, titleRef }: ProblemNoticeProps) {
   if (problem.kind === "unreachable") {
     return (
-      <Notice tone="error" title={problem.message}>
+      <Notice tone="error" title={problem.message} titleRef={titleRef}>
         <ApiStartHelp />
       </Notice>
     );
@@ -213,14 +234,14 @@ function ProblemNotice({ problem, inMemoryDatabase }: ProblemNoticeProps) {
     const title = `${problem.email ?? "That account"} isn't on the team list.`;
     if (!SHOW_SETUP_HINTS) {
       return (
-        <Notice tone="error" title={title}>
+        <Notice tone="error" title={title} titleRef={titleRef}>
           <p>Check the address, or ask someone on the team to add you.</p>
         </Notice>
       );
     }
     if (inMemoryDatabase) {
       return (
-        <Notice tone="error" title={title}>
+        <Notice tone="error" title={title} titleRef={titleRef}>
           <p>
             This API uses an in-memory database, so the team list comes from <code>DEV_USERS</code>. Add yourself to
             it and restart the API, which also empties the database:
@@ -233,7 +254,7 @@ function ProblemNotice({ problem, inMemoryDatabase }: ProblemNoticeProps) {
       );
     }
     return (
-      <Notice tone="error" title={title}>
+      <Notice tone="error" title={title} titleRef={titleRef}>
         <p>Anyone with access to the API can add you:</p>
         <pre className={styles.command}>
           <code>flask --app sf_api users add {email} &quot;Your name&quot;</code>
@@ -242,7 +263,7 @@ function ProblemNotice({ problem, inMemoryDatabase }: ProblemNoticeProps) {
     );
   }
   return (
-    <Notice tone="error" title="Sign-in didn't work.">
+    <Notice tone="error" title="Sign-in didn't work." titleRef={titleRef}>
       <p>{problem.message}</p>
     </Notice>
   );

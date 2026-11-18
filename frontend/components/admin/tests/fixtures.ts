@@ -1,6 +1,6 @@
 // Small builders for the records the review tests need. Each one fills in
 // every required field, so a test only spells out what it's about.
-import type { AiAssessment, Review, ReviewFinal, TriageResult } from "@/lib/adminTypes";
+import type { AiAssessment, Candidate, Review, ReviewFinal, TriageResult } from "@/lib/adminTypes";
 
 import { emptyRubric, type DecisionDraft } from "../reviewModel";
 
@@ -83,6 +83,25 @@ export function draft(overrides: Partial<DecisionDraft> = {}): DecisionDraft {
     generalBackground: false,
     notes: "",
     rejectReason: "",
+    ...overrides,
+  };
+}
+
+export function candidate(overrides: Partial<Candidate> = {}): Candidate {
+  return {
+    id: "arxiv-2401.00001",
+    origin: "pipeline",
+    collector: "arxiv",
+    title: "A paper",
+    authors: [],
+    year: 2024,
+    url: "https://arxiv.org/abs/2401.00001",
+    title_key: "a paper",
+    review_status: "pending_review",
+    flags: [],
+    query_labels: [],
+    found_at: "2026-10-27T09:00:00+00:00",
+    updated_at: "2026-10-27T09:00:00+00:00",
     ...overrides,
   };
 }

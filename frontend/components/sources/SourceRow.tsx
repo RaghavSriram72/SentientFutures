@@ -7,7 +7,8 @@ import { ClaimDirectionChip } from "./ClaimDirectionChip";
 import styles from "./SourceRow.module.css";
 
 // The short names the site's navigation uses, so a row's tags stay on one line.
-const TECHNOLOGY_SHORT: Record<Technology, string> = {
+// The source search reads these too, so a word on a tag finds its row.
+export const TECHNOLOGY_SHORT: Record<Technology, string> = {
   wbe: "Brain emulation",
   bci: "Brain interfaces",
   neuromorphic: "Neuromorphic AI",
@@ -34,7 +35,8 @@ function shortAuthors(authors: string[]): string {
 }
 
 // "Lisa Thiergart, 2023 · Talk", or "Psychology Today, 2026 · Blog" without authors.
-function rowByline(source: Source): string {
+// Also searched, so the year and the source type find a row.
+export function rowByline(source: Source): string {
   const who = shortAuthors(source.authors) || source.venue || "";
   const when = who ? `${who}, ${source.year}` : String(source.year);
   return `${when} · ${enumLabel("SourceType", source.source_type)}`;
@@ -80,7 +82,14 @@ export function SourceRow({ source, sources, sharedAddedBy, hideUnrated }: Sourc
         <span className={styles.chevron} aria-hidden="true" />
       </summary>
       <div className={styles.body}>
-        <SourceDetails source={source} sources={sources} sharedAddedBy={sharedAddedBy} hideUnrated={hideUnrated} />
+        {/* The row's chips already show the technology and claim direction. */}
+        <SourceDetails
+          source={source}
+          sources={sources}
+          sharedAddedBy={sharedAddedBy}
+          hideUnrated={hideUnrated}
+          hideSummaryFields
+        />
       </div>
     </details>
   );

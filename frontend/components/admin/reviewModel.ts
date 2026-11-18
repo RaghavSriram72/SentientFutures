@@ -9,6 +9,8 @@ import type {
   Decision,
   FieldEvidence,
   QueueItemDetail,
+  ReAdd,
+  ReAddedDetail,
   RejectReason,
   Review,
   ReviewField,
@@ -109,6 +111,59 @@ export function reviewsNewestFirst(detail: QueueItemDetail): Review[] {
   return newestFirst(detail.reviews);
 }
 
+// One line of the record's decisions: a decision, or the paper being added
+// again after a rejection.
+export type DecisionRecordItem = { kind: "review"; review: Review } | { kind: "re_add"; reAdd: ReAdd };
+
+function recordItemTime(item: DecisionRecordItem): number {
+  return Date.parse(item.kind === "review" ? item.review.created_at : item.reAdd.added_at);
+}
+
+// The decisions and re-adds together, newest first. A re-add always follows
+// the rejection it undid, so at the same moment it counts as the newer one.
+export function decisionRecordNewestFirst(reviews: Review[], reAdds: ReAdd[]): DecisionRecordItem[] {
+  const items: DecisionRecordItem[] = [];
+  for (const review of reviews) {
+    items.push({ kind: "review", review });
+  }
+  for (const reAdd of reAdds) {
+    items.push({ kind: "re_add", reAdd });
+  }
+  items.sort((a, b) => {
+    const difference = recordItemTime(b) - recordItemTime(a);
+    if (difference !== 0) {
+      return difference;
+    }
+    if (a.kind === b.kind) {
+      return 0;
+    }
+    return a.kind === "re_add" ? -1 : 1;
+  });
+  return items;
+}
+
+const RE_ADDED_DETAIL_NAMES: Record<ReAddedDetail, string> = {
+  url: "link",
+  title: "title",
+  year: "year",
+};
+
+// "link changed", "link and title changed", "link, title and year changed",
+// or "" when a re-add changed none of them (only the authors, say).
+export function reAddChangesText(changed: ReAddedDetail[]): string {
+  const names: string[] = [];
+  for (const detail of changed) {
+    names.push(RE_ADDED_DETAIL_NAMES[detail]);
+  }
+  if (names.length === 0) {
+    return "";
+  }
+  if (names.length === 1) {
+    return `${names[0]} changed`;
+  }
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]} changed`;
+}
+
 // The assessment a review compares against: the one the source points at.
 // When it points at none, there's nothing to compare against, even if older
 // assessments exist (a run can stop between saving an assessment and
@@ -131,6 +186,9 @@ export function safeExternalUrl(url: string | null | undefined): string | null {
   return null;
 }
 
+// The paper's own link is often its arXiv or doi.org page. The DOI and arXiv
+// links still show then, because their labels are the only place the review
+// page shows the paper's DOI and arXiv id.
 export function paperLinks(source: Candidate): { href: string; label: string }[] {
   const links: { href: string; label: string }[] = [];
   const main = safeExternalUrl(source.url);
@@ -144,25 +202,13 @@ export function paperLinks(source: Candidate): { href: string; label: string }[]
     links.push({ href: `https://arxiv.org/abs/${encodeURIComponent(source.arxiv_id)}`, label: `arXiv ${source.arxiv_id}` });
   }
   if (source.s2_id) {
-    links.push({
-      href: `https://www.semanticscholar.org/paper/${encodeURIComponent(source.s2_id)}`,
-      label: "Semantic Scholar",
-    });
-  }
-  // The paper's own link is often its arXiv page. Keep the first of any repeats.
-  const unique: { href: string; label: string }[] = [];
-  for (const link of links) {
-    let seen = false;
-    for (const kept of unique) {
-      if (kept.href === link.href) {
-        seen = true;
-      }
-    }
-    if (!seen) {
-      unique.push(link);
+    const s2Href = `https://www.semanticscholar.org/paper/${encodeURIComponent(source.s2_id)}`;
+    // Its label names no id, so a second link to the paper's own page adds nothing.
+    if (s2Href !== main) {
+      links.push({ href: s2Href, label: "Semantic Scholar" });
     }
   }
-  return unique;
+  return links;
 }
 
 // ---------- The rubric ----------
