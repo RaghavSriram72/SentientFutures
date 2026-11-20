@@ -1,0 +1,4 @@
+/* One part of a meta line, kept whole (MetaParts.tsx) */
+.part {
+  white-space: nowrap;
+}

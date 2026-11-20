@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { ExternalLink } from "@/components/common/ExternalLink";
+import { findCodes, registerIdsIn } from "@/lib/codes";
 import { enumLabel } from "@/lib/enums";
 import { shortCitation, type SourceRef } from "@/lib/sources";
 import type { Claim, Provenance } from "@/lib/types";
@@ -38,7 +39,7 @@ function isQuiet(claim: Claim, quiet: Provenance | undefined): boolean {
 
 // Renders one claim with its provenance mark:
 //   source  -> the text, then the exact quote with a hanging rule and a citation
-//   team    -> an "Our read" margin tag
+//   team    -> no mark at all: anything without a mark is the team's
 //   ai      -> a dashed rule down its left side and "AI-suggested · checked by X"
 //   unclear -> hatching and the stated reason
 // With `quiet`, a claim of the default kind keeps its glyph and line style
@@ -46,7 +47,10 @@ function isQuiet(claim: Claim, quiet: Provenance | undefined): boolean {
 export function ClaimText({ claim, sources = {}, variant = "block", quiet, hideCitation = false }: ClaimTextProps) {
   const kindClass = styles[`claim_${claim.provenance}`];
   const variantClass = variant === "compact" ? styles.compact : "";
-  const quietClaim = isQuiet(claim, quiet);
+  // The team's own claims carry no tag or glyph. Readers take anything
+  // unmarked as the team's, so only the other kinds are labelled.
+  const unmarked = claim.provenance === "team";
+  const quietClaim = !unmarked && isQuiet(claim, quiet);
   const quietClass = quietClaim ? styles.quiet : "";
 
   const citedSources: SourceRef[] = [];
@@ -59,6 +63,7 @@ export function ClaimText({ claim, sources = {}, variant = "block", quiet, hideC
 
   // The "See ..." line skips a source the text already names by its register
   // id ("S02 (Thiergart 2023)" links to it), so it isn't cited twice in a row.
+  // A range names every source in it: "S24-S29" covers S25 to S28 too.
   const namedInText = registerIdsIn(claim.text);
   const seeAlso: SourceRef[] = [];
   for (const source of citedSources) {
@@ -69,7 +74,7 @@ export function ClaimText({ claim, sources = {}, variant = "block", quiet, hideC
 
   return (
     <div className={`${styles.claim} ${kindClass} ${variantClass} ${quietClass}`}>
-      {quietClaim ? (
+      {unmarked ? null : quietClaim ? (
         <span className={`${styles.quietMark} ${styles[`mark_${claim.provenance}`]}`} aria-hidden="true">
           <ProvenanceGlyph kind={claim.provenance} />
         </span>
@@ -118,22 +123,13 @@ export function ClaimText({ claim, sources = {}, variant = "block", quiet, hideC
   );
 }
 
-// The team's evidence register ids ("S02", "S13") as they appear in claim text.
-const REGISTER_ID = /\b(S\d{2,3})\b/g;
-
-// Every register id the text mentions, such as ["S02", "S13"].
-function registerIdsIn(text: string): string[] {
-  const ids: string[] = [];
-  for (const match of text.matchAll(REGISTER_ID)) {
-    ids.push(match[1]);
-  }
-  return ids;
-}
-
 // The claim's text, with each register id that matches a source turned into a
 // link to that source in the source database, followed by its short citation:
 // "S02 (Thiergart 2023)". A reader who has never seen the register can tell
-// what it points to. The words themselves don't change.
+// what it points to. The words themselves don't change. Source ids are two
+// digits (lib/codes.ts), so the stage codes S1 to S6 are never linked. In a
+// range ("S20-S22") each end links on its own and the citation goes in the
+// link's title instead, so it doesn't split the range.
 function TextWithRegisterLinks({ text, sources }: { text: string; sources: Record<string, SourceRef> }) {
   const byRegisterId: Record<string, SourceRef> = {};
   for (const source of Object.values(sources)) {
@@ -144,19 +140,26 @@ function TextWithRegisterLinks({ text, sources }: { text: string; sources: Recor
 
   const parts: ReactNode[] = [];
   let last = 0;
-  for (const match of text.matchAll(REGISTER_ID)) {
-    const source = byRegisterId[match[1]];
-    if (!source || match.index === undefined) {
+  for (const found of findCodes(text)) {
+    const source = found.kind === "source" ? byRegisterId[found.code] : undefined;
+    if (!source) {
       continue;
     }
-    parts.push(text.slice(last, match.index));
+    const citation = shortCitation(source);
+    parts.push(text.slice(last, found.index));
     parts.push(
-      <Link key={match.index} href={`/sources/#${source.id}`} className={styles.registerLink}>
-        {match[1]}
-        <span className={styles.registerCite}> ({shortCitation(source)})</span>
+      <Link
+        key={found.index}
+        href={`/sources/#${source.id}`}
+        className={styles.registerLink}
+        title={found.inRange ? citation : undefined}
+        aria-label={found.inRange ? `${found.code} (${citation})` : undefined}
+      >
+        {found.code}
+        {!found.inRange && <span className={styles.registerCite}> ({citation})</span>}
       </Link>,
     );
-    last = match.index + match[0].length;
+    last = found.index + found.code.length;
   }
   parts.push(text.slice(last));
   return <>{parts}</>;

@@ -1,4 +1,4 @@
-// Hand-written mirror of shared/sf_shared/models.py for the demo.
+// Hand-written mirror of shared/sf_shared/models.py.
 // In W2 this file is replaced by types generated from the shared JSON Schema.
 // If you change a field here, change it in models.py too (CI validates content/ with Python).
 
@@ -17,15 +17,19 @@ export type MilestoneCategory =
   | "legal_regulatory"
   | "institutional_legitimacy";
 export type MilestoneType = "technical" | "deployment" | "welfare_governance"; // worked out from the category, never stored
-export type MilestoneStatus = "not_demonstrated" | "prototype" | "replicated" | "mature" | "not_claimed";
+export type MilestoneStatus = "not_demonstrated" | "prototype" | "replicated" | "mature" | "not_claimed" | "unclear";
 export type Confidence = "high" | "medium" | "low";
 export type CaseRating = "strong" | "moderate" | "weak" | "unclear" | "not_claimed";
+// Retired: no scorecard row uses it since v0.4. Kept because enums.json still lists it.
 export type RiskRating = "high" | "medium" | "low" | "unclear";
 export type UnclearReason =
   | "no_relevant_evidence"
   | "conflicting_evidence"
   | "underspecified_proposal"
   | "search_incomplete"
+  | "indirect_evidence_only"
+  | "outcome_not_operationalized"
+  | "information_inaccessible"
   | "other";
 export type EvidenceType = "argument" | "simulation" | "experiment" | "deployment" | "review";
 export type Directness = "direct" | "adjacent" | "remote";
@@ -37,6 +41,25 @@ export type SourceKind = "argument" | "milestone_evidence";
 export type Relevance = "core" | "supporting" | "peripheral" | "not_relevant";
 export type Credibility = "strong" | "adequate" | "weak" | "unclear";
 export type Provenance = "source" | "team" | "ai" | "unclear";
+
+// ---------- The workbook's scales (scorecard v0.4), as in enums.py ----------
+// How close an evidence entry is to the family. Not the source rubric's Directness.
+export type EvidenceDirectness = "direct" | "close_prerequisite" | "related_neuroai" | "conceptual";
+export type EvidenceRole = "supports" | "contrary" | "qualifies" | "prerequisite_only";
+export type EvidenceBasis = "demonstrated" | "projected" | "argued" | "assumed";
+// A causal link's status.
+export type EvidenceStatus = "supporting" | "contrary" | "conflicting" | "no_relevant_evidence" | "search_incomplete";
+export type Severity = "very_high" | "high" | "medium" | "low" | "unclear";
+export type Likelihood = "high" | "medium" | "low" | "not_assessable";
+// A risk's reversibility or detectability.
+export type RiskLevel = "high" | "medium" | "low" | "unclear";
+export type RiskDomain = "human_welfare" | "artificial_mind_welfare" | "governance";
+export type GovernanceStatus = "not_addressed" | "proposal_found" | "evidence_found";
+export type AgencyEffect = "strengthens" | "weakens" | "mixed" | "not_addressed";
+// The technology pages a workbook row can belong to.
+export type Family = Exclude<Technology, "hybrid">;
+// The register's "Outcome addressed" and the links' "Outcome", word for word.
+export type Outcome = "AI Alignment" | "Intelligence Curse" | "Both" | "Neither";
 
 // Every sentence shown on the site is a Claim, so its provenance travels with it.
 //   source  -> needs source_ids and an exact quote (max 300 chars)
@@ -102,7 +125,7 @@ export interface Milestone {
   confidence: Confidence | null; // required when estimate is set
   summary: Claim;
   success_criterion: Claim;
-  main_bottleneck: Claim;
+  main_bottleneck: Claim | null; // null when the workbook's cell is empty
   depends_on: string[];
   source_ids: string[];
   estimate: Estimate | null;
@@ -112,6 +135,15 @@ export interface Milestone {
   would_move_earlier: Claim[];
   would_move_later: Claim[];
   artificial_minds_questions: Claim[];
+  // From the workbook's milestone tab (1a). All optional, so older records
+  // still fit. assessment_confidence is the tab's "Confidence" in the status;
+  // `confidence` above stays the team range's.
+  assessment_confidence?: Confidence | null;
+  applies_to?: string | null;
+  criterion_met?: string | null; // "Criterion met?", word for word
+  evidence_entries?: string[]; // the E-ids the evidence cell cites, for counts and filters
+  timing?: string | null;
+  note?: string | null;
   sample?: boolean; // true for the worked examples; shown with a SAMPLE tag
 }
 
@@ -143,15 +175,26 @@ export interface Source {
   added_by?: string | null;
   reviewed_by?: string | null;
   reviewed_on?: string | null;
+  quality?: SourceQuality | null; // the workbook's 3a cells, word for word
+  screening_pending?: boolean; // true while the workbook marks the source "screening pending"
   sample?: boolean;
+}
+
+// One row of the workbook's "3a Source Quality" tab, each cell word for word.
+export interface SourceQuality {
+  source_type?: string | null; // "Source type"
+  empirical_theoretical?: string | null; // "Empirical / theoretical"
+  original_secondary?: string | null; // "Original / secondary"
+  peer_review?: string | null; // "Peer-review status"
+  affiliation?: string | null; // "Affiliation / independence"
 }
 
 // One change to a scorecard rating. The previous assessment stays visible.
 // note.source_ids names the source or sources that caused the change.
 export interface RatingChange {
   date: string; // YYYY-MM-DD
-  rating_before: CaseRating | RiskRating;
-  rating_after: CaseRating | RiskRating;
+  rating_before: CaseRating;
+  rating_after: CaseRating;
   confidence_before: Confidence;
   confidence_after: Confidence;
   note: Claim;
@@ -168,46 +211,41 @@ export interface RatingTracker {
   placeholder?: boolean;
 }
 
+// One headline judgment. Case rows carry a rating; risk rows never do: the
+// workbook keeps a risk's severity, likelihood and confidence apart.
 export interface ScorecardRow {
   // Stable and the same on every page. Never changes once public: the row's
-  // anchor (#scorecard-<id>), the evidence register's links and the compare
-  // address all use it.
+  // anchor (#scorecard-<id>) and the compare address use it.
   id: string;
   dimension: string;
   problem: Problem | null;
   scale: "case" | "risk";
-  rating: CaseRating | RiskRating;
+  rating: CaseRating | null; // null on risk rows
   confidence: Confidence;
-  unclear_reason?: UnclearReason | null;
-  // Risk rows only: how bad it could be while the rating is still Unclear.
-  potential_severity?: "high" | "medium" | "low" | null;
-  basis: Claim;
+  unclear_reason?: UnclearReason | null; // optional: the workbook states none
+  // Risk rows only. null until the workbook gives them, or when not applicable.
+  severity?: Severity | null;
+  likelihood?: Likelihood | null;
+  // Risk rows only: false when the workbook says "Not applicable" (BCI, artificial minds).
+  applicable?: boolean;
+  basis: Claim | null; // always set on case rows; optional on risk rows
   tracker?: RatingTracker | null;
 }
 
-// ---------- The populated scorecard (scorecard v0.1 sections 1 to 6) ----------
+// ---------- The technology page's workbook sections (scorecard v0.4) ----------
+// Written by python -m sf_shared.import_workbook, word for word. Codes stay in
+// the text as written; source_ids and entries lists are parsed from the cells.
 
 export interface Scope {
-  intervention: Claim;
+  intervention: Claim; // "Technology family definition"
   deployment_scenario: Claim;
   affected_groups: Claim;
   time_horizon: Claim;
   comparator: Claim;
-  problem: Problem;
-}
-
-// One line of the evidence register. The ids are the team's register ids
-// ("S02"), shown as plain text until those sources are in sources.json.
-export interface EvidenceRow {
-  claim: string;
-  supporting_ids: string[];
-  contrary_ids: string[];
-  evidence_type: string;
-  directness: Directness;
-  limitation: string;
-  independence: string;
-  provenance: "team" | "ai";
-  scorecard_ids?: string[]; // the ids of the scorecard rows on this page it bears on
+  problems_claimed: Claim; // "Problem(s) claimed to address", without the trailing arrow
+  problem: Problem; // the problem named after that arrow
+  source_ids?: string[]; // from "Source IDs / basis", ranges expanded (counts and links)
+  source_ids_text?: string | null; // that cell word for word ("S24-S29" kept): show this one
 }
 
 export interface AssessmentQuestion {
@@ -215,58 +253,255 @@ export interface AssessmentQuestion {
   answer: Claim;
 }
 
-export interface Assessment {
+// One scenario row of "4 Alignment Judgment", word for word.
+export interface AlignmentScenario {
+  scenario: string;
+  problem: string; // "Problem addressed"
+  mechanism?: string | null;
+  supporting?: string[]; // entry ids
+  contrary_or_qualifying?: string[]; // entry ids
+  gap?: string | null; // "Main gap, or reason for rating"
+}
+
+// The family row of "4 Alignment Judgment", plus its scenario rows.
+export interface AlignmentAssessment {
+  problem_addressed: string;
   mechanism: Claim;
-  questions: AssessmentQuestion[];
+  questions?: AssessmentQuestion[];
   rating: CaseRating;
   confidence: Confidence;
   unclear_reason?: UnclearReason | null;
   reason: Claim;
   decisive_question: Claim;
+  scenarios?: AlignmentScenario[];
 }
 
-export interface ArtificialMindsAssessment {
-  consciousness: Claim;
-  moral_status: Claim;
-  identity: Claim;
-  welfare: Claim;
+// One row of "6 Agency and Ownership" for the family.
+export interface AgencyRow {
+  group: string; // "Group or dimension"
+  effect: AgencyEffect;
+  mechanism?: string | null;
+  ownership_questions?: string | null;
+  entries?: string[];
 }
 
-export interface WelfareGovernance {
-  exposed: Claim;
-  harms: Claim;
-  severity: Claim;
-  detectability: Claim;
-  control: Claim;
+// The family's row of "5 Intelligence Curse Judgment", plus its agency rows.
+export interface IntelligenceCurseAssessment {
+  mechanism: Claim; // "Mechanism claimed"
+  questions?: AssessmentQuestion[]; // each question is the column header word for word
+  rating: CaseRating;
   confidence: Confidence;
+  unclear_reason?: UnclearReason | null;
+  reason: Claim;
+  decisive_question?: Claim | null; // the tab has no such column
+  agency?: AgencyRow[];
+  ownership_gate?: string | null;
+}
+
+// One row of "4.1 Artificial Minds" for the family. Empty rows are kept, so
+// the stage list is complete.
+export interface ArtificialMindsStage {
+  stage?: string | null; // "S3"; null when the Stage cell has no leading number ("All stages")
+  stage_label: string; // the Stage cell word for word, e.g. "3 Whole brain emulation (one instance)"
+  stage_number?: number | null;
+  consciousness?: string | null;
+  moral_status?: string | null; // "Moral status grounded in"
+  identity?: string | null; // "Identity, copying and modification"
+  welfare?: string | null; // "Welfare harms or benefits named"
+  protections?: string | null; // "Protections proposed"
+  source_ids?: string[];
+  entries?: string[];
+}
+
+// The family's row of "9 Welfare and Governance Judgment". Severity,
+// likelihood and confidence per domain are on the scorecard's risk rows.
+export interface WelfareGovernance {
+  exposed: Claim; // "Who is exposed"
+  harms: Claim; // "Main harms (risk IDs)"
   rationale: Claim;
 }
 
 export interface TechnologyPage {
-  id: Exclude<Technology, "hybrid">;
+  id: Family;
   name: string;
   short_name: string;
   headline: string; // use *asterisks* around the one italic word or phrase
   intro: Claim;
-  // The outline sections. A page with a populated scorecard can leave these empty.
+  // The outline sections, written on the site (BCI and NM: drafted by AI).
   claims_to_solve?: Claim[];
   mechanism?: Claim[];
   strongest_case?: Claim[];
   strongest_objections?: Claim[];
   scorecard: ScorecardRow[];
   artificial_minds_questions?: Claim[];
-  // The populated scorecard, section by section. All optional.
-  scope?: Scope | null;
-  theory_of_change?: Claim[];
   alternatives?: Claim[];
-  evidence_register?: EvidenceRow[];
-  alignment_assessment?: Assessment | null;
-  intelligence_curse_assessment?: Assessment | null;
-  artificial_minds_assessment?: ArtificialMindsAssessment | null;
+  // The workbook's sections. All optional.
+  scope?: Scope | null;
+  alignment_assessment?: AlignmentAssessment | null;
+  intelligence_curse_assessment?: IntelligenceCurseAssessment | null;
+  artificial_minds_by_stage?: ArtificialMindsStage[];
   welfare_governance?: WelfareGovernance | null;
-  evidence_gap?: Claim | null;
   tension?: Claim | null; // team-written; the page shows it only when set
-  sample?: boolean;
+  // True while the page has AI-drafted outline sections nobody has reviewed.
+  // The page itself (ratings and workbook sections) is the team's.
+  unreviewed_ai_sections?: boolean;
+}
+
+// ---------- content/scorecard.json: the workbook's shared tables ----------
+// Generated by python -m sf_shared.import_workbook, never edited by hand.
+
+export interface WorkbookInfo {
+  title: string; // the Overview tab's first cell
+  version: string; // e.g. "0.4"
+  source_sha256?: string | null;
+}
+
+export interface Overview {
+  purpose: string;
+  principles?: string[];
+  update_protocol?: string[];
+}
+
+// The "1 Scope" tab's Cross-family row.
+export interface CrossFamilyScope {
+  intervention: string; // "Technology family definition"
+  deployment_scenario?: string | null;
+  source_ids?: string[];
+  source_ids_text?: string | null; // "Source IDs / basis" word for word, as on Scope
+}
+
+// One Codebook row, in sheet order. family is the sheet's own word ("WBE", "All").
+export interface CodebookRow {
+  type: string;
+  code: string;
+  family: string;
+  definition: string;
+}
+
+export interface Framework {
+  id: string; // "RF1"
+  reference: string;
+  url: string;
+  contributes: string; // "What it contributes"
+  applied: string; // "Applied in workbook"
+}
+
+// One of tab 1a's category headers: "M1 Technical capability" and its question.
+export interface MilestoneCategoryInfo {
+  id: string; // "M1"
+  category: MilestoneCategory;
+  label: string;
+  question: string;
+}
+
+// One family row of tab 1a. BCI M1 and NM M1 have two rows each, told apart by applies_to.
+export interface MilestoneAssessment {
+  family: Family;
+  milestone: string; // "M1"
+  category: MilestoneCategory;
+  applies_to: string;
+  success_criterion: string;
+  status: MilestoneStatus;
+  criterion_met: string; // "Criterion met?", word for word
+  evidence: string; // "Evidence (entries and basis)", word for word: link its E-ids inline
+  evidence_entries?: string[]; // parsed E-ids for counts and filters ("not admissible" ones left out)
+  bottleneck?: string | null;
+  timing?: string | null;
+  confidence: Confidence;
+  note?: string | null;
+}
+
+// What an entry feeds, from the register's "Ratings it feeds (direction)".
+export type FeedTarget = "alignment" | "intelligence_curse" | `M${number}`;
+
+export interface EntryFeed {
+  family: Family;
+  target: FeedTarget;
+  direction: "supports" | "against_or_qualifies";
+  note?: string | null; // e.g. "efficiency prerequisite only"
+}
+
+// One row of the "0 Evidence Register" tab.
+export interface EvidenceEntry {
+  id: string; // "E001"
+  source_id: string; // the site's source id, "s01"
+  register_id: string; // the sheet's "Source ID", "S01"
+  locator: string;
+  claim: string; // "Exact claim"
+  codes?: string[]; // "Link / milestone / risk ID", split on ";"
+  family: Family | "cross_family";
+  feeds?: EntryFeed[];
+  feeds_text: string; // "Ratings it feeds (direction)", word for word
+  source_type_independence: string;
+  outcome: Outcome;
+  alignment_problem: string; // "A-VS" ... or "N/A"
+  scenarios?: string[]; // scenario codes
+  stage: string; // "S1" ... or "N/A"
+  directness: EvidenceDirectness;
+  role: EvidenceRole;
+  basis: EvidenceBasis;
+}
+
+// One row of the "2 Theory of Change" tab.
+export interface CausalLink {
+  id: string; // "WBE-O-L1"
+  family: Family;
+  scenario_code: string; // "WBE-O"
+  scenario: string; // the tab's Scenario name
+  step: string; // "Step in causal chain", word for word
+  outcome: Outcome;
+  claim: string;
+  status: EvidenceStatus;
+  supporting?: string[];
+  contrary?: string[];
+  qualifying?: string[];
+  best_directness?: EvidenceDirectness | null;
+  assumption?: string | null;
+  objection?: string | null;
+}
+
+// One row of the "7 Overall Risks" tab.
+export interface Risk {
+  id: string; // "R01"
+  risk: string;
+  families: Family[];
+  domain: RiskDomain;
+  category: string;
+  exposed: string; // "Who is exposed (scale)"
+  severity: Severity; // "Potential severity"
+  likelihood: Likelihood;
+  reversibility: RiskLevel;
+  detectability: RiskLevel;
+  remedies: string; // "Remedies and safeguards"
+  control: string; // "Who controls / route to exit"
+  confidence: Confidence;
+  entries?: string[];
+}
+
+// One row of the "8 Governance Checklist" tab.
+export interface GovernanceItem {
+  id: string; // "G01"
+  family: Family;
+  question: string;
+  status: GovernanceStatus;
+  entries?: string[];
+  summary?: string | null;
+}
+
+export interface ScorecardData {
+  generated: string;
+  workbook: WorkbookInfo;
+  overview?: Overview | null;
+  codebook?: CodebookRow[];
+  frameworks?: Framework[];
+  milestone_categories?: MilestoneCategoryInfo[];
+  milestone_assessments?: MilestoneAssessment[];
+  entries?: EvidenceEntry[];
+  links?: CausalLink[];
+  risks?: Risk[];
+  governance?: GovernanceItem[];
+  scope_notes?: string[];
+  cross_family_scope?: CrossFamilyScope | null;
 }
 
 export interface Post {
@@ -282,6 +517,7 @@ export interface SiteData {
   milestones: Milestone[];
   sources: Source[];
   technologies: TechnologyPage[];
+  scorecard: ScorecardData;
   posts: Post[];
   nowYear: number;
   builtAt: string;

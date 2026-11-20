@@ -1,0 +1,42 @@
+/* A milestone's type: an ink glyph, then its name. The glyph has its own
+   column, so a name that wraps ("WELFARE AND / GOVERNANCE") hangs under its
+   first word. */
+.mark {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.45em;
+  align-items: start;
+}
+
+/* Sized in em, so the glyph grows with the text. It is centred on the first
+   line: 1lh is the line's height. */
+.glyph {
+  width: 1.2em;
+  height: 1.2em;
+  margin-top: calc((1lh - 1.2em) / 2);
+  color: var(--ink-body);
+}
+
+/* The name gives the mark its baseline. Without this the grid took the
+   glyph's bottom edge as its baseline, and the name sat about 3px above the
+   text beside it in a row or a sentence. */
+.label {
+  align-self: baseline;
+}
+
+/* Small monospace caps, like the codes and stage tags around it */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* The surrounding font and size, set a little heavier */
+.plain {
+  font-weight: 600;
+  color: var(--ink);
+}

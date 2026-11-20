@@ -7,13 +7,19 @@ from sf_shared.claims import Claim, compact_dump
 from sf_shared.enums import ENUM_INFO, MilestoneCategory
 from sf_shared.models import (
     COMPARE_MINDS_ID,
+    ArtificialMindsStage,
+    CausalLink,
+    EvidenceEntry,
     Estimate,
     Forecast,
+    Framework,
     Milestone,
     PostFrontmatter,
+    Risk,
     ScorecardRow,
     Source,
     TechnologyPage,
+    WorkbookInfo,
     compare_category_id,
 )
 
@@ -51,8 +57,11 @@ def test_source_claim_quote_has_a_length_limit():
 
 def test_unclear_claim_needs_a_reason():
     errors = model_errors(Claim, {"text": "We can't tell.", "provenance": "unclear"})
-    assert len(errors) == 1
-    assert errors[0].startswith("record.unclear_reason: required when provenance is unclear.")
+    assert errors == [
+        "record.unclear_reason: required when provenance is unclear. Say why: no_relevant_evidence, "
+        "conflicting_evidence, underspecified_proposal, search_incomplete, indirect_evidence_only, "
+        "outcome_not_operationalized, information_inaccessible or other"
+    ]
 
 
 def test_unclear_reason_other_needs_a_note():
@@ -266,6 +275,44 @@ def test_high_level_fidelity_is_a_milestone_category():
     assert errors[0].startswith("record.category: Input should be 'technical_capability', 'high_level_fidelity',")
 
 
+def test_the_workbooks_milestone_fields_are_optional():
+    milestone = sample_milestone()
+    for key in ("assessment_confidence", "applies_to", "criterion_met", "evidence_entries", "timing", "note"):
+        assert key not in milestone
+    assert model_errors(Milestone, milestone) == []
+
+    milestone["assessment_confidence"] = "medium"
+    milestone["applies_to"] = "All WBE uses"
+    milestone["criterion_met"] = "Unclear (search incomplete)"
+    milestone["evidence_entries"] = ["E037", "E043"]
+    milestone["timing"] = "Not sourced"
+    milestone["note"] = "Single source."
+    milestone["status"] = "unclear"
+    assert model_errors(Milestone, milestone) == []
+
+
+def test_a_milestone_may_have_no_bottleneck():
+    # The workbook leaves some bottleneck cells empty (WBE M7, M9).
+    milestone = sample_milestone()
+    milestone["main_bottleneck"] = None
+    assert model_errors(Milestone, milestone) == []
+    del milestone["main_bottleneck"]
+    assert model_errors(Milestone, milestone) == ["record.main_bottleneck: required"]
+
+
+def test_milestone_evidence_entries_are_entry_ids_listed_once():
+    milestone = sample_milestone()
+    milestone["evidence_entries"] = ["E037", "e043", "E037"]
+    milestone["applies_to"] = "  "
+    assert model_errors(Milestone, milestone) == [
+        'record.applies_to: must not be empty (got "  ")',
+        'record.evidence_entries[1]: must be an evidence entry id like "E001" (got "e043")',
+    ]
+    milestone["evidence_entries"] = ["E037", "E037"]
+    milestone["applies_to"] = None
+    assert model_errors(Milestone, milestone) == ['record.evidence_entries[1]: "E037" is listed twice']
+
+
 # ---------------------------------------------------------------------------
 # Source
 
@@ -299,7 +346,8 @@ def test_unclear_credibility_cannot_be_other():
     source["credibility_unclear_reason"] = "other"
     assert model_errors(Source, source) == [
         'record.credibility_unclear_reason: "other" needs a note to explain it, and sources have no note field. '
-        "Use the closest of: no_relevant_evidence, conflicting_evidence, underspecified_proposal, search_incomplete"
+        "Use the closest of: no_relevant_evidence, conflicting_evidence, underspecified_proposal, search_incomplete, "
+        "indirect_evidence_only, outcome_not_operationalized, information_inaccessible"
     ]
 
 
@@ -336,6 +384,26 @@ def test_ai_suggested_summary_uses_the_claim_instead():
     ]
 
 
+def test_the_workbooks_quality_block_and_screening_flag():
+    source = sample_source()
+    source["quality"] = {
+        "source_type": "Wiki / reference page",
+        "empirical_theoretical": "Theoretical",
+        "original_secondary": "Summarizes other work",
+        "peer_review": "Not peer-reviewed",
+        "affiliation": "Independent",
+    }
+    source["screening_pending"] = True
+    assert model_errors(Source, source) == []
+
+    source["quality"]["peer_reveiw"] = "Unclear"
+    source["screening_pending"] = "yes"
+    assert model_errors(Source, source) == [
+        "record.quality.peer_reveiw: unknown field. Did you mean \"peer_review\"?",
+        'record.screening_pending: Input should be a valid boolean (got "yes")',
+    ]
+
+
 def test_every_markable_field_is_accepted():
     source = sample_source()
     source["ai_suggested_fields"] = [
@@ -357,37 +425,104 @@ def test_every_markable_field_is_accepted():
 # Technology pages and scorecards
 
 
-def scorecard_row(scale: str, rating: str, provenance: str = "team") -> dict:
-    basis: dict = {"text": "Basis.", "provenance": provenance}
-    if provenance == "source":
-        basis["source_ids"] = ["sample-bci-trial"]
-        basis["quote"] = "Sample quote."
+def scorecard_row(scale: str, rating: str | None) -> dict:
+    """A case row with a team basis, or a risk row with severity and likelihood."""
+    if scale == "risk":
+        return {
+            "id": "welfare-risk",
+            "dimension": "Welfare risk",
+            "problem": None,
+            "scale": "risk",
+            "rating": rating,
+            "confidence": "low",
+            "severity": "very_high",
+            "likelihood": "not_assessable",
+        }
     return {
-        "id": "welfare-risk",
-        "dimension": "Welfare risk",
+        "id": "welfare-case",
+        "dimension": "Welfare case",
         "problem": None,
         "scale": scale,
         "rating": rating,
         "confidence": "low",
-        "basis": basis,
+        "basis": {"text": "Basis.", "provenance": "team"},
     }
 
 
-def test_rating_must_match_its_scale():
+def test_a_case_row_needs_a_case_rating_and_a_basis():
     assert model_errors(ScorecardRow, scorecard_row("case", "high")) == [
         'record.rating: "high" is not a case rating. Use one of: strong, moderate, weak, unclear, not_claimed'
     ]
-    assert model_errors(ScorecardRow, scorecard_row("risk", "strong")) == [
-        'record.rating: "strong" is not a risk rating. Use one of: high, medium, low, unclear'
-    ]
     assert model_errors(ScorecardRow, scorecard_row("case", "not_claimed")) == []
-    assert model_errors(ScorecardRow, scorecard_row("risk", "medium")) == []
+
+    row = scorecard_row("case", None)
+    del row["basis"]
+    assert model_errors(ScorecardRow, row) == [
+        "record.rating: required on a case row. Use one of: strong, moderate, weak, unclear, not_claimed",
+        "record.basis: required on a case row: the reason for the rating",
+    ]
 
 
-def test_unclear_rating_needs_a_reason():
+def test_a_risk_row_has_severity_and_likelihood_instead_of_a_rating():
+    # The workbook never combines severity, likelihood and confidence (core principle 6).
+    assert model_errors(ScorecardRow, scorecard_row("risk", None)) == []
+
     row = scorecard_row("risk", "unclear")
-    assert model_errors(ScorecardRow, row) == ['record.unclear_reason: required when rating is "unclear"']
-    row["unclear_reason"] = "no_relevant_evidence"
+    row["unclear_reason"] = "search_incomplete"
+    assert model_errors(ScorecardRow, row) == [
+        "record.rating: must be null on a risk row. The workbook keeps severity, likelihood and confidence apart, "
+        "so a risk row has severity and likelihood instead",
+        "record.unclear_reason: must be null on a risk row, which has no rating",
+    ]
+
+    # Until the workbook gives them, both may be null, and the basis is optional.
+    row = scorecard_row("risk", None)
+    row["severity"] = None
+    row["likelihood"] = None
+    assert model_errors(ScorecardRow, row) == []
+
+
+def test_severity_and_likelihood_use_the_workbooks_scales():
+    row = scorecard_row("risk", None)
+    row["severity"] = "Very high"
+    row["likelihood"] = "unclear"
+    errors = model_errors(ScorecardRow, row)
+    assert len(errors) == 2
+    assert errors[0].startswith("record.severity: Input should be 'very_high', 'high', 'medium', 'low' or 'unclear'")
+    assert errors[1].startswith("record.likelihood: Input should be 'high', 'medium', 'low' or 'not_assessable'")
+
+
+def test_a_risk_that_doesnt_apply_has_no_severity_or_likelihood():
+    # BCI and artificial minds: "Not applicable" in the workbook.
+    row = scorecard_row("risk", None)
+    row["applicable"] = False
+    assert model_errors(ScorecardRow, row) == [
+        "record.severity: must be null when applicable is false",
+        "record.likelihood: must be null when applicable is false",
+    ]
+    row["severity"] = None
+    row["likelihood"] = None
+    row["confidence"] = "medium"
+    assert model_errors(ScorecardRow, row) == []
+
+
+def test_case_rows_have_no_risk_fields():
+    row = scorecard_row("case", "unclear")
+    row["severity"] = "high"
+    row["likelihood"] = "low"
+    row["applicable"] = False
+    assert model_errors(ScorecardRow, row) == [
+        'record.severity: only risk rows (scale "risk") have one',
+        'record.likelihood: only risk rows (scale "risk") have one',
+        'record.applicable: only a risk row (scale "risk") can be not applicable',
+    ]
+
+
+def test_an_unclear_rating_needs_no_stated_reason_but_never_other():
+    # The workbook states no unclear reason, so it is optional; the basis gives the reason.
+    row = scorecard_row("case", "unclear")
+    assert model_errors(ScorecardRow, row) == []
+    row["unclear_reason"] = "indirect_evidence_only"
     assert model_errors(ScorecardRow, row) == []
 
     # "other" needs a note, and a row has nowhere to put one.
@@ -395,15 +530,17 @@ def test_unclear_rating_needs_a_reason():
     assert model_errors(ScorecardRow, row) == [
         'record.unclear_reason: "other" needs a note to explain it, and scorecard rows have no note field. '
         "Use the closest of: no_relevant_evidence, conflicting_evidence, underspecified_proposal, "
-        "search_incomplete, and explain the rest in the basis"
+        "search_incomplete, indirect_evidence_only, outcome_not_operationalized, information_inaccessible, "
+        "and explain the rest in the basis"
     ]
 
 
-def test_low_risk_needs_a_sourced_basis():
-    errors = model_errors(ScorecardRow, scorecard_row("risk", "low"))
-    assert len(errors) == 1
-    assert errors[0].startswith('record.basis.provenance: must be "source" for a low risk rating.')
-    assert model_errors(ScorecardRow, scorecard_row("risk", "low", provenance="source")) == []
+def test_potential_severity_is_retired():
+    row = scorecard_row("risk", None)
+    row["potential_severity"] = "high"
+    assert model_errors(ScorecardRow, row) == [
+        "record.potential_severity: unknown field (check the spelling, or remove it)"
+    ]
 
 
 def test_technology_page_rules():
@@ -437,9 +574,8 @@ def change(day: str, rating: tuple[str, str], confidence: tuple[str, str]) -> di
 
 
 def tracked_row(tracker: dict, scale: str = "case") -> dict:
-    """An Unclear row with Low confidence, carrying the given tracker."""
-    row = scorecard_row(scale, "unclear")
-    row["unclear_reason"] = "search_incomplete"
+    """An Unclear case row with Low confidence (or a risk row), carrying the given tracker."""
+    row = scorecard_row(scale, "unclear" if scale == "case" else None)
     row["tracker"] = tracker
     return row
 
@@ -459,17 +595,21 @@ def test_a_full_tracker_is_valid():
     assert model_errors(ScorecardRow, tracked_row({})) == []
 
 
-def test_history_ratings_must_be_on_the_row_scale():
+def test_history_ratings_must_be_case_ratings():
     tracker = {"last_updated": "2026-11-02", "history": [change("2026-11-02", ("high", "unclear"), ("low", "low"))]}
     assert model_errors(ScorecardRow, tracked_row(tracker, "case")) == [
         'record.tracker.history[0].rating_before: "high" is not a case rating. '
         "Use one of: strong, moderate, weak, unclear, not_claimed"
     ]
 
+
+def test_a_risk_row_has_no_history():
     tracker = {"last_updated": "2026-11-02", "history": [change("2026-11-02", ("strong", "unclear"), ("low", "low"))]}
     assert model_errors(ScorecardRow, tracked_row(tracker, "risk")) == [
-        'record.tracker.history[0].rating_before: "strong" is not a risk rating. Use one of: high, medium, low, unclear'
+        "record.tracker.history: must be empty on a risk row, which has no rating to change"
     ]
+    # A tracker without a history is fine.
+    assert model_errors(ScorecardRow, tracked_row({"milestone_ids": ["wbe-legal"]}, "risk")) == []
 
 
 def test_history_must_be_oldest_first():
@@ -586,10 +726,10 @@ def test_an_ai_change_note_needs_a_reviewer_on_a_real_page():
     entry = change("2026-11-02", ("unclear", "weak"), ("low", "low"))
     entry["note"] = {"text": "Suggested by a model.", "provenance": "ai", "source_ids": ["s13"]}
     page["scorecard"][0]["tracker"] = {"last_updated": "2026-11-02", "history": [entry]}
-    assert page["sample"] is True
+    assert page["unreviewed_ai_sections"] is True
     assert model_errors(TechnologyPage, page) == []
 
-    page["sample"] = False
+    page["unreviewed_ai_sections"] = False
     errors = model_errors(TechnologyPage, page)
     assert len(errors) == 1
     assert errors[0].startswith(
@@ -614,8 +754,22 @@ def case_row(row_id: str, dimension: str, problem: str | None) -> dict:
     }
 
 
-def assessment() -> dict:
+def risk_row(row_id: str, dimension: str) -> dict:
     return {
+        "id": row_id,
+        "dimension": dimension,
+        "problem": None,
+        "scale": "risk",
+        "rating": None,
+        "confidence": "low",
+        "severity": "high",
+        "likelihood": "not_assessable",
+    }
+
+
+def alignment_assessment() -> dict:
+    return {
+        "problem_addressed": "Oversight; value specification",
         "mechanism": team_claim("Fixture mechanism."),
         "questions": [],
         "rating": "unclear",
@@ -623,35 +777,51 @@ def assessment() -> dict:
         "unclear_reason": "underspecified_proposal",
         "reason": team_claim("Fixture reason."),
         "decisive_question": team_claim("Fixture question."),
+        "scenarios": [
+            {
+                "scenario": "WBE as AI overseer",
+                "problem": "Oversight",
+                "mechanism": "Human-derived overseer supervises AI",
+                "supporting": [],
+                "contrary_or_qualifying": ["E007", "E038"],
+                "gap": "No entry addresses supervising a more capable system (WBE-O-L4).",
+            }
+        ],
     }
 
 
-def evidence_row(scorecard_ids: list[str]) -> dict:
+def curse_assessment() -> dict:
     return {
-        "claim": "Fixture claim.",
-        "supporting_ids": ["S02"],
-        "contrary_ids": [],
-        "evidence_type": "Argument",
-        "directness": "remote",
-        "limitation": "Fixture limitation.",
-        "independence": "Unclear",
-        "provenance": "team",
-        "scorecard_ids": scorecard_ids,
+        "mechanism": team_claim("Fixture mechanism."),
+        "questions": [{"question": "Who gains, who loses", "answer": team_claim("Fixture answer.")}],
+        "rating": "unclear",
+        "confidence": "low",
+        "unclear_reason": "underspecified_proposal",
+        "reason": team_claim("Fixture reason."),
+        "decisive_question": None,
+        "agency": [
+            {
+                "group": "Biological humans: bargaining power",
+                "effect": "weakens",
+                "mechanism": "Fixture mechanism.",
+                "ownership_questions": None,
+                "entries": ["E087"],
+            }
+        ],
+        "ownership_gate": "0 answered, 2 partly answered.",
     }
 
 
 def scored_page() -> dict:
     """A page with the two case rows the assessments repeat, plus a risk row."""
     page = technology_page("wbe")
-    governance = case_row("governance-risk", "Governance risk", None)
-    governance["scale"] = "risk"
     page["scorecard"] = [
         case_row("alignment-case", "Alignment case", "alignment"),
         case_row("intelligence-curse-case", "Intelligence Curse case", "intelligence_curse"),
-        governance,
+        risk_row("governance-risk", "Governance risk"),
     ]
-    page["alignment_assessment"] = assessment()
-    page["intelligence_curse_assessment"] = assessment()
+    page["alignment_assessment"] = alignment_assessment()
+    page["intelligence_curse_assessment"] = curse_assessment()
     return page
 
 
@@ -673,9 +843,7 @@ def test_a_row_needs_an_id_that_is_a_slug():
 
 def test_row_ids_and_dimensions_are_unique_on_a_page():
     page = scored_page()
-    repeat = case_row("governance-risk", "Governance risk", None)
-    repeat["scale"] = "risk"
-    page["scorecard"].append(repeat)
+    page["scorecard"].append(risk_row("governance-risk", "Governance risk"))
     assert model_errors(TechnologyPage, page) == [
         'record.scorecard[3].id: "governance-risk" is already used by scorecard[2]',
         'record.scorecard[3].dimension: "Governance risk" is already used by scorecard[2]',
@@ -712,32 +880,79 @@ def test_no_row_id_can_be_a_milestone_category_key(category: MilestoneCategory):
     ]
 
 
-def test_register_links_name_a_row_on_this_page():
+def test_the_v01_sections_are_gone():
+    # Replaced by the workbook's tables (content/scorecard.json) and sections.
+    for key in ("evidence_register", "theory_of_change", "artificial_minds_assessment", "evidence_gap", "sample"):
+        page = scored_page()
+        page[key] = []
+        errors = model_errors(TechnologyPage, page)
+        assert len(errors) == 1
+        assert errors[0].startswith(f"record.{key}: ")
+
+
+def test_the_workbook_sections_are_valid():
     page = scored_page()
-    page["evidence_register"] = [evidence_row(["alignment-case"]), evidence_row(["alignment", "welfare"])]
+    page["artificial_minds_by_stage"] = [
+        {
+            "stage": "S3",
+            "stage_number": 3,
+            "stage_label": "3 Whole brain emulation (one instance)",
+            "consciousness": "Agnostic. S22 assumes suitably designed digital minds could be conscious.",
+            "moral_status": None,
+            "identity": None,
+            "welfare": None,
+            "protections": None,
+            "source_ids": ["s22"],
+            "entries": ["E086"],
+        },
+        {"stage": None, "stage_number": None, "stage_label": "All stages"},
+    ]
+    page["welfare_governance"] = {
+        "exposed": team_claim("Emulated persons; scanned originals."),
+        "harms": team_claim("Suffering across copies (R01-R06, R20, R21)"),
+        "rationale": team_claim("Severity follows from unbounded copy numbers (S22)."),
+    }
+    claim = team_claim("Fixture.")
+    page["scope"] = {
+        "intervention": claim,
+        "deployment_scenario": claim,
+        "affected_groups": claim,
+        "time_horizon": claim,
+        "comparator": claim,
+        "problems_claimed": claim,
+        "problem": "both",
+        "source_ids": ["s13", "s16"],
+    }
+    assert model_errors(TechnologyPage, page) == []
+
+
+def test_an_alignment_assessment_names_the_problem_it_addresses():
+    page = scored_page()
+    del page["alignment_assessment"]["problem_addressed"]
+    page["alignment_assessment"]["scenarios"][0]["supporting"] = ["E7"]
     assert model_errors(TechnologyPage, page) == [
-        'record.evidence_register[1].scorecard_ids[0]: no scorecard row with id "alignment" on this page. '
-        'Did you mean "alignment-case"?',
-        'record.evidence_register[1].scorecard_ids[1]: no scorecard row with id "welfare" on this page. '
-        "Use one of: alignment-case, intelligence-curse-case, governance-risk",
+        "record.alignment_assessment.problem_addressed: required",
+        'record.alignment_assessment.scenarios[0].supporting[0]: must be an evidence entry id like "E001" (got "E7")',
     ]
 
 
-def test_register_links_on_a_page_with_no_rows():
+def test_agency_effects_use_the_workbooks_values():
     page = scored_page()
-    page["scorecard"] = []
-    page["evidence_register"] = [evidence_row(["alignment-case"])]
-    assert model_errors(TechnologyPage, page) == [
-        'record.evidence_register[0].scorecard_ids[0]: no scorecard row with id "alignment-case" on this page. '
-        "This page has no scorecard rows yet"
-    ]
+    page["intelligence_curse_assessment"]["agency"][0]["effect"] = "Weakens"
+    errors = model_errors(TechnologyPage, page)
+    assert len(errors) == 1
+    assert errors[0].startswith(
+        "record.intelligence_curse_assessment.agency[0].effect: Input should be 'strengthens', 'weakens', 'mixed' "
+        "or 'not_addressed'"
+    )
 
 
-def test_a_register_row_links_each_row_once():
-    page = scored_page()
-    page["evidence_register"] = [evidence_row(["alignment-case", "governance-risk", "alignment-case"])]
-    assert model_errors(TechnologyPage, page) == [
-        'record.evidence_register[0].scorecard_ids[2]: "alignment-case" is listed twice'
+def test_a_minds_stage_keeps_its_label_word_for_word():
+    stage = {"stage": "3", "stage_number": "3", "stage_label": ""}
+    assert model_errors(ArtificialMindsStage, stage) == [
+        'record.stage: must be a stage like "S1", or "N/A" (got "3")',
+        'record.stage_label: must not be empty (got "")',
+        'record.stage_number: Input should be a valid integer (got "3")',
     ]
 
 
@@ -762,11 +977,6 @@ def test_a_placeholder_has_to_mark_something():
 
     # Any other unclear reason is an assessment, so it counts.
     page["scorecard"][0]["tracker"]["what_would_change"]["unclear_reason"] = "conflicting_evidence"
-    assert model_errors(TechnologyPage, page) == []
-
-    # A register row linking it is enough: the card shows that link inside the placeholder box.
-    page["scorecard"][0]["tracker"] = {"placeholder": True}
-    page["evidence_register"] = [evidence_row(["alignment-case"])]
     assert model_errors(TechnologyPage, page) == []
 
 
@@ -795,6 +1005,149 @@ def test_an_assessment_matches_its_scorecard_row(field_name: str, row_id: str):
             remaining.append(row)
     page["scorecard"] = remaining
     assert model_errors(TechnologyPage, page) == []
+
+
+# ---------------------------------------------------------------------------
+# The workbook's tables (content/scorecard.json), one record at a time
+
+
+def entry() -> dict:
+    return {
+        "id": "E014",
+        "source_id": "s05",
+        "register_id": "S05",
+        "locator": "Limits of FLOP-centric regulation; Fig. 1",
+        "claim": "NorthPole delivers ~72.7x more tokens/s/W than an H100.",
+        "codes": ["NM-M6", "NM-E-L1"],
+        "family": "neuromorphic",
+        "feeds": [
+            {"family": "neuromorphic", "target": "intelligence_curse", "direction": "supports",
+             "note": "efficiency prerequisite only"},
+            {"family": "neuromorphic", "target": "M6", "direction": "supports", "note": None},
+        ],
+        "feeds_text": "Neuromorphic AI Intelligence Curse (supports, efficiency prerequisite only); "
+        "Neuromorphic AI M6 Economic viability (supports)",
+        "source_type_independence": "Preprint; Independent",
+        "outcome": "Intelligence Curse",
+        "alignment_problem": "N/A",
+        "scenarios": ["NM-H", "NM-E"],
+        "stage": "S1",
+        "directness": "direct",
+        "role": "supports",
+        "basis": "demonstrated",
+    }
+
+
+def test_an_evidence_entry_is_valid():
+    assert model_errors(EvidenceEntry, entry()) == []
+    cross = entry()
+    cross["family"] = "cross_family"
+    cross["feeds"] = []
+    cross["feeds_text"] = "Not used in a headline rating"
+    cross["stage"] = "N/A"
+    cross["alignment_problem"] = "A-X"
+    assert model_errors(EvidenceEntry, cross) == []
+
+
+def test_an_evidence_entry_uses_the_workbooks_codes():
+    data = entry()
+    data["id"] = "E14"
+    data["register_id"] = "S5"
+    data["family"] = "Neuromorphic AI"
+    data["outcome"] = "Alignment"
+    data["scenarios"] = ["NM-H", "*-C"]
+    data["role"] = "Supports"
+    errors = model_errors(EvidenceEntry, data)
+    assert errors[0] == 'record.id: must be an evidence entry id like "E001" (got "E14")'
+    assert errors[1] == 'record.register_id: must look like "S02": a capital S and at least two digits (got "S5")'
+    assert errors[2].startswith("record.family: Input should be 'wbe', 'bci', 'neuromorphic' or 'cross_family'")
+    assert errors[3].startswith("record.outcome: Input should be 'AI Alignment', 'Intelligence Curse', 'Both'")
+    assert errors[4] == 'record.scenarios[1]: must be a scenario code like "WBE-O", "BCI-D" or "NM-A" (got "*-C")'
+    assert errors[5].startswith("record.role: Input should be 'supports', 'contrary', 'qualifies'")
+
+
+def link() -> dict:
+    return {
+        "id": "WBE-O-L1",
+        "family": "wbe",
+        "scenario_code": "WBE-O",
+        "scenario": "WBE as AI overseer",
+        "step": "1 Capability",
+        "outcome": "AI Alignment",
+        "claim": "Prerequisite: a single whole human emulation can be built and run.",
+        "status": "contrary",
+        "supporting": [],
+        "contrary": ["E037"],
+        "qualifying": ["E043", "E065"],
+        "best_directness": "direct",
+        "assumption": "Scanning, functional modelling and compute prerequisites all met.",
+        "objection": None,
+    }
+
+
+def test_a_causal_link_names_its_family_in_its_id():
+    assert model_errors(CausalLink, link()) == []
+    data = link()
+    data["id"] = "WBE-O-1"
+    assert model_errors(CausalLink, data) == ['record.id: must be a causal link id like "WBE-O-L1" (got "WBE-O-1")']
+    data = link()
+    data["family"] = "neuromorphic"
+    assert model_errors(CausalLink, data) == [
+        'record.family: "neuromorphic" doesn\'t match the id "WBE-O-L1", which names wbe'
+    ]
+
+
+def test_a_risk_names_at_least_one_family_once():
+    data = {
+        "id": "R05",
+        "risk": "Neuroscience and WBE research speed up AI capabilities more than safety",
+        "families": ["wbe", "neuromorphic", "bci"],
+        "domain": "governance",
+        "category": "Misuse and dual use (capability acceleration)",
+        "exposed": "Everyone (population-wide)",
+        "severity": "very_high",
+        "likelihood": "not_assessable",
+        "reversibility": "low",
+        "detectability": "low",
+        "remedies": "Controls on access (not specified)",
+        "control": "Research groups",
+        "confidence": "low",
+        "entries": ["E040", "E068"],
+    }
+    assert model_errors(Risk, data) == []
+    data["families"] = []
+    assert model_errors(Risk, data) == ["record.families: needs at least one family"]
+    data["families"] = ["wbe", "wbe"]
+    assert model_errors(Risk, data) == ['record.families[1]: "wbe" is listed twice']
+
+
+def test_the_workbook_version_and_checksum():
+    info = {"title": "Neuroengineering proposal scorecard framework", "version": "0.4", "source_sha256": None}
+    assert model_errors(WorkbookInfo, info) == []
+    info["version"] = "v0.4"
+    info["source_sha256"] = "ABC"
+    assert model_errors(WorkbookInfo, info) == [
+        'record.version: must look like "0.4": numbers with one dot',
+        "record.source_sha256: must be 64 lowercase hexadecimal characters",
+    ]
+    info["version"] = "0.5"
+    info["source_sha256"] = "0" * 64
+    assert model_errors(WorkbookInfo, info) == []
+
+
+def test_a_framework_links_to_a_full_web_address():
+    framework = {
+        "id": "RF2",
+        "reference": "NIST, AI Risk Management Framework (AI RMF 1.0)",
+        "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+        "contributes": "Govern / Map / Measure / Manage functions.",
+        "applied": "Not used.",
+    }
+    assert model_errors(Framework, framework) == []
+    framework["url"] = "www.nist.gov"
+    assert model_errors(Framework, framework) == [
+        "record.url: must be a full web address starting with https:// or http://"
+    ]
 
 
 # ---------------------------------------------------------------------------

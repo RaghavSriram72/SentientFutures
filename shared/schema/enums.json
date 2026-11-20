@@ -77,7 +77,7 @@
         {
           "value": "high_level_fidelity",
           "label": "High-level fidelity",
-          "description": "Preserves the relevant cognitive, behavioral, memory, personality, preference and decision-making properties of the original person."
+          "description": "Preserves the relevant cognitive, behavioural, memory, personality, preference and decision-making properties of the original person."
         },
         {
           "value": "reliability_robustness",
@@ -143,6 +143,11 @@
           "value": "not_claimed",
           "label": "Not claimed",
           "description": "None of our current sources claims the proposal will do this."
+        },
+        {
+          "value": "unclear",
+          "label": "Unclear",
+          "description": ""
         }
       ]
     },
@@ -152,7 +157,7 @@
         {
           "value": "high",
           "label": "High",
-          "description": "Several relevant, reasonably solid sources support the judgment, and we've considered the main evidence against it."
+          "description": "Several relevant, reasonably solid sources support the judgement, and we've considered the main evidence against it."
         },
         {
           "value": "medium",
@@ -162,7 +167,7 @@
         {
           "value": "low",
           "label": "Low",
-          "description": "The judgment rests mainly on indirect evidence, early results or contested assumptions."
+          "description": "The judgement rests mainly on indirect evidence, early results or contested assumptions."
         }
       ]
     },
@@ -236,13 +241,28 @@
         },
         {
           "value": "underspecified_proposal",
-          "label": "Underspecified proposal",
+          "label": "Proposal underspecified",
           "description": "The proposal isn't specific enough to assess."
         },
         {
           "value": "search_incomplete",
           "label": "Search incomplete",
           "description": "We haven't finished looking."
+        },
+        {
+          "value": "indirect_evidence_only",
+          "label": "Indirect evidence only",
+          "description": ""
+        },
+        {
+          "value": "outcome_not_operationalized",
+          "label": "Outcome not operationalised",
+          "description": ""
+        },
+        {
+          "value": "information_inaccessible",
+          "label": "Information inaccessible",
+          "description": ""
         },
         {
           "value": "other",
@@ -342,7 +362,7 @@
         {
           "value": "report",
           "label": "Report",
-          "description": "A report from an organization."
+          "description": "A report from an organisation."
         },
         {
           "value": "forum_post",
@@ -397,7 +417,7 @@
         {
           "value": "argument",
           "label": "Argument",
-          "description": "Proposes or criticizes neuroengineering as a response to alignment or the Intelligence Curse."
+          "description": "Proposes or criticises neuroengineering as a response to alignment or the Intelligence Curse."
         },
         {
           "value": "milestone_evidence",
@@ -498,6 +518,256 @@
           "value": "unclear",
           "label": "Unclear",
           "description": "We don't know, and the tag gives the reason."
+        }
+      ]
+    },
+    "EvidenceDirectness": {
+      "draft": false,
+      "values": [
+        {
+          "value": "direct",
+          "label": "Direct (family itself)",
+          "description": "Source studies the technology family itself"
+        },
+        {
+          "value": "close_prerequisite",
+          "label": "Close technical prerequisite",
+          "description": "Source studies a component the family requires"
+        },
+        {
+          "value": "related_neuroai",
+          "label": "Related NeuroAI system",
+          "description": "Source studies an adjacent neuro-inspired system"
+        },
+        {
+          "value": "conceptual",
+          "label": "Conceptually relevant only",
+          "description": "No empirical or technical bearing; argument by analogy"
+        }
+      ]
+    },
+    "EvidenceRole": {
+      "draft": false,
+      "values": [
+        {
+          "value": "supports",
+          "label": "Supports",
+          "description": ""
+        },
+        {
+          "value": "contrary",
+          "label": "Contrary",
+          "description": ""
+        },
+        {
+          "value": "qualifies",
+          "label": "Qualifies",
+          "description": ""
+        },
+        {
+          "value": "prerequisite_only",
+          "label": "Prerequisite only",
+          "description": ""
+        }
+      ]
+    },
+    "EvidenceBasis": {
+      "draft": false,
+      "values": [
+        {
+          "value": "demonstrated",
+          "label": "Demonstrated",
+          "description": ""
+        },
+        {
+          "value": "projected",
+          "label": "Projected",
+          "description": ""
+        },
+        {
+          "value": "argued",
+          "label": "Argued",
+          "description": ""
+        },
+        {
+          "value": "assumed",
+          "label": "Assumed",
+          "description": ""
+        }
+      ]
+    },
+    "EvidenceStatus": {
+      "draft": false,
+      "values": [
+        {
+          "value": "supporting",
+          "label": "Supporting evidence found",
+          "description": "≥1 Supports entry; no unaddressed contrary entry of comparable quality"
+        },
+        {
+          "value": "contrary",
+          "label": "Contrary evidence found",
+          "description": "≥1 Contrary entry; no supporting entry of comparable quality"
+        },
+        {
+          "value": "conflicting",
+          "label": "Conflicting evidence",
+          "description": "Supporting and contrary entries of comparable quality"
+        },
+        {
+          "value": "no_relevant_evidence",
+          "label": "No relevant evidence found",
+          "description": "Documented search completed; nothing relevant. Never counted as contrary."
+        },
+        {
+          "value": "search_incomplete",
+          "label": "Search incomplete",
+          "description": "Search not yet completed"
+        }
+      ]
+    },
+    "Severity": {
+      "draft": false,
+      "values": [
+        {
+          "value": "very_high",
+          "label": "Very high",
+          "description": ""
+        },
+        {
+          "value": "high",
+          "label": "High",
+          "description": ""
+        },
+        {
+          "value": "medium",
+          "label": "Medium",
+          "description": ""
+        },
+        {
+          "value": "low",
+          "label": "Low",
+          "description": ""
+        },
+        {
+          "value": "unclear",
+          "label": "Unclear",
+          "description": ""
+        }
+      ]
+    },
+    "Likelihood": {
+      "draft": false,
+      "values": [
+        {
+          "value": "high",
+          "label": "High",
+          "description": ""
+        },
+        {
+          "value": "medium",
+          "label": "Medium",
+          "description": ""
+        },
+        {
+          "value": "low",
+          "label": "Low",
+          "description": ""
+        },
+        {
+          "value": "not_assessable",
+          "label": "Not assessable",
+          "description": ""
+        }
+      ]
+    },
+    "RiskLevel": {
+      "draft": false,
+      "values": [
+        {
+          "value": "high",
+          "label": "High",
+          "description": ""
+        },
+        {
+          "value": "medium",
+          "label": "Medium",
+          "description": ""
+        },
+        {
+          "value": "low",
+          "label": "Low",
+          "description": ""
+        },
+        {
+          "value": "unclear",
+          "label": "Unclear",
+          "description": ""
+        }
+      ]
+    },
+    "RiskDomain": {
+      "draft": false,
+      "values": [
+        {
+          "value": "human_welfare",
+          "label": "Human welfare",
+          "description": ""
+        },
+        {
+          "value": "artificial_mind_welfare",
+          "label": "Artificial-mind welfare",
+          "description": ""
+        },
+        {
+          "value": "governance",
+          "label": "Governance",
+          "description": ""
+        }
+      ]
+    },
+    "GovernanceStatus": {
+      "draft": false,
+      "values": [
+        {
+          "value": "not_addressed",
+          "label": "Not addressed by any source",
+          "description": ""
+        },
+        {
+          "value": "proposal_found",
+          "label": "Proposal found",
+          "description": ""
+        },
+        {
+          "value": "evidence_found",
+          "label": "Evidence found",
+          "description": ""
+        }
+      ]
+    },
+    "AgencyEffect": {
+      "draft": false,
+      "values": [
+        {
+          "value": "strengthens",
+          "label": "Strengthens",
+          "description": ""
+        },
+        {
+          "value": "weakens",
+          "label": "Weakens",
+          "description": ""
+        },
+        {
+          "value": "mixed",
+          "label": "Mixed",
+          "description": ""
+        },
+        {
+          "value": "not_addressed",
+          "label": "Not addressed",
+          "description": ""
         }
       ]
     }

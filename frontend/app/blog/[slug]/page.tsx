@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { isSamplePost } from "@/components/blog/posts";
+import { isSamplePost, postAuthor } from "@/components/blog/posts";
 import { PostBody } from "@/components/blog/PostBody";
 import { EmphasisText, stripEmphasis } from "@/components/common/Emphasis";
 import { SampleChip } from "@/components/common/Marks";
@@ -47,6 +47,8 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound();
   }
   const isSample = isSamplePost(post);
+  // null for the team's own posts, which show only the date.
+  const author = postAuthor(post);
   // "More posts" only when there are other posts to see.
   const hasOtherPosts = getPosts().length > 1;
 
@@ -59,7 +61,7 @@ export default async function PostPage({ params }: PostPageProps) {
             <span aria-hidden="true">&larr;</span> All posts
           </Link>
         }
-        eyebrow={`${formatDate(post.date)} · ${post.author}`}
+        eyebrow={author ? `${formatDate(post.date)} · ${author}` : formatDate(post.date)}
         title={<EmphasisText text={post.title} />}
         lede={post.summary || undefined}
       >

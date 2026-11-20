@@ -15,12 +15,17 @@ export interface EnumGroup {
 interface EnumDefinitionsProps {
   name: EnumName;
   title: string;
-  note?: string;
+  note?: ReactNode;
   // Folded into a <details> that shows only the title until it's opened.
   collapsible?: boolean;
   // Splits the values into titled groups, in the order given. Values in no
   // group come last, so a value added to enums.py later still shows up.
   groups?: EnumGroup[];
+  // Meanings to show instead of the ones in enums.json, keyed by value, such
+  // as the workbook Codebook's own definitions. Values left out keep theirs.
+  descriptions?: Record<string, string>;
+  // A line under the values, such as where the meanings come from.
+  footer?: ReactNode;
 }
 
 interface DefinitionRow {
@@ -28,14 +33,22 @@ interface DefinitionRow {
   description: string;
 }
 
+type Descriptions = Record<string, string> | undefined;
+
+// A value's meaning: the one passed in when there is one, else enums.json's.
+function describe(info: { value: string; description: string }, descriptions: Descriptions): string {
+  return descriptions?.[info.value] ?? info.description;
+}
+
 // One row per value. When every value has the same description (the time
-// horizons are all "Definition to be agreed."), the labels share one row so
-// the sentence isn't printed three times.
-function definitionRows(name: EnumName): DefinitionRow[] {
+// horizons are all "Definition to be agreed.", and scales with no
+// definitions have none at all), the labels share one row so the sentence
+// isn't printed three times.
+function definitionRows(name: EnumName, descriptions: Descriptions): DefinitionRow[] {
   const values = enumValues(name);
   let allSame = values.length > 1;
   for (const info of values) {
-    if (info.description !== values[0].description) {
+    if (describe(info, descriptions) !== describe(values[0], descriptions)) {
       allSame = false;
     }
   }
@@ -44,11 +57,11 @@ function definitionRows(name: EnumName): DefinitionRow[] {
     for (const info of values) {
       labels.push(info.label);
     }
-    return [{ label: labels.join(", "), description: values[0].description }];
+    return [{ label: labels.join(", "), description: describe(values[0], descriptions) }];
   }
   const rows: DefinitionRow[] = [];
   for (const info of values) {
-    rows.push({ label: info.label, description: info.description });
+    rows.push({ label: info.label, description: describe(info, descriptions) });
   }
   return rows;
 }
@@ -61,7 +74,11 @@ interface GroupRows {
 // Each group's rows in the group's order, then the values in no group. Every
 // value gets a row of its own here, even when the descriptions match. A group
 // with none of the category's values is left out.
-function groupedRows(name: EnumName, groups: EnumGroup[]): { grouped: GroupRows[]; ungrouped: DefinitionRow[] } {
+function groupedRows(
+  name: EnumName,
+  groups: EnumGroup[],
+  descriptions: Descriptions,
+): { grouped: GroupRows[]; ungrouped: DefinitionRow[] } {
   const values = enumValues(name);
   const placed = new Set<string>();
   const grouped: GroupRows[] = [];
@@ -70,7 +87,7 @@ function groupedRows(name: EnumName, groups: EnumGroup[]): { grouped: GroupRows[
     for (const value of group.values) {
       for (const info of values) {
         if (info.value === value) {
-          rows.push({ label: info.label, description: info.description });
+          rows.push({ label: info.label, description: describe(info, descriptions) });
           placed.add(info.value);
         }
       }
@@ -82,17 +99,19 @@ function groupedRows(name: EnumName, groups: EnumGroup[]): { grouped: GroupRows[
   const ungrouped: DefinitionRow[] = [];
   for (const info of values) {
     if (!placed.has(info.value)) {
-      ungrouped.push({ label: info.label, description: info.description });
+      ungrouped.push({ label: info.label, description: describe(info, descriptions) });
     }
   }
   return { grouped, ungrouped };
 }
 
+// A row with no meaning to show (scales the workbook gives as plain labels)
+// lets its labels use the full width instead of wrapping in the label column.
 function DefinitionList({ rows }: { rows: DefinitionRow[] }) {
   return (
     <dl className={styles.values}>
       {rows.map((row) => (
-        <div key={row.label} className={styles.row}>
+        <div key={row.label} className={`${styles.row} ${row.description === "" ? styles.labelsOnly : ""}`}>
           <dt className={styles.term}>
             <span className={styles.label}>{row.label}</span>
           </dt>
@@ -106,8 +125,16 @@ function DefinitionList({ rows }: { rows: DefinitionRow[] }) {
 // The values under their group titles. Each group is a role="group" named by
 // its title, which is a paragraph and not a heading, so a screen reader's
 // list of headings never shows a bare "Technical".
-function GroupedDefinitions({ name, groups }: { name: EnumName; groups: EnumGroup[] }) {
-  const { grouped, ungrouped } = groupedRows(name, groups);
+function GroupedDefinitions({
+  name,
+  groups,
+  descriptions,
+}: {
+  name: EnumName;
+  groups: EnumGroup[];
+  descriptions: Descriptions;
+}) {
+  const { grouped, ungrouped } = groupedRows(name, groups, descriptions);
   return (
     <div className={styles.groups}>
       {grouped.map(({ group, rows }) => {
@@ -128,14 +155,32 @@ function GroupedDefinitions({ name, groups }: { name: EnumName; groups: EnumGrou
 
 // One category from the shared enums.json as a ruled definition list:
 // its name and an optional note on the left, each value and its meaning on the right.
-export function EnumDefinitions({ name, title, note, collapsible = false, groups }: EnumDefinitionsProps) {
+export function EnumDefinitions({
+  name,
+  title,
+  note,
+  collapsible = false,
+  groups,
+  descriptions,
+  footer,
+}: EnumDefinitionsProps) {
   const headingId = `category-${name}`;
   const isDraft = isDraftEnum(name);
 
-  const values = groups ? (
-    <GroupedDefinitions name={name} groups={groups} />
+  const list = groups ? (
+    <GroupedDefinitions name={name} groups={groups} descriptions={descriptions} />
   ) : (
-    <DefinitionList rows={definitionRows(name)} />
+    <DefinitionList rows={definitionRows(name, descriptions)} />
+  );
+  // With a footer, the list and its footer share one box, so the layout
+  // around them still sees one block of values.
+  const values = footer ? (
+    <div className={styles.withFooter}>
+      {list}
+      <p className={styles.footer}>{footer}</p>
+    </div>
+  ) : (
+    list
   );
 
   if (collapsible) {

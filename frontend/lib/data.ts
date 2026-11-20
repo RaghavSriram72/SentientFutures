@@ -3,12 +3,14 @@
 // The deploy points it at .site-data/, the folder the publish step writes
 // (python -m sf_shared.export_site): content/ plus the sources, milestones and
 // posts the team approved or published in admin. Both folders have the same
-// layout (milestones.json, sources.json, technologies.json, posts/*.md).
+// layout (milestones.json, sources.json, technologies.json, scorecard.json,
+// posts/*.md). scorecard.json holds the workbook's shared tables (evidence
+// entries, causal links, risks and more); lib/workbook.ts reads it.
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 
-import type { Milestone, Post, SiteData, Source, TechnologyPage } from "./types";
+import type { Milestone, Post, ScorecardData, SiteData, Source, TechnologyPage } from "./types";
 
 const DATA_DIR = process.env.DATA_DIR
   ? path.resolve(process.env.DATA_DIR)
@@ -36,6 +38,7 @@ const KEEP_IN_MEMORY = process.env.NODE_ENV === "production";
 let cachedMilestones: Milestone[] | null = null;
 let cachedSources: Source[] | null = null;
 let cachedTechnologies: TechnologyPage[] | null = null;
+let cachedScorecard: ScorecardData | null = null;
 let cachedPosts: Post[] | null = null;
 
 export function getMilestones(): Milestone[] {
@@ -78,6 +81,16 @@ export function getTechnology(id: string): TechnologyPage | undefined {
     }
   }
   return undefined;
+}
+
+// The workbook's shared tables (content/scorecard.json). Written by
+// python -m sf_shared.import_workbook; before the first import it is a
+// placeholder with empty lists, so every list here may be empty.
+export function getScorecard(): ScorecardData {
+  if (cachedScorecard === null || !KEEP_IN_MEMORY) {
+    cachedScorecard = readJson<ScorecardData>("scorecard.json");
+  }
+  return cachedScorecard;
 }
 
 export function getPosts(): Post[] {
@@ -139,6 +152,7 @@ export function getSiteData(): SiteData {
     milestones: getMilestones(),
     sources: getSources(),
     technologies: getTechnologies(),
+    scorecard: getScorecard(),
     posts: getPosts(),
     nowYear: now.getFullYear(),
     builtAt: now.toISOString(),

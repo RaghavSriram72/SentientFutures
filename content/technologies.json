@@ -18,13 +18,18 @@
         "dimension": "Alignment case",
         "problem": "alignment",
         "scale": "case",
-        "rating": "unclear",
+        "rating": "weak",
         "confidence": "low",
-        "unclear_reason": "underspecified_proposal",
+        "unclear_reason": null,
         "basis": {
-          "text": "S02 and S13 both name WBE as a possible pathway for alignment, but neither shows how an emulation would solve a specific alignment problem. The evidence we have isn't enough to tell whether WBE is a promising research direction or an intervention that matters for safety.",
+          "text": "Value inheritance and human-derived oversight are argued by S16 and partly S14, but S13 judges the WBE-safety arguments flawed and S13 and S21 expect other AI first. Technical capability is shown only for 1 mm³ of cortex (S16), and value drift is raised by S16 and S21. Every pathway has a contrary or conflicting necessary link and otherwise rests on argument or assumption. Low confidence: no source tests any alignment link.",
           "provenance": "team",
-          "source_ids": ["s02", "s13"]
+          "source_ids": [
+            "s16",
+            "s14",
+            "s13",
+            "s21"
+          ]
         },
         "tracker": {
           "what_would_change": {
@@ -40,13 +45,17 @@
         "dimension": "Intelligence Curse case",
         "problem": "intelligence_curse",
         "scale": "case",
-        "rating": "unclear",
+        "rating": "weak",
         "confidence": "low",
-        "unclear_reason": "underspecified_proposal",
+        "unclear_reason": null,
         "basis": {
-          "text": "S15 describes the risk that powerful actors lose their incentive to invest in people. None of our sources says how WBE would help, or shows that it would counteract that risk. Who would own the scans, the emulations, the compute and the labor they produce is unresolved.",
+          "text": "Three independent book-length arguments (S20, S21, S22) predict displacement of biological workers and wage pressure on emulations. None proposes a mechanism that preserves biological humans' bargaining power, and the ownership gate is not passed.",
           "provenance": "team",
-          "source_ids": ["s15"]
+          "source_ids": [
+            "s20",
+            "s21",
+            "s22"
+          ]
         }
       },
       {
@@ -54,44 +63,36 @@
         "dimension": "Human welfare risk",
         "problem": null,
         "scale": "risk",
-        "rating": "unclear",
+        "rating": null,
         "confidence": "low",
-        "unclear_reason": "no_relevant_evidence",
-        "potential_severity": "high",
-        "basis": {
-          "text": "Scanned people, users, workers, the wider public and future generations could all be exposed to harm. The severity could be high, but it hasn't been assessed, and the WBE-specific welfare evidence we have is too thin to separate likely harms from speculative ones.",
-          "provenance": "team"
-        }
+        "severity": "high",
+        "likelihood": "not_assessable",
+        "applicable": true,
+        "basis": null
       },
       {
         "id": "artificial-mind-welfare-and-rights-risk",
         "dimension": "Artificial-mind welfare and rights risk",
         "problem": null,
         "scale": "risk",
-        "rating": "unclear",
+        "rating": null,
         "confidence": "low",
-        "unclear_reason": "no_relevant_evidence",
-        "potential_severity": "high",
-        "basis": {
-          "text": "The proposal could create digital minds whose welfare is at stake. Harm to them could be severe and hard to reverse if emulations can be copied or modified, or can persist indefinitely. No source we have assesses their suffering, consent, copying, confinement, acceleration, deletion or labor conditions, and S02 names moral bottlenecks without setting out a framework for moral status.",
-          "provenance": "team",
-          "source_ids": ["s02"]
-        }
+        "severity": "very_high",
+        "likelihood": "not_assessable",
+        "applicable": true,
+        "basis": null
       },
       {
         "id": "governance-risk",
         "dimension": "Governance risk",
         "problem": null,
         "scale": "risk",
-        "rating": "unclear",
+        "rating": null,
         "confidence": "low",
-        "unclear_reason": "underspecified_proposal",
-        "potential_severity": "high",
-        "basis": {
-          "text": "No governance arrangements have been specified, and the sources we have describe no way to detect or remedy harms. S02 identifies moral and regulatory bottlenecks, and S15 points to the risk of concentrated power. The governance risk could be high, but judging how severe it is would take more WBE-specific evidence on governance than we have.",
-          "provenance": "team",
-          "source_ids": ["s02", "s15"]
-        }
+        "severity": "high",
+        "likelihood": "not_assessable",
+        "applicable": true,
+        "basis": null
       },
       {
         "id": "safeguard-adequacy",
@@ -100,60 +101,17 @@
         "scale": "case",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "underspecified_proposal",
+        "unclear_reason": null,
         "basis": {
-          "text": "The theory of change depends on safeguards against exploitation, abuses of copying, welfare harms and concentration of power. Nothing we've found sets out governance arrangements or a way to detect or remedy harms, and S02 has no standard for protecting emulated minds.",
+          "text": "Severity follows from unbounded copy numbers and subjective speed (S22). No source estimates likelihood. Harms are hard to detect and hard to reverse once copies exist; proposed safeguards are principles only (S22).",
           "provenance": "team",
-          "source_ids": ["s02"]
+          "source_ids": [
+            "s22"
+          ]
         }
       }
     ],
     "artificial_minds_questions": [],
-    "scope": {
-      "intervention": {
-        "text": "A high-fidelity digital emulation of a human brain, which might be used as a human-derived AI system or as an overseer.",
-        "provenance": "team"
-      },
-      "deployment_scenario": {
-        "text": "Research, then deployment if it turns out to be feasible: emulated minds working as trusted AI systems, as overseers or as contributors to alignment research.",
-        "provenance": "team"
-      },
-      "affected_groups": {
-        "text": "Emulated individuals, if any are created; the people whose brains may be scanned; developers and operators; users of AI systems; and society more widely.",
-        "provenance": "team"
-      },
-      "time_horizon": {
-        "text": "Long term. The current evidence doesn't support any defensible near-term date for deployment.",
-        "provenance": "team"
-      },
-      "comparator": {
-        "text": "Conventional AI alignment methods, including interpretability, evaluations, oversight, control and value learning.",
-        "provenance": "team"
-      },
-      "problem": "both"
-    },
-    "theory_of_change": [
-      {
-        "text": "Brain scanning, functional modeling and simulation become accurate enough.",
-        "provenance": "team"
-      },
-      {
-        "text": "A human brain is emulated, with legitimate consent and governance arrangements in place.",
-        "provenance": "team"
-      },
-      {
-        "text": "The emulation is deployed as an AI system, an overseer, a researcher or a contributor.",
-        "provenance": "team"
-      },
-      {
-        "text": "Its human-derived cognition improves value specification, oversight or institutional decision-making.",
-        "provenance": "team"
-      },
-      {
-        "text": "Safeguards prevent exploitation, abuses of copying, welfare harms and concentration of power.",
-        "provenance": "team"
-      }
-    ],
     "alternatives": [
       {
         "text": "Conventional alignment research may solve the relevant problems sooner.",
@@ -166,205 +124,396 @@
       {
         "text": "Regulatory, moral and technical bottlenecks may keep it from being deployed in time. S02 points to the regulatory and moral bottlenecks explicitly.",
         "provenance": "team",
-        "source_ids": ["s02"]
+        "source_ids": [
+          "s02"
+        ]
       },
       {
         "text": "S13 presents brain emulation as one of several underdeveloped NeuroAI pathways, and makes no case that it's an established safety solution.",
         "provenance": "team",
-        "source_ids": ["s13"]
+        "source_ids": [
+          "s13"
+        ]
       }
     ],
-    "evidence_register": [
-      {
-        "claim": "WBE could contribute to alignment.",
-        "supporting_ids": ["S02", "S13"],
-        "contrary_ids": [],
-        "evidence_type": "Argument / review",
-        "directness": "remote",
-        "limitation": "No one has shown that an emulation would be safer, aligned or deployable.",
-        "independence": "Mixed",
+    "scope": {
+      "intervention": {
+        "text": "Whole brain emulation: scanning a specific human brain at sufficient resolution and running a computational model that reproduces that person's cognition (stages S1 component simulation → S6 deployed populations). Systems that model only parts of a brain are not treated as WBE (e.g., partial emulation and digital twins, stages S1-S2).",
+        "provenance": "team"
+      },
+      "deployment_scenario": {
+        "text": "WBE-O AI overseer · WBE-R alignment researcher · WBE-G general-purpose AI system · WBE-L digital labour · WBE-I institutional decision-making (provisional)",
+        "provenance": "team"
+      },
+      "affected_groups": {
+        "text": "Claimed beneficiaries: humanity at large via aligned intelligence (WBE-O/R/G); owners of scans, emulations and compute (WBE-L). Bear risks: emulated persons (copying, deletion, subsistence); biological workers (displacement); scanned originals (consent); everyone (capability spillover).",
+        "provenance": "team"
+      },
+      "time_horizon": {
+        "text": "Long (> 15 y). No source dates S3; S13: whole-brain simulation 'many years out'; S21: de novo AI plausibly first.",
         "provenance": "team",
-        "scorecard_ids": ["alignment-case"]
+        "source_ids": [
+          "s13",
+          "s21"
+        ]
       },
-      {
-        "claim": "Regulatory and moral bottlenecks could delay WBE.",
-        "supporting_ids": ["S02"],
-        "contrary_ids": [],
-        "evidence_type": "Argument",
-        "directness": "adjacent",
-        "limitation": "A workshop-level claim, with no policy analysis or empirical test behind it.",
-        "independence": "Unclear",
-        "provenance": "team"
+      "comparator": {
+        "text": "Alignment: conventional (non-neuro) alignment and oversight methods (S28). Intelligence Curse: labour-replacing AI without WBE.",
+        "provenance": "team",
+        "source_ids": [
+          "s28"
+        ]
       },
-      {
-        "claim": "Neuroscience-inspired methods may support safety.",
-        "supporting_ids": ["S13"],
-        "contrary_ids": [],
-        "evidence_type": "Research roadmap",
-        "directness": "remote",
-        "limitation": "It doesn't show that WBE in particular improves alignment.",
-        "independence": "Independent",
-        "provenance": "team"
+      "problems_claimed": {
+        "text": "Alignment: value specification (WBE-G), scalable oversight (WBE-O), research acceleration (WBE-R). Intelligence Curse: claimed by no source as a benefit; displacement argued (S20-S22).",
+        "provenance": "team",
+        "source_ids": [
+          "s20",
+          "s21",
+          "s22"
+        ]
       },
-      {
-        "claim": "WBE could preserve or distribute human agency.",
-        "supporting_ids": [],
-        "contrary_ids": ["S15"],
-        "evidence_type": "Argument",
-        "directness": "remote",
-        "limitation": "No evidence links WBE to broad ownership, bargaining power or institutional change.",
-        "independence": "Not applicable",
-        "provenance": "team"
-      }
-    ],
-    "alignment_assessment": {
-      "mechanism": {
-        "text": "Potentially value specification, oversight or interpretability.",
-        "provenance": "team"
-      },
-      "questions": [
-        {
-          "question": "Does the mechanism address that problem, or move it somewhere else?",
-          "answer": {
-            "text": "Unclear. An emulation could inherit human values, but it could also inherit human biases, conflicts, limitations and governance failures.",
-            "provenance": "team"
-          }
-        },
-        {
-          "question": "Could a more capable AI undermine or get around the benefit?",
-          "answer": {
-            "text": "Unclear. Nothing we've read tests whether an overseer based on an emulation would stay effective against a more capable AI.",
-            "provenance": "team"
-          }
-        },
-        {
-          "question": "Does it create another agent or decision-maker that would itself need to be aligned or governed?",
-          "answer": {
-            "text": "Yes, potentially. An emulated mind would itself need moral treatment and governance, and possibly alignment safeguards too.",
-            "provenance": "team"
-          }
-        },
-        {
-          "question": "What's the benefit relative to the comparator?",
-          "answer": {
-            "text": "Unclear. There's no direct comparison with conventional alignment methods to go on.",
-            "provenance": "team"
-          }
-        }
+      "problem": "both",
+      "source_ids": [
+        "s13",
+        "s16",
+        "s20",
+        "s21",
+        "s22"
       ],
-      "rating": "unclear",
-      "confidence": "low",
-      "unclear_reason": "underspecified_proposal",
-      "reason": {
-        "text": "S02 and S13 both name WBE as a possible pathway for alignment, but neither shows how an emulation would solve a specific alignment problem. S02 also identifies regulatory and moral bottlenecks. The evidence we have isn't enough to tell whether WBE is a promising research direction or an intervention that matters for safety.",
+      "source_ids_text": "S13, S16, S20, S21, S22"
+    },
+    "alignment_assessment": {
+      "problem_addressed": "Oversight; research acceleration; value specification",
+      "mechanism": {
+        "text": "Relocates the problem: value specification becomes the fidelity and stability of emulated humans; oversight becomes aligning the overseer (S13, S16, S21). Creates new agents whose alignment, welfare and governance are open (S16, S21, S22).",
         "provenance": "team",
-        "source_ids": ["s02", "s13"]
+        "source_ids": [
+          "s13",
+          "s16",
+          "s21",
+          "s22"
+        ]
+      },
+      "questions": [],
+      "rating": "weak",
+      "confidence": "low",
+      "unclear_reason": null,
+      "reason": {
+        "text": "Value inheritance and human-derived oversight are argued by S16 and partly S14, but S13 judges the WBE-safety arguments flawed and S13 and S21 expect other AI first. Technical capability is shown only for 1 mm³ of cortex (S16), and value drift is raised by S16 and S21. Every pathway has a contrary or conflicting necessary link and otherwise rests on argument or assumption. Low confidence: no source tests any alignment link.",
+        "provenance": "team",
+        "source_ids": [
+          "s16",
+          "s14",
+          "s13",
+          "s21"
+        ]
       },
       "decisive_question": {
-        "text": "Which specific alignment failure would a WBE-based system solve better than alignment methods that don't use WBE, and what evidence would show that?",
+        "text": "Can an emulation reproduce and keep specified values or oversight judgement, and would it arrive before other advanced AI?",
         "provenance": "team"
-      }
+      },
+      "scenarios": [
+        {
+          "scenario": "WBE as AI overseer",
+          "problem": "Oversight",
+          "mechanism": "Human-derived overseer supervises AI",
+          "supporting": [],
+          "contrary_or_qualifying": [
+            "E007",
+            "E038",
+            "E092"
+          ],
+          "gap": "No entry addresses supervising a more capable system (WBE-O-L4) or compares with non-WBE oversight (WBE-O-L5)."
+        },
+        {
+          "scenario": "WBE as alignment researcher",
+          "problem": "Research acceleration",
+          "mechanism": "Accelerated emulated researchers multiply alignment research",
+          "supporting": [
+            "E063"
+          ],
+          "contrary_or_qualifying": [
+            "E007",
+            "E038",
+            "E092"
+          ],
+          "gap": "Only an assumed claim that depends on fidelity (S16); no comparison with AI research agents."
+        },
+        {
+          "scenario": "WBE as general-purpose AI",
+          "problem": "Value specification",
+          "mechanism": "Values inherited from the original, so values need not be specified",
+          "supporting": [
+            "E058",
+            "E060",
+            "E061",
+            "E064"
+          ],
+          "contrary_or_qualifying": [
+            "E007",
+            "E038",
+            "E039",
+            "E040",
+            "E062",
+            "E068",
+            "E091",
+            "E092"
+          ],
+          "gap": "Value inheritance argued (S16) and disputed (S13); drift raised (S16, S21); timing contrary (S13, S21)."
+        },
+        {
+          "scenario": "WBE in institutional decisions",
+          "problem": "Other",
+          "mechanism": "Emulations improve institutional decisions",
+          "supporting": [],
+          "contrary_or_qualifying": [],
+          "gap": "No entries."
+        }
+      ]
     },
     "intelligence_curse_assessment": {
       "mechanism": {
-        "text": "Potentially wider ownership of productive AI capacity or of human-derived labor. Our current sources don't specify the mechanism.",
+        "text": "No source claims an agency-preserving mechanism. Argued effects come from digital labour; institutional use has no evidence.",
         "provenance": "team"
       },
       "questions": [
         {
-          "question": "Who gains lasting agency or bargaining power?",
+          "question": "Who gains, who loses",
           "answer": {
-            "text": "Unclear. It could be emulated individuals, biological people, developers or the owners of compute.",
-            "provenance": "team"
+            "text": "Owners of scans, emulations and compute, and asset holders if property rights hold, gain (S20). Biological workers and emulated persons lose (S20-S22).",
+            "provenance": "team",
+            "source_ids": [
+              "s20",
+              "s21",
+              "s22"
+            ]
           }
         },
         {
-          "question": "Who owns and controls the infrastructure, the data and the returns?",
+          "question": "Who owns infrastructure, data and returns",
           "answer": {
-            "text": "Unclear. Ownership of the scans, the emulations, the compute and the labor they produce is unresolved.",
-            "provenance": "team"
+            "text": "Not specified: scans, compute and exit unaddressed; returns go to asset holders only (S20, unverified).",
+            "provenance": "team",
+            "source_ids": [
+              "s20"
+            ]
           }
         },
         {
-          "question": "Does it complement human contributions, delay replacement or deepen dependence?",
+          "question": "Complements, delays or deepens replacement?",
           "answer": {
-            "text": "Unclear. WBE could expand human-derived capacity, or it could create a new class of digital labor that's open to exploitation.",
-            "provenance": "team"
+            "text": "Deepens replacement: emulation labour substitutes for biological labour (S20, S21); digital populations may dilute transfers and political power (S22).",
+            "provenance": "team",
+            "source_ids": [
+              "s20",
+              "s21",
+              "s22"
+            ]
           }
         },
         {
-          "question": "What's the benefit relative to the comparator?",
+          "question": "Benefit over comparator",
           "answer": {
-            "text": "Unclear.",
+            "text": "Not shown; no source compares with the comparator.",
             "provenance": "team"
           }
         }
       ],
-      "rating": "unclear",
+      "rating": "weak",
       "confidence": "low",
-      "unclear_reason": "underspecified_proposal",
+      "unclear_reason": null,
       "reason": {
-        "text": "S15 describes the risk that powerful actors lose their incentive to invest in people, but nothing we've read shows that WBE would counteract that. S02 raises moral and regulatory bottlenecks without setting out how ownership or distribution would work.",
+        "text": "Three independent book-length arguments (S20, S21, S22) predict displacement of biological workers and wage pressure on emulations. None proposes a mechanism that preserves biological humans' bargaining power, and the ownership gate is not passed.",
         "provenance": "team",
-        "source_ids": ["s15", "s02"]
+        "source_ids": [
+          "s20",
+          "s21",
+          "s22"
+        ]
       },
-      "decisive_question": {
-        "text": "What arrangements for ownership, consent, labor and access to compute would let WBE increase broad human agency without creating a new class of dependent digital workers?",
-        "provenance": "team"
-      }
+      "decisive_question": null,
+      "agency": [
+        {
+          "group": "Biological humans: bargaining power",
+          "effect": "weakens",
+          "mechanism": "Emulation labour undercuts wages; humans cannot compete (S20, S21). Argued only; S20 qualifies this through asset ownership.",
+          "ownership_questions": null,
+          "entries": [
+            "E087",
+            "E089"
+          ]
+        },
+        {
+          "group": "Emulated persons (reported separately)",
+          "effect": "weakens",
+          "mechanism": "Selection for productive, copy-willing emulations; subsistence pay (S20, S21).",
+          "ownership_questions": "Can an emulation leave, refuse work or move compute provider? No.",
+          "entries": [
+            "E088",
+            "E090"
+          ]
+        },
+        {
+          "group": "Ownership of productive capacity",
+          "effect": "not_addressed",
+          "mechanism": "Asset-holding humans could live on returns (S20, unverified).",
+          "ownership_questions": "Who owns the scans? No (S16 does not cover ownership). Who owns the emulations? Partly: emulations act as economic agents, human asset ownership assumed (S20, unverified). Can emulations own assets? No.",
+          "entries": [
+            "E087",
+            "E088"
+          ]
+        },
+        {
+          "group": "Control of compute",
+          "effect": "not_addressed",
+          "mechanism": null,
+          "ownership_questions": "Who owns the compute? No.",
+          "entries": []
+        },
+        {
+          "group": "Distribution of economic returns",
+          "effect": "weakens",
+          "mechanism": "Transfers diluted toward digital subsistence (S22); returns to asset holders only (S20).",
+          "ownership_questions": "Who receives returns from emulation labour? Partly: asset holders (S20, unverified); transfers diluted (S22).",
+          "entries": [
+            "E087",
+            "E095"
+          ]
+        },
+        {
+          "group": "Political and institutional influence",
+          "effect": "weakens",
+          "mechanism": "Rapidly copying digital minds could gain majority control (S22); concentration of power listed (S16). Influence through emulations is not biological-human influence.",
+          "ownership_questions": null,
+          "entries": [
+            "E071",
+            "E094"
+          ]
+        }
+      ],
+      "ownership_gate": "0 answered, 2 partly answered."
     },
-    "artificial_minds_assessment": {
-      "consciousness": {
-        "text": "Unclear. We haven't found a source that assesses whether an emulation would be conscious or sentient.",
-        "provenance": "team"
+    "artificial_minds_by_stage": [
+      {
+        "stage": "S1",
+        "stage_label": "1 Neural component simulation",
+        "stage_number": 1,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": null,
+        "welfare": null,
+        "protections": null,
+        "source_ids": [],
+        "entries": []
       },
-      "moral_status": {
-        "text": "Unclear. S02 identifies moral bottlenecks but doesn't set out a framework for moral status or a standard for protecting emulated minds.",
-        "provenance": "team",
-        "source_ids": ["s02"]
+      {
+        "stage": "S2",
+        "stage_label": "2 Partial brain emulation",
+        "stage_number": 2,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": null,
+        "welfare": null,
+        "protections": null,
+        "source_ids": [],
+        "entries": []
       },
-      "identity": {
-        "text": "Unclear. How an emulated mind relates to the original person isn't addressed in the sources we have.",
-        "provenance": "team"
+      {
+        "stage": "S3",
+        "stage_label": "3 Whole brain emulation (one instance)",
+        "stage_number": 3,
+        "consciousness": "Agnostic. S22 assumes suitably designed digital minds could be conscious but commits to no theory; S16 notes uncertainty only during testing.",
+        "moral_status": "Psychological capacities and potentials, not a single property (S22)",
+        "identity": "The emulation is a distinct entity from the original person (S22)",
+        "welfare": null,
+        "protections": "Non-discrimination (S22); consent not addressed (S16)",
+        "source_ids": [
+          "s16",
+          "s22"
+        ],
+        "entries": [
+          "E069",
+          "E097",
+          "E098"
+        ]
       },
-      "welfare": {
-        "text": "Unclear. The proposal could create digital minds whose welfare is at stake, but no source assesses suffering, consent, copying, confinement, acceleration, deletion or labor conditions.",
-        "provenance": "team"
+      {
+        "stage": "S4",
+        "stage_label": "4 Copied emulations",
+        "stage_number": 4,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": "Copies are counted individually (S22); copies made on demand and groups of copies may count as moral entities (S21); groups of copies also come up in S20 (book not yet read)",
+        "welfare": "Selection for compliance, long hours, low pay; open whether lives are worth living (S21)",
+        "protections": "Limits on copying (S22)",
+        "source_ids": [
+          "s20",
+          "s21",
+          "s22"
+        ],
+        "entries": [
+          "E090",
+          "E093",
+          "E096"
+        ]
+      },
+      {
+        "stage": "S5",
+        "stage_label": "5 Modified emulations",
+        "stage_number": 5,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": "Engineering an emulation's values is raised (S22); consent to modification not addressed (S16)",
+        "welfare": null,
+        "protections": null,
+        "source_ids": [
+          "s16",
+          "s22"
+        ],
+        "entries": [
+          "E069"
+        ]
+      },
+      {
+        "stage": "S6",
+        "stage_label": "6 Deployed populations",
+        "stage_number": 6,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": "Rapid copying changes resource and voting claims (S22)",
+        "welfare": "Lives below subsistence as transfers are diluted, or minds with cheap well-being (S22); subsistence wages and deletion of short-lived copies (S20, unverified)",
+        "protections": "Resource bargains; avoid creating lives not worth living (S22)",
+        "source_ids": [
+          "s20",
+          "s21",
+          "s22"
+        ],
+        "entries": [
+          "E086",
+          "E088",
+          "E096"
+        ]
       }
-    },
+    ],
     "welfare_governance": {
       "exposed": {
-        "text": "Emulated minds, if any are created; people whose brains are scanned; users; workers; the wider public; and future generations.",
+        "text": "Emulated persons; scanned originals; biological workers; everyone (capability spillover, value drift)",
         "provenance": "team"
       },
       "harms": {
-        "text": "Consent violations, harms to identity and continuity, copying or exploitation, suffering of digital minds, concentration of power, value lock-in and unsafe deployment.",
+        "text": "Suffering across copies; copying, modification or deletion without consent; subsistence and selection; labour displacement; political dominance of digital minds; value drift; information hazards (R01-R06, R20, R21)",
         "provenance": "team"
       },
-      "severity": {
-        "text": "We haven't assessed it yet. It could be high, and hard to reverse if emulations can be copied or modified, or can persist indefinitely.",
-        "provenance": "team"
-      },
-      "detectability": {
-        "text": "Unclear. Our sources don't specify any way to detect harms or remedy them.",
-        "provenance": "team"
-      },
-      "control": {
-        "text": "Unclear. No governance arrangements have been specified.",
-        "provenance": "team"
-      },
-      "confidence": "low",
       "rationale": {
-        "text": "S02 identifies moral and regulatory bottlenecks, and S15 describes the risks of concentrated power and of less investment in people. But we don't have enough WBE-specific welfare or governance evidence to tell likely harms from speculative ones.",
+        "text": "Severity follows from unbounded copy numbers and subjective speed (S22). No source estimates likelihood. Harms are hard to detect and hard to reverse once copies exist; proposed safeguards are principles only (S22).",
         "provenance": "team",
-        "source_ids": ["s02", "s15"]
+        "source_ids": [
+          "s22"
+        ]
       }
     },
-    "evidence_gap": {
-      "text": "Our current sources don't include enough technical, empirical, welfare or governance literature to assess WBE as an intervention for alignment or the Intelligence Curse.",
-      "provenance": "team"
-    },
-    "sample": false
+    "unreviewed_ai_sections": false
   },
   {
     "id": "bci",
@@ -442,11 +591,16 @@
         "scale": "case",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": null,
         "basis": {
-          "text": "Most versions of this argument don't explain how a faster link would make an AI system safer, and the search for a proposal that does isn't finished.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "Prerequisites are shown at laboratory scale: single-trial error signals (S26), EEG-rewarded learning on robotic tasks (S25), fNIRS classification at F1 46-67% (S27). The decisive links (information gain, resistance to gaming, transfer to frontier models) have no evidence either way, and S14 argues the oversight gain is a fixed speed-up. Neither the Moderate nor the Weak condition is met.",
+          "provenance": "team",
+          "source_ids": [
+            "s26",
+            "s25",
+            "s27",
+            "s14"
+          ]
         }
       },
       {
@@ -456,11 +610,16 @@
         "scale": "case",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": null,
         "basis": {
-          "text": "It's plausible that augmented people would stay economically relevant, but that depends on cost, safety and who gets access.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "The only agency-strengthening evidence is therapeutic and individual, not bargaining power. The enhancement pathway has no specified mechanism, access model or ownership terms (S11, S14), while workplace and state pathways weaken agency (S19, S29).",
+          "provenance": "team",
+          "source_ids": [
+            "s11",
+            "s14",
+            "s19",
+            "s29"
+          ]
         }
       },
       {
@@ -468,42 +627,36 @@
         "dimension": "Human welfare risk",
         "problem": null,
         "scale": "risk",
-        "rating": "unclear",
+        "rating": null,
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
-        "basis": {
-          "text": "Brain data can reveal things people never chose to share, and a device that writes to the brain could be used to nudge mood or decisions. Employers could use headsets to monitor workers, and users may come to depend on a device its maker can stop supporting. How likely or severe these harms are hasn't been weighed.",
-          "provenance": "ai",
-          "reviewed_by": null
-        }
+        "severity": "very_high",
+        "likelihood": "not_assessable",
+        "applicable": true,
+        "basis": null
       },
       {
         "id": "artificial-mind-welfare-and-rights-risk",
         "dimension": "Artificial-mind welfare and rights risk",
         "problem": null,
         "scale": "risk",
-        "rating": "unclear",
-        "confidence": "low",
-        "unclear_reason": "search_incomplete",
-        "basis": {
-          "text": "The risk to artificial minds hasn't been assessed. The open questions we've found for BCIs are about the person using the device, such as where the person ends and the system begins.",
-          "provenance": "ai",
-          "reviewed_by": null
-        }
+        "rating": null,
+        "confidence": "medium",
+        "severity": null,
+        "likelihood": null,
+        "applicable": false,
+        "basis": null
       },
       {
         "id": "governance-risk",
         "dimension": "Governance risk",
         "problem": null,
         "scale": "risk",
-        "rating": "unclear",
+        "rating": null,
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
-        "basis": {
-          "text": "Only a few places have rules on who may collect, own and use brain data.",
-          "provenance": "ai",
-          "reviewed_by": null
-        }
+        "severity": "high",
+        "likelihood": "not_assessable",
+        "applicable": true,
+        "basis": null
       },
       {
         "id": "safeguard-adequacy",
@@ -512,11 +665,14 @@
         "scale": "case",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": null,
         "basis": {
-          "text": "Medical device rules cover implants used in clinics, but consumer and workplace headsets may fall outside them. We haven't checked whether existing privacy and device rules are enough.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "Two independent sources (S19 peer-reviewed; S29 policy paper) identify the workplace mechanism; others are argued. Employers, states and vendors hold control; consent is judged inadequate (S29). Likelihood is not assessable from the database.",
+          "provenance": "team",
+          "source_ids": [
+            "s19",
+            "s29"
+          ]
         }
       }
     ],
@@ -537,7 +693,336 @@
         "reviewed_by": null
       }
     ],
-    "sample": true
+    "scope": {
+      "intervention": {
+        "text": "Brain-computer interfaces: devices that record (read) and/or stimulate (write) neural activity and couple it to computers or AI systems; invasive and non-invasive; stages S1 passive decoding → S4 population-scale deployment.",
+        "provenance": "team"
+      },
+      "deployment_scenario": {
+        "text": "BCI-D neural data for alignment · BCI-O bandwidth for oversight · BCI-E enhancement / merger · BCI-T therapeutic · BCI-W workplace · BCI-P consumer · BCI-S state/security · BCI-X representational constraint",
+        "provenance": "team"
+      },
+      "affected_groups": {
+        "text": "Claimed beneficiaries: AI developers (better feedback signals); overseers; impaired persons (BCI-T); enhanced users. Bear risks: users (manipulation, mental privacy, neuroplasticity); workers (surveillance); citizens and detainees (state monitoring); non-users (inequality).",
+        "provenance": "team"
+      },
+      "time_horizon": {
+        "text": "Near for BCI-T, BCI-W, BCI-P (devices in trials or on the market: FDA IDE registrations, S16, E075; workplace EEG, S19). Medium-Long for BCI-D/O/E (only toy-task or argued evidence: S24-S27, S14). S09 claims a 5-year horizon (not accessed; tier D).",
+        "provenance": "team",
+        "source_ids": [
+          "s16",
+          "s19",
+          "s24",
+          "s25",
+          "s26",
+          "s27",
+          "s14",
+          "s09"
+        ]
+      },
+      "comparator": {
+        "text": "Alignment: RLHF / RLAIF and non-BCI oversight tooling (S28). Intelligence Curse: labour-replacing AI without BCI.",
+        "provenance": "team",
+        "source_ids": [
+          "s28"
+        ]
+      },
+      "problems_claimed": {
+        "text": "Alignment: value specification / preference elicitation (BCI-D), oversight (BCI-O), research acceleration (BCI-E). Intelligence Curse: enhancement keeps humans relevant (BCI-E, argued); disempowerment pathways (BCI-W/S/P).",
+        "provenance": "team"
+      },
+      "problem": "both",
+      "source_ids": [
+        "s01",
+        "s08",
+        "s09",
+        "s10",
+        "s11",
+        "s14",
+        "s16",
+        "s18",
+        "s19",
+        "s24",
+        "s25",
+        "s26",
+        "s27",
+        "s28",
+        "s29"
+      ],
+      "source_ids_text": "S01, S08, S09, S10, S11, S14, S16, S18, S19, S24-S29"
+    },
+    "alignment_assessment": {
+      "problem_addressed": "Value specification; oversight; research acceleration; control",
+      "mechanism": {
+        "text": "Partly relocates the problem: adds a feedback channel but inherits the limits of feedback-based training (S28) and adds manipulation risk (S14). No new agents, but a new attack surface on humans (S14, S16).",
+        "provenance": "team",
+        "source_ids": [
+          "s28",
+          "s14",
+          "s16"
+        ]
+      },
+      "questions": [],
+      "rating": "unclear",
+      "confidence": "low",
+      "unclear_reason": null,
+      "reason": {
+        "text": "Prerequisites are shown at laboratory scale: single-trial error signals (S26), EEG-rewarded learning on robotic tasks (S25), fNIRS classification at F1 46-67% (S27). The decisive links (information gain, resistance to gaming, transfer to frontier models) have no evidence either way, and S14 argues the oversight gain is a fixed speed-up. Neither the Moderate nor the Weak condition is met.",
+        "provenance": "team",
+        "source_ids": [
+          "s26",
+          "s25",
+          "s27",
+          "s14"
+        ]
+      },
+      "decisive_question": {
+        "text": "Does neural feedback add alignment-relevant information beyond explicit feedback, and does that survive optimisation pressure?",
+        "provenance": "team"
+      },
+      "scenarios": [
+        {
+          "scenario": "BCI neural feedback for alignment",
+          "problem": "Value specification",
+          "mechanism": "Neural evaluative signals as additional training feedback",
+          "supporting": [
+            "E002",
+            "E027",
+            "E028",
+            "E031",
+            "E078",
+            "E099",
+            "E101",
+            "E102",
+            "E105",
+            "E106"
+          ],
+          "contrary_or_qualifying": [
+            "E001",
+            "E056",
+            "E079",
+            "E080",
+            "E100",
+            "E104",
+            "E108"
+          ],
+          "gap": "Decoding and small-task training shown; no test of information gain over explicit feedback (BCI-D-L3) or of transfer to frontier models (BCI-D-L6)."
+        },
+        {
+          "scenario": "BCI for faster human oversight",
+          "problem": "Oversight",
+          "mechanism": "Higher-bandwidth human oversight",
+          "supporting": [
+            "E054",
+            "E073"
+          ],
+          "contrary_or_qualifying": [
+            "E049",
+            "E052",
+            "E053",
+            "E074"
+          ],
+          "gap": "Fixed speed-up argument (S14) unanswered; security contrary (S14, S16)."
+        },
+        {
+          "scenario": "BCI cognitive enhancement",
+          "problem": "Research acceleration",
+          "mechanism": "Enhanced humans do alignment research, or 'merge' with AI",
+          "supporting": [
+            "E032"
+          ],
+          "contrary_or_qualifying": [
+            "E050",
+            "E051",
+            "E057"
+          ],
+          "gap": "Mechanism underspecified (S14); no differential benefit (S14)."
+        },
+        {
+          "scenario": "BCI representational constraint",
+          "problem": "Control",
+          "mechanism": "Human-like representational bottleneck constrains AI",
+          "supporting": [
+            "E003"
+          ],
+          "contrary_or_qualifying": [],
+          "gap": "Proposal only (S01)."
+        }
+      ]
+    },
+    "intelligence_curse_assessment": {
+      "mechanism": {
+        "text": "Enhancement keeps humans economically relevant (argued); therapy restores agency for impaired persons. Harmful pathways: workplace, state and consumer monitoring.",
+        "provenance": "team"
+      },
+      "questions": [
+        {
+          "question": "Who gains, who loses",
+          "answer": {
+            "text": "Impaired persons gain individual agency; enhanced users vs non-users unclear; employers and states gain over workers and citizens (S19, S29).",
+            "provenance": "team",
+            "source_ids": [
+              "s19",
+              "s29"
+            ]
+          }
+        },
+        {
+          "question": "Who owns infrastructure, data and returns",
+          "answer": {
+            "text": "Not specified: neural-data ownership, firmware and decoder control, and returns are unaddressed (S29 leaves data ownership open).",
+            "provenance": "team",
+            "source_ids": [
+              "s29"
+            ]
+          }
+        },
+        {
+          "question": "Complements, delays or deepens replacement?",
+          "answer": {
+            "text": "Mixed: complements for impaired persons; enhancement presented as delaying replacement, but S14 argues the human becomes a bottleneck; monitoring deepens dependence on employers and states.",
+            "provenance": "team",
+            "source_ids": [
+              "s14"
+            ]
+          }
+        },
+        {
+          "question": "Benefit over comparator",
+          "answer": {
+            "text": "Not shown; S14 argues enhanced humans still lose to AI-only systems.",
+            "provenance": "team",
+            "source_ids": [
+              "s14"
+            ]
+          }
+        }
+      ],
+      "rating": "unclear",
+      "confidence": "low",
+      "unclear_reason": null,
+      "reason": {
+        "text": "The only agency-strengthening evidence is therapeutic and individual, not bargaining power. The enhancement pathway has no specified mechanism, access model or ownership terms (S11, S14), while workplace and state pathways weaken agency (S19, S29).",
+        "provenance": "team",
+        "source_ids": [
+          "s11",
+          "s14",
+          "s19",
+          "s29"
+        ]
+      },
+      "decisive_question": null,
+      "agency": [
+        {
+          "group": "Biological humans: monitored workers",
+          "effect": "weakens",
+          "mechanism": "Employer neurosurveillance shifts power (S19, S29).",
+          "ownership_questions": "Can users refuse without exclusion (work, insurance, services)? Partly: limited freedom to refuse (S19); consent alone is inadequate (S29).",
+          "entries": [
+            "E081",
+            "E085",
+            "E110",
+            "E113"
+          ]
+        },
+        {
+          "group": "Biological humans: users vs non-users of enhancement",
+          "effect": "not_addressed",
+          "mechanism": "Enhancement could keep humans competitive (S11, assumed) but may deepen inequality (S11) and still lose to AI-only systems (S14).",
+          "ownership_questions": null,
+          "entries": [
+            "E034",
+            "E051",
+            "E115"
+          ]
+        },
+        {
+          "group": "Biological humans: citizens and the state",
+          "effect": "weakens",
+          "mechanism": "State neural monitoring to detect dissent (S29).",
+          "ownership_questions": null,
+          "entries": [
+            "E111"
+          ]
+        },
+        {
+          "group": "Biological humans: impaired persons",
+          "effect": "strengthens",
+          "mechanism": "Clinical BCIs restore communication and movement (S03, S16). Individual agency, not bargaining power.",
+          "ownership_questions": null,
+          "entries": [
+            "E008",
+            "E075"
+          ]
+        },
+        {
+          "group": "Ownership of productive capacity",
+          "effect": "not_addressed",
+          "mechanism": null,
+          "ownership_questions": "Who owns and may use neural data? No (S29 explicitly leaves it open; legal classification unclear).",
+          "entries": [
+            "E114"
+          ]
+        },
+        {
+          "group": "Control of devices",
+          "effect": "not_addressed",
+          "mechanism": null,
+          "ownership_questions": "Who controls device firmware and decoders? No. Is maintenance guaranteed if a device is abandoned? No (not required). Is data portable between providers? No (not required).",
+          "entries": []
+        },
+        {
+          "group": "Distribution of economic returns",
+          "effect": "not_addressed",
+          "mechanism": null,
+          "ownership_questions": "Who receives returns from neural data? No.",
+          "entries": []
+        },
+        {
+          "group": "Political and institutional influence",
+          "effect": "weakens",
+          "mechanism": "State monitoring (S29).",
+          "ownership_questions": null,
+          "entries": [
+            "E111"
+          ]
+        }
+      ],
+      "ownership_gate": "0 answered, 1 partly answered."
+    },
+    "artificial_minds_by_stage": [
+      {
+        "stage": null,
+        "stage_label": "All stages",
+        "stage_number": null,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": null,
+        "welfare": null,
+        "protections": null,
+        "source_ids": [],
+        "entries": []
+      }
+    ],
+    "welfare_governance": {
+      "exposed": {
+        "text": "Users; workers; consumers; citizens and detainees; non-users; long-term users",
+        "provenance": "team"
+      },
+      "harms": {
+        "text": "Manipulation through the interface; workplace neurosurveillance; state monitoring; commercial exploitation; neural-data theft; neuroplastic change; bias; inequality (R07-R14)",
+        "provenance": "team"
+      },
+      "rationale": {
+        "text": "Two independent sources (S19 peer-reviewed; S29 policy paper) identify the workplace mechanism; others are argued. Employers, states and vendors hold control; consent is judged inadequate (S29). Likelihood is not assessable from the database.",
+        "provenance": "team",
+        "source_ids": [
+          "s19",
+          "s29"
+        ]
+      }
+    },
+    "unreviewed_ai_sections": true
   },
   {
     "id": "neuromorphic",
@@ -610,11 +1095,17 @@
         "scale": "case",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": null,
         "basis": {
-          "text": "The motivation is clear, since brains are the only known systems that develop general intelligence and human values together, but we haven't yet looked at the evidence on whether brain-like design leads to more human-like values in practice.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "S30 (peer-reviewed, affiliated authors) argues brain-like motivational systems make human-style safety reasoning appropriate, but also lists instability risks and notes the theories are underdetermined. The only empirical result (S13) is a small-benchmark gain, smaller than that of a non-neural method. Hardware sources concern governance, not alignment benefit (S05-S07).",
+          "provenance": "team",
+          "source_ids": [
+            "s30",
+            "s13",
+            "s05",
+            "s06",
+            "s07"
+          ]
         }
       },
       {
@@ -626,9 +1117,8 @@
         "confidence": "low",
         "unclear_reason": null,
         "basis": {
-          "text": "Neuromorphic AI is pitched as a route to alignment and to cheaper, more efficient computing. No proposal found so far says it would help with the Intelligence Curse.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "No source in the database claims an Intelligence Curse benefit. 'Not claimed' is distinct from Weak or Unclear.",
+          "provenance": "team"
         }
       },
       {
@@ -636,42 +1126,36 @@
         "dimension": "Human welfare risk",
         "problem": null,
         "scale": "risk",
-        "rating": "unclear",
+        "rating": null,
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
-        "basis": {
-          "text": "Two possible harms, neither yet checked against evidence: AI built on human social instincts might be better at reading and persuading people, and cheaper, more efficient AI could speed up the replacement of human work.",
-          "provenance": "ai",
-          "reviewed_by": null
-        }
+        "severity": "medium",
+        "likelihood": "not_assessable",
+        "applicable": true,
+        "basis": null
       },
       {
         "id": "artificial-mind-welfare-and-rights-risk",
         "dimension": "Artificial-mind welfare and rights risk",
         "problem": null,
         "scale": "risk",
-        "rating": "unclear",
+        "rating": null,
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
-        "basis": {
-          "text": "It's an open question whether a brain-like AI could be conscious or able to suffer, and whether building in emotions like empathy on purpose would also build in the capacity to be hurt. The search for evidence on either hasn't started.",
-          "provenance": "ai",
-          "reviewed_by": null
-        }
+        "severity": "unclear",
+        "likelihood": "not_assessable",
+        "applicable": true,
+        "basis": null
       },
       {
         "id": "governance-risk",
         "dimension": "Governance risk",
         "problem": null,
         "scale": "risk",
-        "rating": "unclear",
+        "rating": null,
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
-        "basis": {
-          "text": "We haven't reviewed the governance work that exists, but so far brain-inspired AI seems to get little specific attention in AI policy. Dual use is also a concern: methods that make AI cheaper or more capable could arrive well before methods that make it safer.",
-          "provenance": "ai",
-          "reviewed_by": null
-        }
+        "severity": "high",
+        "likelihood": "not_assessable",
+        "applicable": true,
+        "basis": null
       },
       {
         "id": "safeguard-adequacy",
@@ -680,11 +1164,16 @@
         "scale": "case",
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
+        "unclear_reason": null,
         "basis": {
-          "text": "The search so far found no safeguards proposed specifically for brain-inspired AI, and it hasn't covered whether general AI safety rules would apply.",
-          "provenance": "ai",
-          "reviewed_by": null
+          "text": "Governance risks are argued by preprints (S05-S07) and one peer-reviewed argument (S30). On-chip learning defeats weight inspection and countermeasures are immature. Only one risk has a likelihood judgement (S06: low for current devices).",
+          "provenance": "team",
+          "source_ids": [
+            "s05",
+            "s06",
+            "s07",
+            "s30"
+          ]
         }
       }
     ],
@@ -705,6 +1194,297 @@
         "reviewed_by": null
       }
     ],
-    "sample": true
+    "scope": {
+      "intervention": {
+        "text": "Brain-inspired computing: neuromorphic hardware (spiking, in-memory, self-assembled substrates), brain-inspired AGI architectures with human-like motivational systems, and models constrained by neural data. Family boundary still open.",
+        "provenance": "team"
+      },
+      "deployment_scenario": {
+        "text": "NM-H hardware / efficient compute · NM-A brain-inspired AGI architecture · NM-N neural-data-constrained models · NM-E edge / decentralised deployment",
+        "provenance": "team"
+      },
+      "affected_groups": {
+        "text": "Claimed beneficiaries: AI developers (efficiency, robustness); users of edge AI. Bear risks: users and data subjects (attack surfaces); everyone (unauditable learning, escape from compute-threshold regulation, AGI value instability); brain-inspired agents if moral patients.",
+        "provenance": "team"
+      },
+      "time_horizon": {
+        "text": "Near for NM-H (chips exist: S05, S07). Long for NM-A (S30 argued only). NM-N: projected compute far beyond GPT-4 for human-level robustness (S13).",
+        "provenance": "team",
+        "source_ids": [
+          "s05",
+          "s07",
+          "s30",
+          "s13"
+        ]
+      },
+      "comparator": {
+        "text": "Alignment: non-neuromorphic AI and standard robustness / interpretability methods (adversarial training: S13). Intelligence Curse: concentrated cloud AI.",
+        "provenance": "team",
+        "source_ids": [
+          "s13"
+        ]
+      },
+      "problems_claimed": {
+        "text": "Alignment: interpretability/robustness (NM-N), value specification via motivational architecture (NM-A), verification (NM-H). Intelligence Curse: no source claims a benefit (NM-E decentralisation unclaimed).",
+        "provenance": "team"
+      },
+      "problem": "alignment",
+      "source_ids": [
+        "s05",
+        "s06",
+        "s07",
+        "s13",
+        "s17",
+        "s30"
+      ],
+      "source_ids_text": "S05, S06, S07, S13, S17, S30"
+    },
+    "alignment_assessment": {
+      "problem_addressed": "Value specification; verification; interpretability",
+      "mechanism": {
+        "text": "Relocates the problem: replaces objective specification with design of a motivational architecture (S30). May create new agents if brain-inspired agents have moral status; no source addresses it.",
+        "provenance": "team",
+        "source_ids": [
+          "s30"
+        ]
+      },
+      "questions": [],
+      "rating": "unclear",
+      "confidence": "low",
+      "unclear_reason": null,
+      "reason": {
+        "text": "S30 (peer-reviewed, affiliated authors) argues brain-like motivational systems make human-style safety reasoning appropriate, but also lists instability risks and notes the theories are underdetermined. The only empirical result (S13) is a small-benchmark gain, smaller than that of a non-neural method. Hardware sources concern governance, not alignment benefit (S05-S07).",
+        "provenance": "team",
+        "source_ids": [
+          "s30",
+          "s13",
+          "s05",
+          "s06",
+          "s07"
+        ]
+      },
+      "decisive_question": {
+        "text": "Can specified motivational mechanisms be built and shown to stay stable under learning?",
+        "provenance": "team"
+      },
+      "scenarios": [
+        {
+          "scenario": "Brain-inspired AGI architecture",
+          "problem": "Value specification",
+          "mechanism": "Human-like motivational architecture yields friendly behaviour",
+          "supporting": [
+            "E119",
+            "E120"
+          ],
+          "contrary_or_qualifying": [
+            "E117",
+            "E118"
+          ],
+          "gap": "All support argued by affiliated authors (S30); stability contrary (S30)."
+        },
+        {
+          "scenario": "Brain-inspired AGI architecture",
+          "problem": "Verification",
+          "mechanism": "Human-style reasoning predicts the system's behaviour",
+          "supporting": [
+            "E116"
+          ],
+          "contrary_or_qualifying": [],
+          "gap": "S30 argues verification of any AGI is intractable, which moves the problem rather than showing an advantage."
+        },
+        {
+          "scenario": "Models trained on neural data",
+          "problem": "Interpretability",
+          "mechanism": "Neural-data constraints confer robustness or interpretability",
+          "supporting": [
+            "E042",
+            "E044",
+            "E048"
+          ],
+          "contrary_or_qualifying": [
+            "E045",
+            "E046",
+            "E047"
+          ],
+          "gap": "Own experiments: adversarial training stronger; gain vanished with noise (S13)."
+        },
+        {
+          "scenario": "Neuromorphic hardware",
+          "problem": "Interpretability; verification",
+          "mechanism": "No benefit claimed; the entries record verification and interpretability conditions",
+          "supporting": [],
+          "contrary_or_qualifying": [
+            "E012",
+            "E021"
+          ],
+          "gap": "Contrary entries only (S05, S06)."
+        }
+      ]
+    },
+    "intelligence_curse_assessment": {
+      "mechanism": {
+        "text": "No source claims a mechanism. Edge deployment spreading power is a hypothesis no source makes.",
+        "provenance": "team"
+      },
+      "questions": [
+        {
+          "question": "Who gains, who loses",
+          "answer": {
+            "text": "Not analysed by any source.",
+            "provenance": "team"
+          }
+        },
+        {
+          "question": "Who owns infrastructure, data and returns",
+          "answer": {
+            "text": "Not specified: fabrication, models, deployment control and efficiency gains unaddressed (S05 notes small fabrication runs only).",
+            "provenance": "team",
+            "source_ids": [
+              "s05"
+            ]
+          }
+        },
+        {
+          "question": "Complements, delays or deepens replacement?",
+          "answer": {
+            "text": "Not addressed.",
+            "provenance": "team"
+          }
+        },
+        {
+          "question": "Benefit over comparator",
+          "answer": {
+            "text": "Not addressed.",
+            "provenance": "team"
+          }
+        }
+      ],
+      "rating": "not_claimed",
+      "confidence": "low",
+      "unclear_reason": null,
+      "reason": {
+        "text": "No source in the database claims an Intelligence Curse benefit. 'Not claimed' is distinct from Weak or Unclear.",
+        "provenance": "team"
+      },
+      "decisive_question": null,
+      "agency": [
+        {
+          "group": "Biological humans: bargaining power",
+          "effect": "not_addressed",
+          "mechanism": "No source claims an effect; S05 does not analyse power.",
+          "ownership_questions": null,
+          "entries": []
+        },
+        {
+          "group": "Ownership of productive capacity",
+          "effect": "not_addressed",
+          "mechanism": null,
+          "ownership_questions": "Who owns fabrication capacity? No (S05 notes small fabrication runs only). Who owns the models? No.",
+          "entries": [
+            "E016"
+          ]
+        },
+        {
+          "group": "Control of compute",
+          "effect": "not_addressed",
+          "mechanism": "Edge efficiency shown (S05), but its effect on control is not analysed; efficiency is a prerequisite, not evidence about control.",
+          "ownership_questions": "Who controls deployment? No. Does edge deployment reduce or move dependence on concentrated providers? No (not analysed).",
+          "entries": [
+            "E014",
+            "E015"
+          ]
+        },
+        {
+          "group": "Distribution of economic returns",
+          "effect": "not_addressed",
+          "mechanism": null,
+          "ownership_questions": "Who captures efficiency gains? No.",
+          "entries": []
+        },
+        {
+          "group": "Political and institutional influence",
+          "effect": "not_addressed",
+          "mechanism": null,
+          "ownership_questions": null,
+          "entries": []
+        }
+      ],
+      "ownership_gate": "None answered."
+    },
+    "artificial_minds_by_stage": [
+      {
+        "stage": "S1",
+        "stage_label": "1 Hardware only",
+        "stage_number": 1,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": null,
+        "welfare": null,
+        "protections": null,
+        "source_ids": [],
+        "entries": []
+      },
+      {
+        "stage": "S2",
+        "stage_label": "2 Architecture without human-derived data",
+        "stage_number": 2,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": null,
+        "welfare": null,
+        "protections": null,
+        "source_ids": [],
+        "entries": []
+      },
+      {
+        "stage": "S3",
+        "stage_label": "3 Human-like motivational systems",
+        "stage_number": 3,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": "Self-modification discussed as a safety risk, not a welfare issue (S30)",
+        "welfare": null,
+        "protections": null,
+        "source_ids": [
+          "s30"
+        ],
+        "entries": [
+          "E121"
+        ]
+      },
+      {
+        "stage": "S4",
+        "stage_label": "4 Autonomously learning deployed agents",
+        "stage_number": 4,
+        "consciousness": null,
+        "moral_status": null,
+        "identity": null,
+        "welfare": null,
+        "protections": null,
+        "source_ids": [],
+        "entries": []
+      }
+    ],
+    "welfare_governance": {
+      "exposed": {
+        "text": "Users and data subjects; third parties; everyone (regulatory escape, unstable AGI values); brain-inspired agents if they have moral status",
+        "provenance": "team"
+      },
+      "harms": {
+        "text": "Hardware attacks; unauditable on-device learning; escape from compute-threshold rules and export controls; opaque self-assembled hardware; unstable AGI values; unrecognised moral status (R15-R19, R22)",
+        "provenance": "team"
+      },
+      "rationale": {
+        "text": "Governance risks are argued by preprints (S05-S07) and one peer-reviewed argument (S30). On-chip learning defeats weight inspection and countermeasures are immature. Only one risk has a likelihood judgement (S06: low for current devices).",
+        "provenance": "team",
+        "source_ids": [
+          "s05",
+          "s06",
+          "s07",
+          "s30"
+        ]
+      }
+    },
+    "unreviewed_ai_sections": true
   }
 ]

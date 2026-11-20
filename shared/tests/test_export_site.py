@@ -82,8 +82,25 @@ def test_without_the_api_it_copies_content(content_dir, out_dir):
     assert read_json(out_dir / "milestones.json") == read_json(content_dir / "milestones.json")
     assert read_json(out_dir / "sources.json") == read_json(content_dir / "sources.json")
     assert read_json(out_dir / "technologies.json") == read_json(content_dir / "technologies.json")
+    assert (out_dir / "scorecard.json").read_bytes() == (content_dir / "scorecard.json").read_bytes()
     assert sorted(path.name for path in (out_dir / "posts").iterdir()) == ["about-this-blog.md"]
     assert lines[-1].startswith("OK:")
+
+
+def test_the_scorecard_is_copied_and_checked(content_dir, out_dir):
+    path = content_dir / "scorecard.json"
+    data = read_json(path)
+    data["entries"].append({"id": "E001"})
+    write_json(path, data)
+    lines: list[str] = []
+    assert run_export(content_dir, out_dir, None, lines.append) is False
+    assert any(line.startswith("scorecard.entries[") and "source_id: required" in line for line in lines)
+
+
+def test_a_missing_scorecard_stops_the_export(content_dir, out_dir):
+    (content_dir / "scorecard.json").unlink()
+    with pytest.raises(ExportError, match="scorecard.json is missing. Run python -m sf_shared.import_workbook first."):
+        run_export(content_dir, out_dir, None, print)
 
 
 def test_approved_sources_are_added_and_repeats_of_content_skipped(content_dir, out_dir):

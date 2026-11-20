@@ -1,10 +1,20 @@
-"""The whole-folder validator: file handling, cross-record rules, posts and em dashes."""
+"""The whole-folder validator: file handling, cross-record rules, the workbook's codes, posts and dashes."""
 
 from datetime import date
 from pathlib import Path
 
 import pytest
-from helpers import POST_TEXT, REAL_CONTENT, milestone_index, read_json, run, team_claim, write_json
+from helpers import (
+    POST_TEXT,
+    REAL_CONTENT,
+    evidence_entry,
+    first_register_source,
+    milestone_index,
+    read_json,
+    run,
+    team_claim,
+    write_json,
+)
 
 from sf_shared import enums
 from sf_shared.enums import MilestoneCategory, MilestoneType, MilestoneTypeInfo
@@ -36,7 +46,9 @@ def ok_line(content_dir: Path) -> str:
     the real milestones.json and sources.json, which grow as the team adds to them."""
     milestone_count = len(read_json(content_dir / "milestones.json"))
     source_count = len(read_json(content_dir / "sources.json"))
-    return f"OK: {milestone_count} milestones, {source_count} sources, 3 technologies, 1 post"
+    entry_count = len(read_json(content_dir / "scorecard.json")["entries"])
+    entries = "1 evidence entry" if entry_count == 1 else f"{entry_count} evidence entries"
+    return f"OK: {milestone_count} milestones, {source_count} sources, 3 technologies, 1 post, {entries}"
 
 
 def test_cli_prints_counts(content_dir: Path, capsys: pytest.CaptureFixture[str]):
@@ -54,8 +66,8 @@ def test_cli_warns_about_unreviewed_sample_claims(content_dir: Path, capsys: pyt
     assert main(["validate", str(content_dir)]) == 0  # a warning doesn't fail the check
     lines = capsys.readouterr().out.strip().splitlines()
     assert lines == [
-        "Warning: 2 AI-suggested claims in sample records have no reviewer. The site shows them as "
-        "unchecked, and they must be reviewed before the sample flag comes off.",
+        "Warning: 2 AI-suggested claims in sample records or pages with unreviewed AI sections have no "
+        "reviewer. The site shows them as unchecked, and they must be reviewed before the flag comes off.",
         ok_line(content_dir),
     ]
 
@@ -131,8 +143,8 @@ def test_ai_claim_without_reviewer(content_dir: Path):
     report = validate_content(content_dir)
     assert report.errors == []  # a sample record may skip review...
     assert report.warnings == [  # ...but it gets counted
-        "Warning: 1 AI-suggested claim in a sample record has no reviewer. The site shows it as unchecked, "
-        "and it must be reviewed before the sample flag comes off."
+        "Warning: 1 AI-suggested claim in a sample record or a page with unreviewed AI sections has no "
+        "reviewer. The site shows it as unchecked, and it must be reviewed before the flag comes off."
     ]
 
     milestones[0]["sample"] = False
@@ -229,16 +241,20 @@ def test_a_real_milestone_cant_link_to_samples(content_dir: Path):
     ]
 
 
-def test_a_real_technology_page_cant_cite_a_sample_source(content_dir: Path):
+def test_no_technology_page_can_cite_a_sample_source(content_dir: Path):
+    # Every page is public and carries team ratings, so a page with unreviewed
+    # AI sections is checked too.
     path = content_dir / "technologies.json"
     pages = read_json(path)
-    pages[0]["sample"] = False
+    pages[0]["unreviewed_ai_sections"] = False
     pages[0]["intro"] = sample_source_claim()
-    pages[1]["intro"] = sample_source_claim()  # still a sample page, so this one is fine
+    pages[1]["intro"] = sample_source_claim()
     write_json(path, pages)
 
     assert run(content_dir) == [
         'technologies[0] (wbe).intro.source_ids[0]: "sample-roadmap-report" is a sample source. The public '
+        "site leaves samples out, so a real record has to cite a real source",
+        'technologies[1] (bci).intro.source_ids[0]: "sample-roadmap-report" is a sample source. The public '
         "site leaves samples out, so a real record has to cite a real source",
     ]
 
@@ -272,6 +288,17 @@ def test_missing_technology_page(content_dir: Path):
 
 
 def scorecard_row(row_id: str, dimension: str, scale: str, problem: str | None) -> dict:
+    if scale == "risk":
+        return {
+            "id": row_id,
+            "dimension": dimension,
+            "problem": problem,
+            "scale": scale,
+            "rating": None,
+            "confidence": "low",
+            "severity": "high",
+            "likelihood": "not_assessable",
+        }
     return {
         "id": row_id,
         "dimension": dimension,
@@ -279,7 +306,6 @@ def scorecard_row(row_id: str, dimension: str, scale: str, problem: str | None) 
         "scale": scale,
         "rating": "unclear",
         "confidence": "low",
-        "unclear_reason": "search_incomplete",
         "basis": team_claim("Fixture basis."),
     }
 
@@ -334,7 +360,7 @@ def test_rows_in_a_different_order_are_reported(content_dir: Path):
 def test_a_row_means_the_same_thing_on_every_page(content_dir: Path):
     pages = pages_with_three_rows(content_dir)
     pages[1]["scorecard"][0]["dimension"] = "Alignment Case"
-    pages[1]["scorecard"][2]["scale"] = "risk"
+    pages[1]["scorecard"][2] = scorecard_row("safeguard-adequacy", "Safeguard adequacy", "risk", None)
     pages[2]["scorecard"][2]["problem"] = "both"
     write_json(content_dir / "technologies.json", pages)
 
@@ -363,11 +389,11 @@ def test_a_broken_first_page_isnt_the_reference(content_dir: Path):
 # Rating trackers: milestone links, dates, sources and the placeholder warning
 
 
-def set_tracker(content_dir: Path, page_index: int, tracker: dict, sample: bool = True) -> None:
+def set_tracker(content_dir: Path, page_index: int, tracker: dict, unreviewed_ai: bool = True) -> None:
     path = content_dir / "technologies.json"
     pages = read_json(path)
     pages[page_index]["scorecard"][0]["tracker"] = tracker
-    pages[page_index]["sample"] = sample
+    pages[page_index]["unreviewed_ai_sections"] = unreviewed_ai
     write_json(path, pages)
 
 
@@ -392,10 +418,10 @@ def test_a_link_to_another_technologys_milestone(content_dir: Path):
     ]
 
 
-@pytest.mark.parametrize("page_is_sample", [False, True])
-def test_a_link_to_a_sample_milestone(content_dir: Path, page_is_sample: bool):
+@pytest.mark.parametrize("unreviewed_ai", [False, True])
+def test_a_link_to_a_sample_milestone(content_dir: Path, unreviewed_ai: bool):
     # Refused on every page: the public site leaves sample milestones out.
-    set_tracker(content_dir, 1, {"milestone_ids": ["bci-sample-agency"]}, sample=page_is_sample)
+    set_tracker(content_dir, 1, {"milestone_ids": ["bci-sample-agency"]}, unreviewed_ai=unreviewed_ai)
     assert run(content_dir) == [
         'technologies[1] (bci).scorecard[0].tracker.milestone_ids[0]: "bci-sample-agency" is a sample milestone. '
         "The public site leaves samples out, so a scorecard row can only link to real milestones"
@@ -509,18 +535,23 @@ def test_invalid_json_gives_a_line_number(content_dir: Path):
     assert errors[0].startswith(f"{path}: not valid JSON (line {year_line + 1},")
 
 
-def test_em_dash_is_detected(content_dir: Path):
+def test_em_and_en_dashes_are_detected(content_dir: Path):
     path = content_dir / "milestones.json"
     milestones = read_json(path)
     milestones[0]["name"] = "A whole mouse brain \u2014 mapped"
+    milestones[1]["name"] = "Pages 4\u20136"
     write_json(path, milestones)
 
-    line_number = 0
+    em_line = 0
+    en_line = 0
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if "\u2014" in line:
-            line_number = number
+            em_line = number
+        if "\u2013" in line:
+            en_line = number
     assert run(content_dir) == [
-        f"{path} line {line_number}: has an em dash. Use a period, comma, colon or parentheses instead"
+        f"{path} line {em_line}: has an em dash. Use a period, comma, colon or parentheses instead",
+        f"{path} line {en_line}: has an en dash. Use a hyphen for a range, or a comma, colon or parentheses instead",
     ]
 
 
@@ -627,6 +658,19 @@ def test_post_em_dash_is_detected(content_dir: Path):
     assert run(content_dir) == [
         f"{path} line 9: has an em dash. Use a period, comma, colon or parentheses instead"
     ]
+
+
+def test_escaped_en_dash_and_entity_are_detected(content_dir: Path):
+    path = content_dir / "sources.json"
+    text = path.read_text(encoding="utf-8")
+    text = text.replace("Placeholder summary.", "Placeholder summary \\u2013 escaped", 1)
+    path.write_text(text, encoding="utf-8")
+    post = content_dir / "posts" / "about-this-blog.md"
+    post.write_text(POST_TEXT.replace("A short placeholder post.", "Pages 4&ndash;6."), encoding="utf-8")
+
+    errors = run(content_dir)
+    assert len(errors) == 2
+    assert all("has an en dash" in error for error in errors)
 
 
 # ---------- The em dash helpers the API uses ----------

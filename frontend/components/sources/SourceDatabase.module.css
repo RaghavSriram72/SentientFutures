@@ -114,6 +114,88 @@
   }
 }
 
+/* The filters in use, under the folded "Filters" button (ActiveFilterChips
+   in ListParts.tsx). Only phones fold the selects, so only phones show these. */
+.chips {
+  display: none;
+}
+
+@media (max-width: 679px) {
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: -0.35rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .chips > li {
+    max-width: 100%;
+  }
+
+  /* The cross stays at the end, beside the text however it wraps */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    max-width: 100%;
+    min-height: 2.25rem;
+    padding: 0.4rem 0.75rem 0.4rem 0.85rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+    background: var(--grape-tint);
+    font-size: var(--text-sm);
+    line-height: 1.35;
+    text-align: left;
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+
+  .chip:hover {
+    border-color: var(--grape);
+  }
+
+  .chip:focus-visible {
+    outline: 2px solid var(--grape);
+    outline-offset: 2px;
+    border-color: var(--grape);
+  }
+
+  /* The select's label and the picked option, on one line when they fit */
+  .chipText {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.45rem;
+    row-gap: 0.1rem;
+    min-width: 0;
+  }
+
+  /* The select's label, small and muted like the labels over the selects */
+  .chipFilter {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .chipValue {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .chipIcon {
+    flex: none;
+    width: 0.7rem;
+    height: 0.7rem;
+    color: var(--grape);
+  }
+}
+
 .label {
   font-family: var(--font-mono);
   font-size: 0.6875rem;

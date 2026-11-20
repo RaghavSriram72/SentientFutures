@@ -200,6 +200,13 @@ def valid_milestone(milestone_id: str, **overrides) -> dict:
         "would_move_earlier": [unclear_claim()],
         "would_move_later": [unclear_claim()],
         "artificial_minds_questions": [],
+        # The workbook's optional fields, as export writes them when unset.
+        "assessment_confidence": None,
+        "applies_to": None,
+        "criterion_met": None,
+        "evidence_entries": [],
+        "timing": None,
+        "note": None,
         "sample": False,
     }
     data.update(overrides)

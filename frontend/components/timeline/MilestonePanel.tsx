@@ -2,15 +2,21 @@
 // what it is, one line for the estimate, one line for what that rests on, and
 // what nobody has assessed yet. Below that come only the sections that have
 // something in them. Every sentence is a Claim rendered with ClaimText, so its
-// provenance shows.
+// provenance shows, except the workbook's own cells from its milestone tab
+// (1a): criterion met, timing, note and the rest are plain strings shown word
+// for word, with their codes linked (CodeText). The 1a cells stored as team
+// claims (evidence, success criterion, main bottleneck) go through
+// WorkbookClaim, which keeps the provenance mark and the same bare links.
 import Link from "next/link";
 import type { ReactNode, Ref } from "react";
 
+import { CodeText } from "@/components/common/CodeText";
 import { ExternalLink } from "@/components/common/ExternalLink";
 import { TypeMark } from "@/components/common/TypeMark";
 import { ClaimList, ClaimText } from "@/components/provenance/ClaimText";
-import { DefaultMark } from "@/components/provenance/DefaultMark";
+import provenanceStyles from "@/components/provenance/Provenance.module.css";
 import { ProvenanceGlyph } from "@/components/provenance/ProvenanceTag";
+import { registerIdsIn, type CodeIndex } from "@/lib/codes";
 import { enumDescription, enumLabel, milestoneTypeOf } from "@/lib/enums";
 import {
   countLabel,
@@ -23,6 +29,7 @@ import {
 import { shortCitation, type SourceRef } from "@/lib/sources";
 import type { Claim, Milestone, Provenance, Technology } from "@/lib/types";
 
+import { dossierCodeIndex } from "./dossierCodes";
 import {
   forecastRangeText,
   rangeText,
@@ -49,13 +56,18 @@ interface MilestonePanelProps {
   // No longer used (the dossier used to draw a strip of the old chart). Kept
   // so existing callers still compile.
   nowYear?: number;
+  // Where the workbook's codes link (buildCodeIndex in lib/codes.ts). Without
+  // it, and with siteLinks on, the dossier links the entries the milestone
+  // lists and the site's sources (dossierCodes.ts). Without siteLinks the
+  // codes stay plain text.
+  codeIndex?: CodeIndex;
 }
 
 // The technologies with a page of their own (/wbe/ and so on).
 const TECHNOLOGY_PAGES: Technology[] = ["wbe", "bci", "neuromorphic"];
 
-// The dossier says "Our read unless marked" once, above its title. The team's
-// claims then show only their diamond, and every other kind keeps its tag.
+// The dossier's default kind. The team's claims carry no mark at all (anything
+// unmarked is the team's), and every other kind keeps its tag.
 const DOSSIER_DEFAULT: Provenance = "team";
 
 const MONTHS = [
@@ -240,7 +252,7 @@ function notYetAssessed(item: TimelineItem, neededFor: TimelineItem[]): string[]
   ) {
     missing.push("what would change the timing");
   }
-  if (!hasText(milestone.main_bottleneck) || isPlaceholder(milestone.main_bottleneck)) {
+  if (!milestone.main_bottleneck || !hasText(milestone.main_bottleneck) || isPlaceholder(milestone.main_bottleneck)) {
     missing.push("the main bottleneck");
   }
   if (!hasContent(claimsWithText(milestone.artificial_minds_questions))) {
@@ -276,8 +288,21 @@ export function MilestonePanel({
   onClose,
   onSelectMilestone,
   siteLinks = false,
+  codeIndex,
 }: MilestonePanelProps) {
   const { milestone, view } = item;
+  const index = siteLinks ? (codeIndex ?? dossierCodeIndex(milestone, sources)) : null;
+  // The workbook's milestone tab (1a) fills these. When it has assessed the
+  // milestone, status_basis holds the tab's "Evidence (entries and basis)"
+  // cell, so it is shown under that header.
+  const criterionMet = textOrNull(milestone.criterion_met);
+  const appliesTo = textOrNull(milestone.applies_to);
+  const timing = textOrNull(milestone.timing);
+  const note = textOrNull(milestone.note);
+  const assessmentConfidence = milestone.assessment_confidence ?? null;
+  const fromWorkbook = criterionMet !== null || (milestone.evidence_entries ?? []).length > 0;
+  const hasFacts = criterionMet !== null || assessmentConfidence !== null || appliesTo !== null;
+  const statusDescription = enumDescription("MilestoneStatus", milestone.status);
   const key = stageKey(milestone.stage);
   // null only with a stale enums.json, and then the line shows the category alone
   const type = milestoneTypeOf(milestone.category);
@@ -294,7 +319,9 @@ export function MilestonePanel({
   // the status chip and its line stand alone.
   const showStatusBasis = hasText(milestone.status_basis) && !isPlaceholder(milestone.status_basis);
   const showSuccess = hasText(milestone.success_criterion) && !sameText(milestone.success_criterion.text, milestone.name);
-  const showBottleneck = hasText(milestone.main_bottleneck) && !isPlaceholder(milestone.main_bottleneck);
+  // The workbook leaves some bottlenecks empty, so it may be null.
+  const bottleneck = milestone.main_bottleneck;
+  const showBottleneck = bottleneck !== null && hasText(bottleneck) && !isPlaceholder(bottleneck);
   const mindsQuestions = claimsWithText(milestone.artificial_minds_questions);
   const earlierClaims = claimsWithText(milestone.would_move_earlier);
   const laterClaims = claimsWithText(milestone.would_move_later);
@@ -344,9 +371,6 @@ export function MilestonePanel({
         {/* What the stage chip means, in words, so keyboard and touch readers
             get it too (it used to be a hover title). */}
         <p className={styles.stageNote}>{enumDescription("Stage", milestone.stage)}</p>
-        <div className={styles.defaultLine}>
-          <DefaultMark kind={DOSSIER_DEFAULT} />
-        </div>
         <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
           {milestone.name}
         </h2>
@@ -382,6 +406,15 @@ export function MilestonePanel({
       <div className={styles.topLayer}>
         <p className={styles.estimateLine}>{estimateLine(item)}</p>
         <BasedOn item={item} sources={sources} />
+        {timing !== null && (
+          <div className={styles.basedOn}>
+            {/* The workbook's own header for this column */}
+            <span className={styles.basedOnLabel}>Timing (dated sources only)</span>
+            <p className={styles.basedOnText}>
+              <WorkbookText text={timing} index={index} />
+            </p>
+          </div>
+        )}
         {missing.length > 0 && (
           <p className={styles.notAssessed}>
             <span className={styles.notAssessedGlyph}>
@@ -424,21 +457,76 @@ export function MilestonePanel({
       <Section title="Status">
         <p className={styles.statusLine}>
           <span className="chip">{enumLabel("MilestoneStatus", milestone.status)}</span>
-          <span className={styles.muted}>{enumDescription("MilestoneStatus", milestone.status)}</span>
+          {/* Unclear has no description of its own, so its chip stands alone */}
+          {statusDescription !== "" && <span className={styles.muted}>{statusDescription}</span>}
         </p>
-        {showStatusBasis && (
-          <ClaimText
-            claim={milestone.status_basis}
-            sources={sources}
-            variant="compact"
-            quiet={DOSSIER_DEFAULT}
-            hideCitation={statusSourcesListed}
-          />
+        {/* The workbook's headers, word for word. "Confidence" here is the
+            tab's confidence in the status, shown with or without a team range. */}
+        {hasFacts && (
+          <dl className={styles.facts}>
+            {criterionMet !== null && (
+              <div className={styles.fact}>
+                <dt>Criterion met?</dt>
+                <dd>
+                  <WorkbookText text={criterionMet} index={index} />
+                </dd>
+              </div>
+            )}
+            {assessmentConfidence !== null && (
+              <div className={styles.fact}>
+                <dt>Confidence</dt>
+                <dd>{enumLabel("Confidence", assessmentConfidence)}</dd>
+              </div>
+            )}
+            {appliesTo !== null && (
+              <div className={styles.fact}>
+                <dt>Applies to</dt>
+                <dd>
+                  <WorkbookText text={appliesTo} index={index} />
+                </dd>
+              </div>
+            )}
+          </dl>
         )}
+        {showStatusBasis &&
+          (fromWorkbook ? (
+            <div className={styles.success}>
+              <h4 className={styles.subTitle}>Evidence (entries and basis)</h4>
+              <WorkbookClaim
+                claim={milestone.status_basis}
+                index={index}
+                sources={sources}
+                hideCitation={statusSourcesListed}
+                fromWorkbook={fromWorkbook}
+              />
+            </div>
+          ) : (
+            <WorkbookClaim
+              claim={milestone.status_basis}
+              index={index}
+              sources={sources}
+              hideCitation={statusSourcesListed}
+              fromWorkbook={fromWorkbook}
+            />
+          ))}
         {showSuccess && (
           <div className={styles.success}>
             <h4 className={styles.subTitle}>Counts as reached when</h4>
-            <ClaimText claim={milestone.success_criterion} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
+            <WorkbookClaim
+              claim={milestone.success_criterion}
+              index={index}
+              sources={sources}
+              hideCitation={false}
+              fromWorkbook={fromWorkbook}
+            />
+          </div>
+        )}
+        {note !== null && (
+          <div className={styles.success}>
+            <h4 className={styles.subTitle}>Note</h4>
+            <p className={styles.workbookText}>
+              <WorkbookText text={note} index={index} />
+            </p>
           </div>
         )}
       </Section>
@@ -485,9 +573,9 @@ export function MilestonePanel({
         </Section>
       )}
 
-      {showBottleneck && (
+      {showBottleneck && bottleneck && (
         <Section title="Main bottleneck">
-          <ClaimText claim={milestone.main_bottleneck} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} />
+          <WorkbookClaim claim={bottleneck} index={index} sources={sources} hideCitation={false} fromWorkbook={fromWorkbook} />
         </Section>
       )}
 
@@ -497,6 +585,86 @@ export function MilestonePanel({
         </Section>
       )}
     </article>
+  );
+}
+
+// A workbook cell with words in it, or null for an empty or missing one.
+function textOrNull(text: string | null | undefined): string | null {
+  if (text === null || text === undefined || text.trim() === "") {
+    return null;
+  }
+  return text;
+}
+
+// A workbook cell word for word, with its codes linked when the dossier links
+// out (see codeIndex); plain text otherwise.
+function WorkbookText({ text, index }: { text: string; index: CodeIndex | null }) {
+  if (index === null) {
+    return <>{text}</>;
+  }
+  return <CodeText text={text} index={index} />;
+}
+
+// A team claim (status basis, success criterion, main bottleneck), drawn like
+// ClaimText's unmarked team claim but with every workbook code linked (E037
+// to the evidence register, S13 to the source), not only the sources. For a
+// milestone filled from the workbook's tab 1a these are its cells, so they
+// stay word for word: a source id links bare, like the note and timing beside
+// them. Site-written text shows "(Author Year)" after a source id, as
+// ClaimText does. A dossier that doesn't link out (the admin preview, the
+// styleguide) shows a workbook cell the same way, word for word with no
+// "(Author Year)" added, only without links. Any other kind of claim, or
+// site-written text in a dossier that doesn't link out, keeps ClaimText.
+function WorkbookClaim({
+  claim,
+  index,
+  sources,
+  hideCitation,
+  fromWorkbook,
+}: {
+  claim: Claim;
+  index: CodeIndex | null;
+  sources: Record<string, SourceRef>;
+  hideCitation: boolean;
+  fromWorkbook: boolean;
+}) {
+  if (claim.provenance !== DOSSIER_DEFAULT || (index === null && !fromWorkbook)) {
+    return (
+      <ClaimText claim={claim} sources={sources} variant="compact" quiet={DOSSIER_DEFAULT} hideCitation={hideCitation} />
+    );
+  }
+  // The "See ..." line, as ClaimText builds it: the claim's sources that its
+  // text doesn't already name by register id.
+  const namedInText = registerIdsIn(claim.text);
+  const seeAlso: SourceRef[] = [];
+  for (const id of claim.source_ids ?? []) {
+    const source = sources[id];
+    if (source && (!source.register_id || !namedInText.includes(source.register_id))) {
+      seeAlso.push(source);
+    }
+  }
+  const p = provenanceStyles;
+  return (
+    <div className={`${p.claim} ${p.claim_team} ${p.compact}`}>
+      <p className={p.text}>
+        {index === null ? (
+          claim.text
+        ) : (
+          <CodeText text={claim.text} index={index} mode={fromWorkbook ? "workbook" : "claim"} />
+        )}
+      </p>
+      {!hideCitation && seeAlso.length > 0 && (
+        <p className={p.citation}>
+          See{" "}
+          {seeAlso.map((source, position) => (
+            <span key={source.id}>
+              {position > 0 && "; "}
+              <ExternalLink href={source.url}>{shortCitation(source)}</ExternalLink>
+            </span>
+          ))}
+        </p>
+      )}
+    </div>
   );
 }
 

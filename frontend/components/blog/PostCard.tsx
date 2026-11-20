@@ -5,11 +5,12 @@ import { SampleChip } from "@/components/common/Marks";
 import { formatDate } from "@/components/common/format";
 import type { Post } from "@/lib/types";
 
-import { isSamplePost } from "./posts";
+import { isSamplePost, postAuthor } from "./posts";
 import styles from "./PostCard.module.css";
 
 // A post on the blog index. The whole card is clickable through the title link.
 export function PostCard({ post }: { post: Post }) {
+  const author = postAuthor(post);
   return (
     <article className={`paper ${styles.card}`}>
       <div className={styles.meta}>
@@ -23,7 +24,8 @@ export function PostCard({ post }: { post: Post }) {
       </h2>
       {post.summary && <p className={styles.summary}>{post.summary}</p>}
       <p className={styles.footer}>
-        <span>By {post.author}</span>
+        {/* Empty for the team's own posts, so "Read" stays on the right. */}
+        <span>{author ? `By ${author}` : ""}</span>
         <span className={styles.read} aria-hidden="true">
           Read <span className={styles.arrow}>&rarr;</span>
         </span>

@@ -2,58 +2,72 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { OpenDetailsOnHash } from "@/components/common/OpenDetailsOnHash";
-import { Term } from "@/components/glossary/Term";
 import { ClaimList, ClaimText } from "@/components/provenance/ClaimText";
 import { DefaultMark } from "@/components/provenance/DefaultMark";
-import { MarksHelp } from "@/components/provenance/MarksHelp";
+import { MarksHelp, type MarksCodeRanges } from "@/components/provenance/MarksHelp";
 import { ProvenanceGlyph } from "@/components/provenance/ProvenanceTag";
 import { buildTimeline, type TimelineItem } from "@/components/timeline/timelineModel";
-import { getPublicMilestones, getSiteData, getSources } from "@/lib/data";
+import { buildCodeIndex, pathwayAnchor } from "@/lib/codes";
+import { getPublicMilestones, getScorecard, getSiteData, getSources } from "@/lib/data";
 import { COMPARE_MINDS_KEY, compareHref, MINDS_ROW_ID, scorecardRowId } from "@/lib/dimensions";
-import { enumValues } from "@/lib/enums";
-import { realSources, sourceRefsById, sourceRefsByRegisterId, type SourceRef } from "@/lib/sources";
-import type { Claim, EvidenceRow, Provenance, ScorecardRow, Stage, TechnologyPage } from "@/lib/types";
+import { realSources, sourceRefsById, type SourceRef } from "@/lib/sources";
+import type { Claim, Family, Provenance, ScorecardData, ScorecardRow, TechnologyPage } from "@/lib/types";
+import {
+  entriesForFamily,
+  governanceByStatus,
+  governanceStatusCounts,
+  linksByScenario,
+  milestoneRowsForFamily,
+  risksByDomain,
+} from "@/lib/workbook";
 
 import { EmphasisText } from "./EmphasisText";
-import { EvidenceRegister } from "./EvidenceRegister";
+import { EvidenceRegisterLink } from "./EvidenceRegister";
 import { FullAssessment, type AssessmentPart } from "./FullAssessment";
 import { MilestoneTable } from "./MilestoneTable";
-import { RatingChip } from "./RatingChip";
 import { Scorecard, type ScorecardDetailLink } from "./Scorecard";
-import {
-  AssessmentView,
-  CausalChain,
-  EvidenceGap,
-  MindsGrid,
-  problemText,
-  ScopeSheet,
-  WelfareSheet,
-} from "./ScorecardSections";
+import { AlignmentPart, IntelligenceCursePart, ScopeSheet, WelfareSheet, type WorkbookContext } from "./ScorecardSections";
+import { MindsFacets, MindsNotApplicable } from "./sections/MindsFacets";
+import fold from "./sections/FoldRow.module.css";
+import { familyStages, idRange, milestoneCount, timelineRefByCategory, type TimelineRef } from "./sections/pageModel";
+import { Pathways } from "./sections/Pathways";
+import { RiskDomains, Safeguards } from "./sections/WelfareRisks";
 import { TensionCallout } from "./TensionCallout";
-import { nextTechnology, requireTechnology, technologyNumber, type TechnologyId } from "./technologyData";
-import { capitalize, countWord, joinList, lowerFirst } from "./text";
+import {
+  AI_SECTIONS_NOTE,
+  nextTechnology,
+  requireTechnology,
+  technologyNumber,
+  type TechnologyId,
+} from "./technologyData";
+import { isNotApplicable } from "./text";
 import { TocNav, type TocItem } from "./TocNav";
-import { WhereWeLand, type MilestoneFacts } from "./WhereWeLand";
+import { WhereWeLand } from "./WhereWeLand";
 import styles from "./TechnologyPageView.module.css";
 
 // One template for all three technology pages:
 //   hero (headline, intro, review status, "Where we land")
 //   "The tension", only when the team has written it
 //   detail sections, in the same order on every page
-//   "Full assessment" (or "Full scorecard" when that's all it holds), collapsed
-// A section with nothing in content says so in one plain line. Nothing here
-// writes research text: every line is a field from content or a count.
+//   "Full assessment", collapsed, with the rating cards
+// The team's workbook (content/scorecard.json and the workbook fields of
+// technologies.json) comes first in each section. The AI-drafted outline
+// fields BCI and neuromorphic AI still have come after it, under their own
+// AI mark. Nothing here writes research text: every line is a field from
+// content or a count.
 
 type Sources = Record<string, SourceRef>;
 
 interface PageContext {
   technology: TechnologyPage;
+  family: Family;
+  scorecard: ScorecardData;
   sources: Sources;
-  // The same sources keyed by register id ("S02"), for the evidence register.
-  sourcesByRegisterId: Sources;
   items: TimelineItem[];
-  // The kind most claims on this page have. Claims of this kind show only
-  // their glyph. On an AI-drafted page each section says the default once.
+  // What the workbook blocks need to link codes and mark provenance.
+  workbook: WorkbookContext;
+  // The kind most claims on this page have: the team's, on every page. Those
+  // claims show only their glyph; the hero chip says it once.
   quiet: Provenance;
 }
 
@@ -63,24 +77,19 @@ interface SectionSpec {
   id: string;
   label: string; // the nav entry, and the heading's words
   title: ReactNode; // the h2, with its one italic word in <em>
-  showsDefault: boolean; // true when the section holds claims
+  // The note under the heading naming the section's default kind, or null.
+  // Only a section made wholly of AI drafts has one.
+  defaultKind: Provenance | null;
   body: ReactNode;
 }
 
-// The scorecard rows whose basis a detail section covers in full. Those rows
+// The scorecard rows the welfare section covers in full. Their rating cards
 // show one sentence and a link. Matched by the row's id, which never changes.
-// Until the team writes a welfare assessment, the welfare section shows its
-// rows from the scorecard, in this order.
-const DIMENSION_SECTIONS: Record<string, "minds" | "welfare"> = {
-  [MINDS_ROW_ID]: "minds",
-  "human-welfare-risk": "welfare",
-  "governance-risk": "welfare",
-  "safeguard-adequacy": "welfare",
-};
+const WELFARE_ROW_IDS = ["human-welfare-risk", "governance-risk", "safeguard-adequacy"];
+const SAFEGUARD_ROW_ID = "safeguard-adequacy";
 
 const PLACEHOLDER = {
-  claims: "The team hasn't written what this claims to solve yet.",
-  mechanism: "The team hasn't written how this would work yet.",
+  how: "The team hasn't written how this would work yet.",
   case: "The team hasn't written the strongest case yet.",
   objections: "The team hasn't written the strongest objections yet.",
   minds: "The team hasn't written about artificial minds for this technology yet.",
@@ -88,7 +97,7 @@ const PLACEHOLDER = {
   milestones: "The team hasn't mapped any milestones for this technology yet.",
 };
 
-const ALTERNATIVES_NOTE = "From the team's scorecard: the most credible alternatives and counterarguments.";
+const ALTERNATIVES_NOTE = "From an earlier version of this assessment: the most credible alternatives and counterarguments.";
 
 // The outline fields are optional, so a missing list is an empty one.
 function listOf<T>(items: T[] | undefined): T[] {
@@ -99,16 +108,25 @@ function listOf<T>(items: T[] | undefined): T[] {
 
 export function TechnologyPageView({ id }: { id: TechnologyId }) {
   const technology = requireTechnology(id);
+  const family: Family = technology.id;
   const number = technologyNumber(id);
   const items = timelineItemsFor(id);
-  const sources = sourceRefsById(getSources());
-  const sourcesByRegisterId = sourceRefsByRegisterId(getSources());
-  const quiet: Provenance = technology.sample === true ? "ai" : "team";
-  // A page the team wrote says so once, in its hero chip, so its sections
-  // skip the "Our read unless marked" line. An AI-drafted page keeps it on
-  // every section, since a deep link can land below the AI draft banner.
-  const sectionDefault: Provenance | null = quiet === "team" ? null : quiet;
-  const context: PageContext = { technology, sources, sourcesByRegisterId, items, quiet };
+  const scorecard = getScorecard();
+  const allSources = getSources();
+  const sources = sourceRefsById(allSources);
+  const quiet: Provenance = "team";
+  const registerIds: Record<string, string | null> = {};
+  for (const source of Object.values(sources)) {
+    registerIds[source.id] = source.register_id;
+  }
+  const workbook: WorkbookContext = {
+    index: buildCodeIndex(scorecard, Object.values(sources)),
+    family,
+    sources,
+    registerIds,
+    quiet,
+  };
+  const context: PageContext = { technology, family, scorecard, sources, items, workbook, quiet };
   const sections = buildSections(context);
   const next = nextTechnology(id);
 
@@ -130,7 +148,7 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
               <p className="eyebrow">
                 Technology {number} · {technology.short_name}
               </p>
-              <ReviewStatus sample={technology.sample === true} />
+              <ReviewStatus aiSections={technology.unreviewed_ai_sections === true} />
               <h1 className={styles.headline}>
                 <EmphasisText text={technology.headline} />
               </h1>
@@ -141,9 +159,10 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
             <div className={styles.heroSide}>
               <WhereWeLand
                 rows={technology.scorecard}
-                milestones={milestoneFacts(items)}
                 technologyId={id}
                 sourceCount={sourceCountFor(id)}
+                milestoneCount={milestoneCount(milestoneRowsForFamily(scorecard, family))}
+                entryCount={entriesForFamily(scorecard, family).length}
               />
             </div>
           </div>
@@ -155,7 +174,7 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
 
         <div className={styles.content}>
           <div className={styles.topNotes}>
-            <MarksHelp />
+            <MarksHelp codes={codeRanges(scorecard, allSources, family)} />
           </div>
 
           {technology.tension && (
@@ -165,12 +184,7 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
           )}
 
           {sections.map((section) => (
-            <PageSection
-              key={section.id}
-              id={section.id}
-              title={section.title}
-              defaultKind={section.showsDefault ? sectionDefault : null}
-            >
+            <PageSection key={section.id} id={section.id} title={section.title} defaultKind={section.defaultKind}>
               {section.body}
             </PageSection>
           ))}
@@ -193,25 +207,33 @@ function buildSections(context: PageContext): SectionSpec[] {
   ];
 }
 
+// The first and last entry and source codes, and the family's stage codes,
+// for the marks help.
+function codeRanges(scorecard: ScorecardData, sources: ReturnType<typeof getSources>, family: Family): MarksCodeRanges {
+  const entryIds = (scorecard.entries ?? []).map((entry) => entry.id);
+  const registerIds: string[] = [];
+  for (const source of realSources(sources)) {
+    if (source.register_id) {
+      registerIds.push(source.register_id);
+    }
+  }
+  return { entries: idRange(entryIds), sources: idRange(registerIds), stages: familyStages(scorecard, family) };
+}
+
 // ---------- Top layer ----------
 
-// A page the team wrote gets a small chip. An AI-drafted page gets one banner
-// here, in place of a "not yet reviewed" label on every paragraph.
-function ReviewStatus({ sample }: { sample: boolean }) {
-  if (!sample) {
-    return (
-      <p className={styles.statusChip}>
-        <ProvenanceGlyph kind="team" />
-        Written by the team
-      </p>
-    );
+// Every page is the team's, so it carries no mark of its own. A page that
+// still has AI-drafted sections says so once, here; each of those sections
+// carries its own AI mark. A page with none shows nothing.
+function ReviewStatus({ aiSections }: { aiSections: boolean }) {
+  if (!aiSections) {
+    return null;
   }
   return (
-    <div className={styles.sample} role="note" aria-label="About this draft">
-      <p className={styles.sampleStamp}>AI draft</p>
-      <p className={styles.sampleText}>
-        Nobody on the team has reviewed this page yet. An AI model wrote it as an outline for the team to react to,
-        so treat every line and every rating as unchecked.
+    <div className={styles.status}>
+      <p className={styles.statusNote}>
+        <ProvenanceGlyph kind="ai" />
+        <span>{AI_SECTIONS_NOTE}</span>
       </p>
     </div>
   );
@@ -219,23 +241,33 @@ function ReviewStatus({ sample }: { sample: boolean }) {
 
 // ---------- Detail sections ----------
 
-// The problem from the team's scope ("Both alignment and the Intelligence
-// Curse"), for pages whose claims_to_solve list is still empty.
-function scopeProblemClaim(technology: TechnologyPage): Claim | null {
-  if (!technology.scope) {
-    return null;
-  }
-  return { text: problemText(technology.scope.problem), provenance: technology.scope.intervention.provenance };
+// The AI-drafted outline fields (BCI and neuromorphic AI), after the team's
+// content, under one "AI-suggested, not yet reviewed" note. Each claim keeps
+// the AI line style, so nobody mistakes it for the team's work.
+function AiBlock({ children }: { children: ReactNode }) {
+  return (
+    <div className={styles.aiBlock}>
+      <DefaultMark kind="ai" />
+      {children}
+    </div>
+  );
 }
 
-function howSection({ technology, sources, quiet }: PageContext): SectionSpec {
+// True when every claim is an AI draft nobody has checked.
+function allUnreviewedAi(claims: Claim[]): boolean {
+  return claims.length > 0 && claims.every((claim) => claim.provenance === "ai" && !claim.reviewed_by);
+}
+
+function howSection({ technology, scorecard, family, sources, workbook }: PageContext): SectionSpec {
+  const pathways = linksByScenario(scorecard, family);
   const claims = listOf(technology.claims_to_solve);
   const mechanism = listOf(technology.mechanism);
-  const steps = listOf(technology.theory_of_change);
-  const scopeProblem = claims.length === 0 ? scopeProblemClaim(technology) : null;
-  // Without its own claims the left column holds one line from the scope, or
-  // a placeholder, beside a much taller mechanism, so the two stack instead.
-  const leftIsShort = claims.length === 0;
+  const hasTeam = Boolean(technology.scope) || pathways.length > 0;
+  const hasAi = claims.length > 0 || mechanism.length > 0;
+  // With one AI list only, it takes the full width instead of half.
+  const aiStacked = claims.length === 0 || mechanism.length === 0;
+  const claimsList = <ClaimList claims={claims} sources={sources} quiet="ai" />;
+  const mechanismList = <ClaimList claims={mechanism} sources={sources} quiet="ai" />;
 
   return {
     id: "how",
@@ -245,46 +277,74 @@ function howSection({ technology, sources, quiet }: PageContext): SectionSpec {
         How it would <em>work</em>
       </>
     ),
-    showsDefault: claims.length > 0 || mechanism.length > 0 || steps.length > 0 || scopeProblem !== null,
+    defaultKind: !hasTeam && allUnreviewedAi([...claims, ...mechanism]) ? "ai" : null,
     body: (
-      <div className={`${styles.howGrid} ${leftIsShort ? styles.howStacked : ""}`}>
-        <div className={styles.subsection}>
-          <h3 className={styles.subsectionTitle}>What it claims to solve</h3>
-          {claims.length > 0 && <ClaimList claims={claims} sources={sources} quiet={quiet} />}
-          {scopeProblem && (
-            <>
-              <p className={styles.fromScope}>From the team&rsquo;s scope</p>
-              <ClaimText claim={scopeProblem} quiet={quiet} />
-            </>
-          )}
-          {claims.length === 0 && !scopeProblem && <Placeholder text={PLACEHOLDER.claims} />}
-        </div>
+      <div className={styles.stack}>
+        {/* The scope card keeps id="scope", the anchor it had in the Full
+            assessment, and folds its own cells. */}
+        {technology.scope && <ScopeSheet scope={technology.scope} shortName={technology.short_name} context={workbook} />}
 
-        <div className={styles.stack}>
-          {mechanism.length > 0 && (
-            <div className={styles.subsection}>
-              <h3 className={styles.subsectionTitle}>The mechanism</h3>
-              <ClaimList claims={mechanism} sources={sources} quiet={quiet} />
-            </div>
-          )}
+        {pathways.length > 0 && (
+          <div className={styles.subsection}>
+            <h3 className={styles.subsectionTitle}>Theory of change</h3>
+            <Pathways pathways={pathways} index={workbook.index} family={family} />
+          </div>
+        )}
 
-          {steps.length > 0 && (
-            <div className={styles.subsection}>
-              <h3 className={styles.subsectionTitle}>The steps it depends on, in order</h3>
-              <CausalChain steps={steps} sources={sources} quiet={quiet} />
+        {/* After the team's content the AI lists are folded, one fold each,
+            like the pathways above, so the section stays short. */}
+        {hasAi && hasTeam && (
+          <AiBlock>
+            <div className={fold.list}>
+              {claims.length > 0 && (
+                <Fold id="claims-to-solve" title="What it claims to solve">
+                  {claimsList}
+                </Fold>
+              )}
+              {mechanism.length > 0 && (
+                <Fold id="mechanism" title="The mechanism">
+                  {mechanismList}
+                </Fold>
+              )}
             </div>
-          )}
+          </AiBlock>
+        )}
+        {/* No workbook content: the AI lists are the section, open, under its heading's mark. */}
+        {hasAi && !hasTeam && (
+          <div className={`${styles.howGrid} ${aiStacked ? styles.howStacked : ""}`}>
+            {claims.length > 0 && (
+              <div className={styles.subsection}>
+                <h3 className={styles.subsectionTitle}>What it claims to solve</h3>
+                {claimsList}
+              </div>
+            )}
+            {mechanism.length > 0 && (
+              <div className={styles.subsection}>
+                <h3 className={styles.subsectionTitle}>The mechanism</h3>
+                {mechanismList}
+              </div>
+            )}
+          </div>
+        )}
 
-          {mechanism.length === 0 && steps.length === 0 && (
-            <div className={styles.subsection}>
-              <h3 className={styles.subsectionTitle}>The mechanism</h3>
-              <Placeholder text={PLACEHOLDER.mechanism} />
-            </div>
-          )}
-        </div>
+        {!hasTeam && !hasAi && <Placeholder text={PLACEHOLDER.how} />}
       </div>
     ),
   };
+}
+
+// One folded block in the look of the pathway and risk rows (FoldRow), with
+// no code: a title line that opens into its content. Linkable by its id.
+function Fold({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <details id={id} className={fold.row}>
+      <summary className={styles.foldSummary}>
+        <span className={`${fold.title} ${styles.foldTitle}`}>{title}</span>
+        <span className={fold.chevron} aria-hidden="true" />
+      </summary>
+      <div className={styles.foldBody}>{children}</div>
+    </details>
+  );
 }
 
 function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
@@ -300,6 +360,10 @@ function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
   // A side that is only a placeholder would leave a tall empty column beside
   // the other one, so the two cards stack instead.
   const oneSided = forClaims.length === 0 || againstClaims.length === 0;
+  // On BCI and neuromorphic AI both sides are AI drafts: the heading says so
+  // once and each claim keeps the AI line style.
+  const aiSection = allUnreviewedAi([...forClaims, ...againstClaims]);
+  const claimQuiet: Provenance = aiSection ? "ai" : quiet;
 
   return {
     id: "case",
@@ -309,7 +373,7 @@ function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
         Strongest case and <em>objections</em>
       </>
     ),
-    showsDefault: forClaims.length > 0 || againstClaims.length > 0,
+    defaultKind: aiSection ? "ai" : null,
     body: (
       <div className={`${styles.debate} ${oneSided ? styles.debateStacked : ""}`}>
         <ArgumentColumn
@@ -323,7 +387,7 @@ function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
           claims={forClaims}
           placeholder={PLACEHOLDER.case}
           sources={sources}
-          quiet={quiet}
+          quiet={claimQuiet}
         />
         <ArgumentColumn
           tone="against"
@@ -337,17 +401,23 @@ function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
           placeholder={PLACEHOLDER.objections}
           note={againstNote}
           sources={sources}
-          quiet={quiet}
+          quiet={claimQuiet}
         />
       </div>
     ),
   };
 }
 
-function mindsSection({ technology, sources, quiet }: PageContext): SectionSpec {
-  const minds = technology.artificial_minds_assessment;
+function mindsSection({ technology, family, sources, workbook }: PageContext): SectionSpec {
+  const stages = technology.artificial_minds_by_stage ?? [];
+  const mindsRow = scorecardRowFor(technology.scorecard, MINDS_ROW_ID);
+  // BCI: the workbook judges artificial-mind welfare "Not applicable" (tab 9),
+  // so the section says that once instead of showing empty facets.
+  const notApplicable = mindsRow !== null && isNotApplicable(mindsRow);
   const questions = listOf(technology.artificial_minds_questions);
-  const hasContent = Boolean(minds) || questions.length > 0;
+  const hasTeam = notApplicable || stages.length > 0;
+  const hasContent = hasTeam || questions.length > 0;
+
   return {
     id: "minds",
     label: "Artificial minds",
@@ -356,22 +426,41 @@ function mindsSection({ technology, sources, quiet }: PageContext): SectionSpec 
         Artificial <em>minds</em>
       </>
     ),
-    showsDefault: hasContent,
+    defaultKind: !hasTeam && allUnreviewedAi(questions) ? "ai" : null,
     body: (
       <div className={styles.stack}>
-        {minds && <MindsGrid minds={minds} sources={sources} quiet={quiet} />}
-        {questions.length > 0 && (
+        {notApplicable && mindsRow && (
+          <MindsNotApplicable dimension={mindsRow.dimension} href={`#${scorecardRowId(mindsRow.id)}`} />
+        )}
+        {!notApplicable && stages.length > 0 && (
+          <MindsFacets stages={stages} index={workbook.index} family={family} registerIds={workbook.registerIds} />
+        )}
+
+        {questions.length > 0 && hasTeam && (
+          <AiBlock>
+            <div className={`measure ${styles.subsection}`}>
+              <h3 className={styles.subsectionTitle}>Other open questions</h3>
+              <ClaimList claims={questions} sources={sources} quiet="ai" />
+            </div>
+          </AiBlock>
+        )}
+        {questions.length > 0 && !hasTeam && (
           <div className={`measure ${styles.subsection}`}>
-            <h3 className={styles.subsectionTitle}>{minds ? "Other open questions" : "Open questions"}</h3>
-            <ClaimList claims={questions} sources={sources} quiet={quiet} />
+            <h3 className={styles.subsectionTitle}>Open questions</h3>
+            <ClaimList claims={questions} sources={sources} quiet="ai" />
           </div>
         )}
+
         {!hasContent && <Placeholder text={PLACEHOLDER.minds} />}
-        {/* The same questions for all three technologies, on the compare page */}
+        {/* The same questions for all three technologies, on the compare page.
+            The aria-label gives screen readers the full name, "Compare side by
+            side: Artificial minds". A visually-hidden span would not work here:
+            its absolute positioning makes the browser add a space, giving
+            "side by side : Artificial". */}
         {hasContent && (
           <p className={styles.compareLine}>
-            <Link href={compareHref(COMPARE_MINDS_KEY)}>
-              Compare side by side<span className="visually-hidden">: Artificial minds</span>
+            <Link href={compareHref(COMPARE_MINDS_KEY)} aria-label="Compare side by side: Artificial minds">
+              Compare side by side
               <span aria-hidden="true"> &rarr;</span>
             </Link>
           </p>
@@ -381,23 +470,13 @@ function mindsSection({ technology, sources, quiet }: PageContext): SectionSpec 
   };
 }
 
-function welfareSection({ technology, sources, quiet }: PageContext): SectionSpec {
+function welfareSection({ technology, scorecard, family, workbook }: PageContext): SectionSpec {
   const welfare = technology.welfare_governance;
-  // Without the team's own assessment, the scorecard's welfare rows stand in.
-  const scorecardRows = welfare ? [] : welfareScorecardRows(technology);
-
-  let body: ReactNode;
-  if (welfare) {
-    body = <WelfareSheet welfare={welfare} shortName={technology.short_name} sources={sources} quiet={quiet} />;
-  } else if (scorecardRows.length > 0) {
-    body = <WelfareFromScorecard rows={scorecardRows} sources={sources} quiet={quiet} />;
-  } else {
-    body = (
-      <p className={`measure ${styles.placeholderBlock}`}>
-        {PLACEHOLDER.welfare} The current risk ratings are in the <a href="#scorecard">full scorecard</a>.
-      </p>
-    );
-  }
+  const groups = risksByDomain(scorecard, family);
+  const anyRisks = groups.some((group) => group.risks.length > 0);
+  const governance = governanceByStatus(scorecard, family);
+  const safeguardRow = scorecardRowFor(technology.scorecard, SAFEGUARD_ROW_ID);
+  const hasContent = Boolean(welfare) || anyRisks || governance.length > 0;
 
   return {
     id: "welfare",
@@ -407,25 +486,25 @@ function welfareSection({ technology, sources, quiet }: PageContext): SectionSpe
         Welfare and governance <em>risks</em>
       </>
     ),
-    showsDefault: Boolean(welfare) || scorecardRows.length > 0,
-    body,
+    defaultKind: null,
+    body: hasContent ? (
+      <div className={styles.stack}>
+        {welfare && <WelfareSheet welfare={welfare} shortName={technology.short_name} context={workbook} />}
+        <RiskDomains groups={groups} rows={technology.scorecard} index={workbook.index} family={family} />
+        <Safeguards
+          row={safeguardRow}
+          groups={governance}
+          counts={governanceStatusCounts(scorecard, family)}
+          index={workbook.index}
+          family={family}
+        />
+      </div>
+    ) : (
+      <p className={`measure ${styles.placeholderBlock}`}>
+        {PLACEHOLDER.welfare} The current risk ratings are in the <a href="#scorecard">full scorecard</a>.
+      </p>
+    ),
   };
-}
-
-// The scorecard rows DIMENSION_SECTIONS sends to the welfare section ("Human
-// welfare risk", "Governance risk", "Safeguard adequacy"), in that order.
-function welfareScorecardRows(technology: TechnologyPage): ScorecardRow[] {
-  const rows: ScorecardRow[] = [];
-  for (const [rowId, section] of Object.entries(DIMENSION_SECTIONS)) {
-    if (section !== "welfare") {
-      continue;
-    }
-    const row = scorecardRowFor(technology.scorecard, rowId);
-    if (row) {
-      rows.push(row);
-    }
-  }
-  return rows;
 }
 
 function scorecardRowFor(rows: ScorecardRow[], rowId: string): ScorecardRow | null {
@@ -437,39 +516,13 @@ function scorecardRowFor(rows: ScorecardRow[], rowId: string): ScorecardRow | nu
   return null;
 }
 
-// The welfare section before the team has assessed these risks: each
-// scorecard row with its rating and its basis in full. The scorecard then
-// keeps one sentence of each basis and links here. These rows have no ids:
-// the rating cards in the full scorecard are the only #scorecard-<id> targets.
-function WelfareFromScorecard({ rows, sources, quiet }: { rows: ScorecardRow[]; sources: Sources; quiet: Provenance }) {
-  return (
-    <div>
-      <p className={`measure ${styles.sectionNote}`}>
-        From the <a href="#scorecard">scorecard</a>. The team hasn&rsquo;t assessed these risks in detail yet.
-      </p>
-      <div className={styles.riskRows}>
-        {rows.map((row) => (
-          <div key={row.id} className={styles.riskRow}>
-            <h3 className={styles.riskTitle}>{row.dimension}</h3>
-            <div className={styles.riskRating}>
-              <RatingChip
-                scale={row.scale}
-                rating={row.rating}
-                unclearReason={row.unclear_reason}
-                potentialSeverity={row.scale === "risk" ? row.potential_severity : null}
-              />
-            </div>
-            <div className={styles.riskBasis}>
-              <ClaimText claim={row.basis} sources={sources} quiet={quiet} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function milestonesSection({ items }: PageContext): SectionSpec {
+function milestonesSection({ scorecard, family, items, workbook }: PageContext): SectionSpec {
+  const rows = milestoneRowsForFamily(scorecard, family);
+  const refs: TimelineRef[] = items.map((item) => ({
+    id: item.milestone.id,
+    code: item.code,
+    category: item.milestone.category,
+  }));
   return {
     id: "milestones",
     label: "Milestones",
@@ -478,63 +531,20 @@ function milestonesSection({ items }: PageContext): SectionSpec {
         <em>Milestones</em>
       </>
     ),
-    showsDefault: false,
+    defaultKind: null,
     body:
-      items.length === 0 ? (
+      rows.length === 0 ? (
         <Placeholder text={PLACEHOLDER.milestones} />
       ) : (
-        <>
-          <p className={`measure ${styles.sectionNote}`}>
-            {milestonesNote(items)}{" "}
-            <Link href="/methodology/#stages">
-              What the stages mean<span aria-hidden="true"> &rarr;</span>
-            </Link>
-          </p>
-          <MilestoneTable items={items} />
-        </>
+        <MilestoneTable
+          rows={rows}
+          categories={scorecard.milestone_categories ?? []}
+          timeline={timelineRefByCategory(refs)}
+          index={workbook.index}
+          family={family}
+        />
       ),
   };
-}
-
-// "None of the 8 has a date yet, and nothing is mapped at the “Actually
-// helping” stage. Each row opens the milestone on the timeline." The quotes
-// mark the stage's name, which keeps the capitals it has on the badges.
-function milestonesNote(items: TimelineItem[]): string {
-  const facts = milestoneFacts(items);
-  let dated: string;
-  if (facts.dated === 0) {
-    dated = `None of the ${facts.count} has a date yet`;
-  } else if (facts.dated === facts.count) {
-    dated = facts.count === 1 ? "It has a date or an estimate" : `All ${facts.count} have a date or an estimate`;
-  } else {
-    dated = `${capitalize(countWord(facts.dated))} of the ${facts.count} have a date or an estimate`;
-  }
-
-  const emptyStages: string[] = [];
-  for (const label of stagesWithoutMilestones(items)) {
-    emptyStages.push(`“${label}”`);
-  }
-  let gap = "";
-  if (emptyStages.length > 0) {
-    gap = `, and nothing is mapped at the ${joinList(emptyStages)} stage${emptyStages.length > 1 ? "s" : ""}`;
-  }
-  return `${dated}${gap}. Each row opens the milestone on the timeline.`;
-}
-
-function stagesWithoutMilestones(items: TimelineItem[]): string[] {
-  const empty: string[] = [];
-  for (const info of enumValues("Stage")) {
-    let found = false;
-    for (const item of items) {
-      if (item.milestone.stage === (info.value as Stage)) {
-        found = true;
-      }
-    }
-    if (!found) {
-      empty.push(info.label);
-    }
-  }
-  return empty;
 }
 
 function fullAssessmentSection(context: PageContext): SectionSpec {
@@ -545,9 +555,6 @@ function fullAssessmentSection(context: PageContext): SectionSpec {
   if (onlyScorecard) {
     parts[0] = { ...parts[0], summary: "the basis for each rating" };
   }
-  // The default note sits inside the collapsed part, next to the claims. A
-  // page the team wrote skips it, as its sections do.
-  const top = context.quiet === "team" ? undefined : <DefaultMark kind={context.quiet} />;
   return {
     id: "full-assessment",
     label: onlyScorecard ? "Full scorecard" : "Full assessment",
@@ -560,69 +567,41 @@ function fullAssessmentSection(context: PageContext): SectionSpec {
         Full <em>assessment</em>
       </>
     ),
-    showsDefault: false,
-    body: <FullAssessment parts={parts} label={onlyScorecard ? "scorecard" : "assessment"} top={top} />,
+    defaultKind: null,
+    body: <FullAssessment parts={parts} label={onlyScorecard ? "scorecard" : "assessment"} />,
   };
 }
 
-// The parts of the collapsed Full assessment, the scorecard first.
+// The parts of the collapsed Full assessment, the scorecard first. The scope
+// sheet moved up into "How it would work" (it keeps its #scope anchor there),
+// so it isn't printed twice.
 function assessmentParts(context: PageContext): AssessmentPart[] {
-  const { technology, sources, sourcesByRegisterId, quiet } = context;
+  const { technology, scorecard, family, workbook } = context;
   const parts: AssessmentPart[] = [];
 
-  if (technology.scope) {
-    parts.push({
-      id: "scope",
-      title: "Scope",
-      summary: "the scope",
-      body: <ScopeSheet scope={technology.scope} shortName={technology.short_name} sources={sources} quiet={quiet} />,
-    });
-  }
-
-  const register = listOf(technology.evidence_register);
-  if (register.length > 0) {
+  const entryCount = entriesForFamily(scorecard, family).length;
+  if (entryCount > 0) {
     parts.push({
       id: "evidence",
       title: "Evidence register",
       summary: "the evidence register",
-      body: (
-        <>
-          <p className={`measure ${styles.sectionNote}`}>
-            Each row is one claim, with the sources for and against it, the kind of evidence, its{" "}
-            <Term name="directness">directness</Term>, its main limitation and the sources&rsquo;{" "}
-            <Term name="independence">independence</Term>.
-          </p>
-          <EvidenceRegister
-            rows={register}
-            technologyName={technology.name}
-            shortName={technology.short_name}
-            sourcesByRegisterId={sourcesByRegisterId}
-            quiet={quiet}
-          />
-        </>
-      ),
+      body: <EvidenceRegisterLink family={family} shortName={technology.short_name} count={entryCount} />,
     });
   }
-
-  const comparatorDefinition = technology.scope
-    ? `The alternative a proposal is measured against. Here: ${lowerFirst(technology.scope.comparator.text)}`
-    : undefined;
 
   if (technology.alignment_assessment) {
     const why = whyLink(technology.scorecard, "alignment");
     parts.push({
       id: "alignment",
       title: "The alignment case",
-      summary: "the alignment questions",
+      summary: "the alignment case",
       body: (
-        <AssessmentView
+        <AlignmentPart
           assessment={technology.alignment_assessment}
-          mechanismLabel="The alignment problem it targets"
-          sources={sources}
-          quiet={quiet}
+          context={workbook}
+          pathwayHrefs={pathwayHrefs(scorecard, family)}
           whyHref={why.href}
           whyLabel={why.label}
-          comparatorDefinition={comparatorDefinition}
         />
       ),
     });
@@ -633,17 +612,13 @@ function assessmentParts(context: PageContext): AssessmentPart[] {
     parts.push({
       id: "intelligence-curse",
       title: "The Intelligence Curse case",
-      summary: "the Intelligence Curse questions",
+      summary: "the Intelligence Curse case",
       body: (
-        <AssessmentView
+        <IntelligenceCursePart
           assessment={technology.intelligence_curse_assessment}
-          mechanismLabel="The mechanism it claims"
-          sources={sources}
-          quiet={quiet}
+          context={workbook}
           whyHref={why.href}
           whyLabel={why.label}
-          // Defined once per page, on the alignment questions when they exist.
-          comparatorDefinition={technology.alignment_assessment ? undefined : comparatorDefinition}
         />
       ),
     });
@@ -651,52 +626,49 @@ function assessmentParts(context: PageContext): AssessmentPart[] {
 
   // The rating cards are h4 under the part's own h3, "Full scorecard". When
   // the scorecard is the only part, the section's h2 is "Full scorecard" and
-  // the cards are h3. Each card shows the register lines that name its row.
-  parts.unshift(scorecardPart(context, register, parts.length > 0 ? 4 : 3));
+  // the cards are h3.
+  parts.unshift(scorecardPart(context, parts.length > 0 ? 4 : 3));
   return parts;
 }
 
-function scorecardPart(
-  { technology, sources, sourcesByRegisterId, items, quiet }: PageContext,
-  register: EvidenceRow[],
-  headingLevel: 3 | 4,
-): AssessmentPart {
+// Scenario name -> its pathway fold, for the alignment part's scenario rows.
+// Only a name both tabs write the same way gets a link.
+function pathwayHrefs(scorecard: ScorecardData, family: Family): Record<string, string> {
+  const hrefs: Record<string, string> = {};
+  for (const pathway of linksByScenario(scorecard, family)) {
+    if (hrefs[pathway.scenario] === undefined) {
+      hrefs[pathway.scenario] = `#${pathwayAnchor(pathway.scenarioCode)}`;
+    }
+  }
+  return hrefs;
+}
+
+// The cards read their evidence and sources from the workbook themselves.
+function scorecardPart({ technology, sources, items, quiet }: PageContext, headingLevel: 3 | 4): AssessmentPart {
   return {
     id: "scorecard",
     title: "Full scorecard",
     summary: "the full scorecard with the basis for each rating",
     body: (
-      <>
-        <Scorecard
-          rows={technology.scorecard}
-          technologyName={technology.name}
-          shortName={technology.short_name}
-          headingLevel={headingLevel}
-          register={register}
-          items={items}
-          sources={sources}
-          sourcesByRegisterId={sourcesByRegisterId}
-          quiet={quiet}
-          detailLinks={scorecardDetailLinks(technology)}
-        />
-        {technology.evidence_gap && <EvidenceGap claim={technology.evidence_gap} sources={sources} quiet={quiet} />}
-      </>
+      <Scorecard
+        rows={technology.scorecard}
+        technologyName={technology.name}
+        shortName={technology.short_name}
+        headingLevel={headingLevel}
+        items={items}
+        sources={sources}
+        quiet={quiet}
+        detailLinks={scorecardDetailLinks(technology)}
+      />
     ),
   };
 }
 
-// Which scorecard rows point to a detail section, for this page's content.
-// Keyed by row id.
+// Which scorecard rows point to a detail section. Keyed by row id.
 function scorecardDetailLinks(technology: TechnologyPage): Record<string, ScorecardDetailLink> {
   const links: Record<string, ScorecardDetailLink> = {};
   for (const row of technology.scorecard) {
-    const section = DIMENSION_SECTIONS[row.id];
-    if (section === "minds" && technology.artificial_minds_assessment) {
-      links[row.id] = { href: "#minds", label: "Artificial minds" };
-    }
-    // The welfare section always covers these rows: with the team's welfare
-    // sheet, or, without one, with the row's own basis in full.
-    if (section === "welfare") {
+    if (WELFARE_ROW_IDS.includes(row.id)) {
       links[row.id] = { href: "#welfare", label: "Welfare and governance risks" };
     }
   }
@@ -715,8 +687,8 @@ function whyLink(rows: ScorecardRow[], problem: "alignment" | "intelligence_curs
 
 // ---------- Milestone data ----------
 
-// This technology's real milestones, built by the same model the timeline
-// uses so the codes ("WBE-01") and estimate text match. Samples never show.
+// This technology's timeline milestones, built by the same model the timeline
+// uses so the codes ("WBE-01") match. Samples never show.
 function timelineItemsFor(id: TechnologyId): TimelineItem[] {
   const { nowYear } = getSiteData();
   const groups = buildTimeline(getPublicMilestones(), nowYear);
@@ -726,16 +698,6 @@ function timelineItemsFor(id: TechnologyId): TimelineItem[] {
     }
   }
   return [];
-}
-
-function milestoneFacts(items: TimelineItem[]): MilestoneFacts {
-  let dated = 0;
-  for (const item of items) {
-    if (item.view.barMode !== "none") {
-      dated += 1;
-    }
-  }
-  return { count: items.length, dated, firstId: items.length > 0 ? items[0].milestone.id : null };
 }
 
 // ---------- Source data ----------

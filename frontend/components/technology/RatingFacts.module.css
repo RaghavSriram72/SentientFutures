@@ -1,0 +1,59 @@
+/* The wrapper is the container the facts measure, so they fit whatever holds
+   them: a rating card's rail, a phone card or a compare column. It takes its
+   width from its parent and never from its content, so don't put it in a
+   shrink-to-fit box (an inline-block or an auto-width flex item). */
+.facts {
+  container: rating-facts / inline-size;
+}
+
+/* Stacked by default: each fact under the one before, each label above its
+   value. */
+.list {
+  display: grid;
+  gap: 1rem;
+}
+
+/* Side by side when the facts have between 20rem and 40rem. Phones (under
+   600px) always stack, wherever the facts sit, because the team asked for
+   that. */
+@media (min-width: 600px) {
+  @container rating-facts (20rem < width < 40rem) {
+    .list {
+      /* The rating gets the wider column: its chip and its label
+         ("Safeguards adequate?") are the longer ones. */
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+      column-gap: 1.25rem;
+    }
+
+    /* A risk row: severity beside likelihood, then confidence under them,
+       so the three line up the same way in every column. One class only,
+       so a holder's own layout (the compare page's spec sheet) can still
+       override it. */
+    .listRisk {
+      grid-template-columns: repeat(2, max-content);
+      column-gap: 1.75rem;
+    }
+  }
+}
+
+/* The same small caps label the scorecard's phone cards used */
+.label {
+  margin-bottom: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* The chip keeps its own width instead of stretching across the column */
+.value {
+  display: grid;
+  justify-items: start;
+  gap: 0.4rem;
+}
+
+/* "Not applicable" on its own, with no label over it */
+.notApplicable {
+  display: flex;
+}

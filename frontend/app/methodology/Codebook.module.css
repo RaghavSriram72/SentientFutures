@@ -1,0 +1,299 @@
+/* ---------- Purpose, core principles and the Scope notes ---------- */
+.overview {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 68ch;
+}
+
+.block {
+  display: grid;
+  gap: 0.6rem;
+}
+
+/* A small label in the workbook's own words, like the site's eyebrows */
+.blockTitle {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--grape);
+}
+
+.purpose {
+  padding-left: 1rem;
+  border-left: 2px solid var(--grape);
+  font-family: var(--font-display);
+  font-size: 1.1875rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.lines {
+  display: grid;
+  border-top: 1px solid var(--rule);
+}
+
+/* Each item starts with its own number ("1. "). The hanging indent lines up
+   a wrapped line with the words after the number. */
+.line {
+  padding: 0.55rem 0 0.55rem 1.4em;
+  text-indent: -1.4em;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--ink-body);
+  /* Long codes and tab names wrap instead of pushing the page sideways */
+  overflow-wrap: anywhere;
+}
+
+.scope {
+  gap: 0.35rem;
+  padding: 0.9rem 1.15rem;
+  border: 1px solid var(--rule-soft);
+  border-radius: var(--radius-md);
+  background: var(--paper-2);
+}
+
+.scopeLine {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--ink-body);
+}
+
+/* ---------- The Codebook folds and the reference frameworks ---------- */
+.folds {
+  display: grid;
+  margin-top: 1.75rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.fold {
+  border-top: 1px solid var(--rule);
+  /* A link to a fold lands clear of the sticky header */
+  scroll-margin-top: calc(var(--header-height) + 2.5rem);
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  padding-block: 0.7rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.foldTitle {
+  font-family: var(--font-display);
+  font-size: 1.3125rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.summary:hover .foldTitle {
+  color: var(--grape);
+}
+
+/* "Family: All" once at the top of a fold whose rows share it */
+.runFamily {
+  margin-bottom: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.runFamilyValue {
+  color: var(--ink-muted);
+}
+
+.chevron {
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  margin-right: 0.35rem;
+  border-right: 1.5px solid var(--grape);
+  border-bottom: 1.5px solid var(--grape);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.fold[open] .chevron {
+  transform: rotate(-135deg);
+}
+
+.rows {
+  display: grid;
+  padding-bottom: 1.25rem;
+}
+
+.row {
+  display: grid;
+  gap: 0.2rem 1.5rem;
+  padding-block: 0.65rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.row:first-child {
+  padding-top: 0.2rem;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+@media (min-width: 560px) {
+  .row {
+    grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+    align-items: baseline;
+  }
+}
+
+/* A rule row ("Synthesis rule", "Status rule") has no code to show, so its
+   empty term is hidden and the definition runs the full width */
+.rowNoCode > .code {
+  display: none;
+}
+
+.rowNoCode > .definition {
+  max-width: 72ch;
+}
+
+@media (min-width: 560px) {
+  .rowNoCode {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.6rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.family {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.definition {
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--ink-body);
+  overflow-wrap: anywhere;
+}
+
+.frameworks {
+  list-style: none;
+  display: grid;
+  padding-bottom: 1.25rem;
+}
+
+.framework {
+  display: grid;
+  gap: 0.45rem;
+  padding-block: 0.85rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.framework:first-child {
+  padding-top: 0.2rem;
+}
+
+.framework:last-child {
+  border-bottom: 0;
+}
+
+.frameworkHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.75rem;
+}
+
+.frameworkId {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--grape);
+}
+
+.frameworkLink {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.frameworkFacts {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 68ch;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.frameworkFacts dt {
+  display: inline;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.frameworkFacts dt::after {
+  content: " ";
+}
+
+.frameworkFacts dd {
+  display: inline;
+  color: var(--ink-body);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Print ---------- */
+/* The folds print open (see globals.css). Chrome can't split a grid inside a
+   <details> cleanly at a page break, so the lists lay out as plain blocks on
+   paper, and a row never splits across two pages. */
+@media print {
+  .chevron {
+    display: none;
+  }
+
+  .overview,
+  .lines,
+  .folds,
+  .rows,
+  .frameworks {
+    display: block;
+  }
+
+  .overview > * + * {
+    margin-top: 1.5rem;
+  }
+
+  .summary,
+  .blockTitle {
+    break-after: avoid;
+  }
+
+  .row,
+  .line,
+  .framework,
+  .scope {
+    break-inside: avoid;
+  }
+}

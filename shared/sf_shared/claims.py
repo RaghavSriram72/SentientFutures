@@ -4,9 +4,10 @@ Every sentence shown on the site is a Claim, so its provenance travels with it:
   source  -> needs source_ids and an exact quote (max 300 characters)
   team    -> the team's own interpretation
   ai      -> AI-suggested; needs reviewed_by. Claim alone can't enforce this,
-             because records with sample: true are allowed to skip it. The
-             record models (Milestone, Source, TechnologyPage) check it instead,
-             using ai_review_problems() below.
+             because sample records (and technology pages with
+             unreviewed_ai_sections: true) are allowed to skip it. The record
+             models (Milestone, Source, TechnologyPage) check it instead, using
+             ai_review_problems() below.
   unclear -> genuinely uncertain; needs unclear_reason (and unclear_note when
              the reason is "other")
 
@@ -22,6 +23,10 @@ from pydantic_core import PydanticCustomError
 from sf_shared.enums import Provenance, UnclearReason
 
 MAX_QUOTE_LENGTH = 300
+
+# "a, b, c or d", built from the enum so the message never falls behind it.
+_REASON_VALUES = [member.value for member in UnclearReason]
+UNCLEAR_REASON_CHOICES = ", ".join(_REASON_VALUES[:-1]) + " or " + _REASON_VALUES[-1]
 
 # A model validator can only raise one error, but a record can break several
 # rules at once. So each validator collects (path, message) pairs and raises
@@ -118,8 +123,7 @@ class Claim(BaseModel):
                 problems.append(
                     (
                         "unclear_reason",
-                        "required when provenance is unclear. Say why: no_relevant_evidence, "
-                        "conflicting_evidence, underspecified_proposal, search_incomplete or other",
+                        f"required when provenance is unclear. Say why: {UNCLEAR_REASON_CHOICES}",
                     )
                 )
             elif self.unclear_reason == UnclearReason.OTHER and is_blank(self.unclear_note):
@@ -183,16 +187,16 @@ def compact_dump(value: object) -> object:
     return value
 
 
-def ai_review_problems(record: BaseModel, is_sample: bool) -> list[RuleProblem]:
+def ai_review_problems(record: BaseModel, is_exempt: bool) -> list[RuleProblem]:
     """AI-suggested claims need a named human reviewer before they go public.
 
-    Sample records (sample: true) are exempt: the fictional worked examples and
-    the AI-drafted outlines on the technology pages. The public site leaves
-    sample milestones and sources out, and puts an "AI draft" banner on a draft
-    technology page. validate.py prints a warning with the count, so these
-    claims can't be forgotten when the sample flag comes off.
+    Exempt records skip this: samples (sample: true, the fictional worked
+    examples, which the public site leaves out) and technology pages with
+    unreviewed_ai_sections: true (their AI-drafted outline sections carry an
+    AI mark). validate.py prints a warning with the count, so these claims
+    can't be forgotten when the flag comes off.
     """
-    if is_sample:
+    if is_exempt:
         return []
     problems: list[RuleProblem] = []
     for path, claim in find_claims(record):

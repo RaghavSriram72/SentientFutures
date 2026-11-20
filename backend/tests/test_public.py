@@ -75,6 +75,18 @@ def test_rubric_ratings_and_source_type_come_from_the_review(client, db, headers
     assert source["relevance"] is None
 
 
+def test_the_workbooks_source_fields_stay_empty_for_an_approved_source(client, db, headers):
+    # The quality block and the screening flag only come from the workbook import.
+    insert_candidate(db, "s2-quality")
+    response = client.post("/api/queue/s2-quality/review", json=approve_body(), headers=headers)
+    assert response.status_code == 201
+
+    source = client.get("/api/public/sources").get_json()["sources"][0]
+
+    assert source["quality"] is None
+    assert source["screening_pending"] is False
+
+
 def test_kept_ai_claim_directions_are_published_as_ai_suggested(client, db, headers):
     insert_candidate(db, "arxiv-1")
     insert_assessment(db, "arxiv-1")  # the AI said ai_alignment, as approve_body does

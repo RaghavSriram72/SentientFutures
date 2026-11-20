@@ -34,15 +34,23 @@ const LEAD_IN = 560;
 export const CARD_WIDTH = 250;
 const CARD_GAP = 48;
 export const ROW_COUNT = 3;
+// On a small phone the three rows can leave the world drawn so small that the
+// cards' small lines can't reach MIN_DRAWN_TEXT (see needsFewerRows). The
+// cards then stand in two rows: the front row and the middle row. Those two
+// never share an x (see firstFreeX), so the cards stand one after another
+// along the track, none ever stands in front of another, and without the
+// deep back row the world fits on the screen at a larger scale.
+export const FEWER_ROW_COUNT = 2;
 
 // ---------- The floor ----------
 // Depths are distances from the floor's front edge, in world pixels. Row 2
 // stands far enough behind row 0 that a front card's top stays below the
 // back row's feet, so it never covers a back card's stage line. That depends
 // on how tall the cards are: tests/trackLayout.test.ts checks the budget with
-// the teaser's camera, the tightest one (see frontRowClearance). Row 1 sits
+// the teaser's cameras, the tightest ones (see frontRowClearance). Row 1 sits
 // between them and would cover the bottom of a row 2 card, so the layout
-// never lets it share x with rows 0 or 2.
+// never lets it share x with rows 0 or 2. (Two-row layouts use rows 0 and 1
+// only, which never share x either; see FEWER_ROW_COUNT and neighbourGap.)
 export const FLOOR_DEPTH = 1000;
 export const AXIS_DEPTH = 70;
 export const ROW_DEPTHS = [200, 510, 820];
@@ -308,8 +316,9 @@ function cardsOverlap(a: number, b: number): boolean {
 }
 
 // Front row first, then the back row (which a front card never covers), then
-// the middle row.
+// the middle row. With two rows, the front row and then the middle row.
 const ROW_PREFERENCE = [0, 2, 1];
+const FEWER_ROW_PREFERENCE = [0, 1];
 // How much a crowded row counts against a choice, in world pixels of nudging.
 const SHARED_ROW_COST = 300;
 
@@ -350,19 +359,20 @@ function freeLane(state: RowState, anchorX: number): number {
 // Give each dated card a row and a standing x. A card stands at its year when
 // it can. When every row is busy there, it takes the row where it has to move
 // right the least, and a crowded row costs extra because its marks have to
-// share lanes.
-function assignRows(items: TrackItem[]): void {
+// share lanes. rowCount is ROW_COUNT or FEWER_ROW_COUNT.
+function assignRows(items: TrackItem[], rowCount: number): void {
+  const preference = rowCount === FEWER_ROW_COUNT ? FEWER_ROW_PREFERENCE : ROW_PREFERENCE;
   const rows: RowState[] = [];
   for (let row = 0; row < ROW_COUNT; row++) {
     rows.push({ cardEnd: -Infinity, marks: [] });
   }
   const placed: TrackItem[] = [];
   for (const trackItem of items) {
-    let bestRow = ROW_PREFERENCE[0];
+    let bestRow = preference[0];
     let bestX = 0;
     let bestCost = Infinity;
-    for (let rank = 0; rank < ROW_PREFERENCE.length; rank++) {
-      const row = ROW_PREFERENCE[rank];
+    for (let rank = 0; rank < preference.length; rank++) {
+      const row = preference[rank];
       const x = firstFreeX(row, trackItem.anchorX, rows[row], placed);
       const shared = freeLane(rows[row], trackItem.anchorX) > 0;
       const cost = x - trackItem.anchorX + (shared ? SHARED_ROW_COST : 0) + rank;
@@ -383,8 +393,12 @@ function assignRows(items: TrackItem[]): void {
 }
 
 // Cards in a zone after 2100 stand in a zigzag: front, back, front, back, with
-// the back row shifted half a column so every card shows in full.
-function placeInZone(cards: TrackItem[], zoneStart: number): number {
+// the back row shifted half a column so every card shows in full. Returns
+// the zone's width.
+function placeInZone(cards: TrackItem[], zoneStart: number, rowCount: number): number {
+  if (rowCount === FEWER_ROW_COUNT) {
+    return placeInZoneSingleFile(cards, zoneStart);
+  }
   for (let i = 0; i < cards.length; i++) {
     const column = Math.floor(i / 2);
     const back = i % 2 === 1;
@@ -397,7 +411,27 @@ function placeInZone(cards: TrackItem[], zoneStart: number): number {
   return ZONE_LEAD + columns * ZONE_COLUMN + halfColumn + ZONE_TAIL;
 }
 
-export function layoutTrack(items: TimelineItem[], technologies: Set<Technology>, nowYear: number): TrackLayout {
+// The zigzag with two rows: front, middle, front, middle. The middle row
+// stands too close to hide behind the front row, so each card gets its own
+// x, a card's width and a gap after the one before, as dated cards do.
+function placeInZoneSingleFile(cards: TrackItem[], zoneStart: number): number {
+  const step = CARD_WIDTH + CARD_GAP;
+  for (let i = 0; i < cards.length; i++) {
+    cards[i].x = zoneStart + ZONE_LEAD + i * step;
+    cards[i].anchorX = cards[i].x;
+    cards[i].row = i % 2 === 1 ? 1 : 0;
+  }
+  return ZONE_LEAD + cards.length * step + ZONE_TAIL;
+}
+
+// rowCount is ROW_COUNT (the usual three rows) or FEWER_ROW_COUNT (two rows,
+// for a small phone where three can't be read; see needsFewerRows).
+export function layoutTrack(
+  items: TimelineItem[],
+  technologies: Set<Technology>,
+  nowYear: number,
+  rowCount: number = ROW_COUNT,
+): TrackLayout {
   const visible: TimelineItem[] = [];
   for (const item of items) {
     if (technologies.has(item.milestone.technology)) {
@@ -484,21 +518,21 @@ export function layoutTrack(items: TimelineItem[], technologies: Set<Technology>
   }
 
   dated.sort((a, b) => a.anchorX - b.anchorX);
-  assignRows(dated);
+  assignRows(dated, rowCount);
 
   // The zones after 2100 exist only when something is in them.
   let cursor = datedEnd;
   let neverZone: Zone | null = null;
   if (never.length > 0 || anyNeverForecast) {
     const start = cursor + ZONE_GAP;
-    const width = Math.max(NEVER_MIN_WIDTH, placeInZone(never, start));
+    const width = Math.max(NEVER_MIN_WIDTH, placeInZone(never, start, rowCount));
     neverZone = { start, end: start + width };
     cursor = neverZone.end;
   }
   let unknownZone: Zone | null = null;
   if (unknown.length > 0) {
     const start = cursor + ZONE_GAP;
-    unknownZone = { start, end: start + placeInZone(unknown, start) };
+    unknownZone = { start, end: start + placeInZone(unknown, start, rowCount) };
     cursor = unknownZone.end;
   }
 
@@ -570,6 +604,22 @@ export function frontRowClearance(view: FloorView, scale: number, frontHeight: n
   return frontTop - backFeet;
 }
 
+// In the two-row layout a front card and a middle-row card never share an x:
+// they stand at least CARD_GAP apart. Perspective draws the front card a
+// little larger, and further from the middle of the screen, so toward the
+// sides it reaches toward a middle-row card standing beyond it. This is the
+// gap left between the two on screen, in screen pixels, when the front
+// card's outer edge is `fromMiddle` screen pixels from the perspective
+// origin (the middle of the screen). Negative means the front card covers
+// the side of the card behind it, and with it the end of its stage line.
+export function neighbourGap(view: FloorView, scale: number, fromMiddle: number): number {
+  const front = rowDrawScale(view, scale, 0);
+  const middle = rowDrawScale(view, scale, 1);
+  // The front card's outer edge, in world pixels from the middle
+  const edge = fromMiddle / front;
+  return (edge + CARD_GAP) * middle - fromMiddle;
+}
+
 // The home page teaser's camera: the floor tilted well back and seen from
 // close up, so the track reads as deep. A close perspective draws the back
 // row smaller, so the teaser is `height` tall: the least (with a few pixels
@@ -598,6 +648,14 @@ export const TEASER_SHORT_CAMERA = {
   tiltDeg: 50,
   perspective: 2400,
 };
+
+// The shortest the CSS cap may make the teaser, in pixels (TrackTeaser sets
+// it as the teaser's min-height). Shorter than about 413px, the back row's
+// small lines drew under MIN_DRAWN_TEXT (10.75px at 405px, on a window 501px
+// tall), and the tests check TEASER_SHORT_CAMERA at this height. A window
+// 500px tall or less shows the list instead, so with the 64px site header
+// above it, a 420px teaser still fits on any window that shows it.
+export const TEASER_MIN_HEIGHT = 420;
 
 // The smallest world scale fitScale tries, unless it's given another. Below
 // it the cards can't be read.
@@ -687,6 +745,35 @@ export function textFloors(view: FloorView, scale: number): number[] {
     floors.push(Math.ceil(floor * 10) / 10);
   }
   return floors;
+}
+
+// How far over MIN_DRAWN_TEXT the three rows must reach, once the cards stand
+// in two, before they go back to three. Without it, a window resized right on
+// the line could switch back and forth.
+const ROW_SWITCH_MARGIN = 0.2;
+
+// Whether the cards should stand in FEWER_ROW_COUNT rows instead of three:
+// true when, with the cards in three rows, some row's small lines would draw
+// under MIN_DRAWN_TEXT even at their largest (MAX_TEXT_FLOOR). rowHeights is
+// the tallest card in each of the three rows, measured with the text floors
+// the three rows settle at, so the answer is the same whichever layout is
+// showing. usingFewer says whether the cards stand in two rows now, which
+// raises the bar for going back by ROW_SWITCH_MARGIN.
+export function needsFewerRows(
+  view: FloorView,
+  rowHeights: number[],
+  safeTop: number,
+  maxScale: number,
+  usingFewer: boolean,
+): boolean {
+  const scale = fitScale(view, rowHeights, safeTop, maxScale);
+  const needed = usingFewer ? MIN_DRAWN_TEXT + ROW_SWITCH_MARGIN : MIN_DRAWN_TEXT;
+  for (let row = 0; row < rowHeights.length; row++) {
+    if (rowHeights[row] > 0 && MAX_TEXT_FLOOR * rowDrawScale(view, scale, row) < needed) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // At most this many rounds of setting the floors and fitting again.

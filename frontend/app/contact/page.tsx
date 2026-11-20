@@ -21,7 +21,7 @@ const WELCOME = [
   },
   {
     title: "Disagreements",
-    text: "Lines marked “Our read” are the team's interpretation of the evidence. If you read it differently, tell us why.",
+    text: "If you read the evidence differently from us, tell us why.",
   },
 ];
 

@@ -674,8 +674,11 @@ function PostPreview({ draft }: { draft: PostDraft }) {
   if (isIsoDate(draft.date.trim())) {
     meta.push(formatDay(`${draft.date.trim()}T12:00:00`));
   }
-  if (draft.author.trim() !== "") {
-    meta.push(draft.author.trim());
+  // As on the blog: a post by the team shows no byline (anything unmarked is
+  // the team's), so the preview matches the live page.
+  const author = draft.author.trim();
+  if (author !== "" && author.toLowerCase() !== "the team") {
+    meta.push(author);
   }
   return (
     <article className={styles.postPreview}>

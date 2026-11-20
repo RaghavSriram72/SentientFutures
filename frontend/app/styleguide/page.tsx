@@ -50,7 +50,7 @@ const FONTS = [
     variable: "--font-sans",
     className: styles.fontSans,
     use: "Body copy and interface text.",
-    sample: "Every research claim on this site carries one of four marks: From a source, Our read, AI-suggested or Unclear.",
+    sample: "Some claims on this site carry one of three marks: From a source, AI-suggested or Unclear.",
   },
   {
     name: "IBM Plex Mono",

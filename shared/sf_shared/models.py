@@ -30,19 +30,28 @@ from sf_shared.claims import (
 )
 from sf_shared.enums import (
     ENUM_INFO,
+    AgencyEffect,
     CaseRating,
     ClaimDirection,
     Confidence,
     Credibility,
     Directness,
+    EvidenceBasis,
+    EvidenceDirectness,
+    EvidenceRole,
+    EvidenceStatus,
     EvidenceType,
+    GovernanceStatus,
     Independence,
+    Likelihood,
     MilestoneCategory,
     MilestoneStatus,
     Problem,
     Provenance,
     Relevance,
-    RiskRating,
+    RiskDomain,
+    RiskLevel,
+    Severity,
     SourceKind,
     SourceType,
     Stage,
@@ -85,6 +94,112 @@ WindowYear = Annotated[int, Strict(), Field(ge=1900, le=3000)]
 # The year a forecast was made, or a milestone was achieved.
 EventYear = Annotated[int, Strict(), Field(ge=1950, le=2100)]
 PublicationYear = Annotated[int, Strict(), Field(ge=1800, le=2100)]
+
+
+# ---------- The workbook's ids (scorecard v0.4) ----------
+# The workbook names things by code: evidence entries E001, causal links
+# WBE-O-L1, risks R01, governance items G01, milestone rows M1 (or BCI-M1 when
+# the family is part of the code). The family prefix in a code maps to a page.
+FAMILY_BY_PREFIX = {"WBE": "wbe", "BCI": "bci", "NM": "neuromorphic"}
+_PREFIXES = "|".join(FAMILY_BY_PREFIX)
+
+ENTRY_ID_PATTERN = re.compile(r"E\d{3,}")
+LINK_ID_PATTERN = re.compile(rf"(?P<scenario>(?P<prefix>{_PREFIXES})-[A-Z])-L\d+")
+RISK_ID_PATTERN = re.compile(r"R\d{2,}")
+GOVERNANCE_ID_PATTERN = re.compile(r"G\d{2,}")
+FRAMEWORK_ID_PATTERN = re.compile(r"RF\d+")
+MILESTONE_CODE_PATTERN = re.compile(r"M\d+")
+# A milestone row named with its family, as the register's column E does: "BCI-M1".
+FAMILY_MILESTONE_PATTERN = re.compile(rf"(?P<prefix>{_PREFIXES})-(?P<milestone>M\d+)")
+SCENARIO_CODE_PATTERN = re.compile(rf"(?P<prefix>{_PREFIXES})-[A-Z]")
+REGISTER_ID_PATTERN = re.compile(r"S\d{2,}")
+STAGE_CODE_PATTERN = re.compile(r"S\d+")
+ALIGNMENT_PROBLEM_PATTERN = re.compile(r"A-[A-Z]+")
+WORKBOOK_VERSION_PATTERN = re.compile(r"\d+\.\d+")
+SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+
+
+def _pattern_checker(pattern: re.Pattern[str], error_type: str, message: str, also_allowed: tuple[str, ...] = ()):
+    """An AfterValidator that accepts a string matching the pattern (or one of also_allowed)."""
+
+    def check(value: str) -> str:
+        if value in also_allowed or pattern.fullmatch(value):
+            return value
+        raise PydanticCustomError(error_type, message)
+
+    return check
+
+
+EntryId = Annotated[str, AfterValidator(_pattern_checker(ENTRY_ID_PATTERN, "entry_id", 'must be an evidence entry id like "E001"'))]
+LinkId = Annotated[
+    str, AfterValidator(_pattern_checker(LINK_ID_PATTERN, "link_id", 'must be a causal link id like "WBE-O-L1"'))
+]
+RiskId = Annotated[str, AfterValidator(_pattern_checker(RISK_ID_PATTERN, "risk_id", 'must be a risk id like "R01"'))]
+GovernanceId = Annotated[
+    str, AfterValidator(_pattern_checker(GOVERNANCE_ID_PATTERN, "governance_id", 'must be a checklist id like "G01"'))
+]
+FrameworkId = Annotated[
+    str, AfterValidator(_pattern_checker(FRAMEWORK_ID_PATTERN, "framework_id", 'must be a framework id like "RF1"'))
+]
+MilestoneCode = Annotated[
+    str, AfterValidator(_pattern_checker(MILESTONE_CODE_PATTERN, "milestone_code", 'must be a milestone code like "M1"'))
+]
+ScenarioCode = Annotated[
+    str,
+    AfterValidator(
+        _pattern_checker(SCENARIO_CODE_PATTERN, "scenario_code", 'must be a scenario code like "WBE-O", "BCI-D" or "NM-A"')
+    ),
+]
+RegisterId = Annotated[
+    str,
+    AfterValidator(
+        _pattern_checker(REGISTER_ID_PATTERN, "register_id", 'must look like "S02": a capital S and at least two digits')
+    ),
+]
+StageCode = Annotated[
+    str,
+    AfterValidator(_pattern_checker(STAGE_CODE_PATTERN, "stage_code", 'must be a stage like "S1", or "N/A"', ("N/A",))),
+]
+AlignmentProblemCode = Annotated[
+    str,
+    AfterValidator(
+        _pattern_checker(
+            ALIGNMENT_PROBLEM_PATTERN, "alignment_problem", 'must be an alignment problem code like "A-VS", or "N/A"', ("N/A",)
+        )
+    ),
+]
+
+# The technology pages a workbook row can belong to.
+Family = Literal["wbe", "bci", "neuromorphic"]
+# Evidence entries can also span families (the register's "Cross-family").
+EntryFamily = Literal["wbe", "bci", "neuromorphic", "cross_family"]
+# The register's "Outcome addressed" and the links' "Outcome", word for word.
+Outcome = Literal["AI Alignment", "Intelligence Curse", "Both", "Neither"]
+# What a register entry feeds: a headline rating or a milestone row (M1 to M9).
+FEED_RATING_TARGETS = ("alignment", "intelligence_curse")
+FeedTarget = Annotated[
+    str,
+    AfterValidator(
+        _pattern_checker(
+            MILESTONE_CODE_PATTERN,
+            "feed_target",
+            'must be "alignment", "intelligence_curse" or a milestone code like "M1"',
+            FEED_RATING_TARGETS,
+        )
+    ),
+]
+
+
+def repeated_problems(values: list, path: str) -> list["RuleProblem"]:
+    """A problem for each value already listed earlier in the same list."""
+    problems: list[RuleProblem] = []
+    first_index: dict[object, int] = {}
+    for index, value in enumerate(values):
+        if value in first_index:
+            problems.append((f"{path}[{index}]", f'"{value}" is listed twice'))
+        else:
+            first_index[value] = index
+    return problems
 
 
 class Forecast(BaseModel):
@@ -174,7 +289,7 @@ class Milestone(BaseModel):
     confidence: Confidence | None  # required when estimate is set
     summary: Claim
     success_criterion: Claim
-    main_bottleneck: Claim
+    main_bottleneck: Claim | None  # null when the workbook's cell is empty
     depends_on: list[str]
     source_ids: list[str]
     estimate: Estimate | None
@@ -184,11 +299,21 @@ class Milestone(BaseModel):
     would_move_earlier: list[Claim]
     would_move_later: list[Claim]
     artificial_minds_questions: list[Claim]
+    # From the workbook's milestone tab (1a), all optional so documents stored
+    # before they existed still validate. assessment_confidence is the tab's
+    # "Confidence" in the status; `confidence` above stays the team range's.
+    assessment_confidence: Confidence | None = None
+    applies_to: NonEmptyStr | None = None
+    criterion_met: NonEmptyStr | None = None  # the "Criterion met?" cell, word for word
+    evidence_entries: list[EntryId] = []  # the E-ids the evidence cell cites, for counts and filters
+    timing: NonEmptyStr | None = None
+    note: NonEmptyStr | None = None
     sample: StrictBool = False  # true for the worked examples, which the public site leaves out
 
     @model_validator(mode="after")
     def check_milestone_rules(self) -> "Milestone":
         problems: list[RuleProblem] = []
+        problems.extend(repeated_problems(self.evidence_entries, "evidence_entries"))
 
         if self.estimate is not None and self.confidence is None:
             problems.append(("confidence", "required when there is an estimate (high, medium or low)"))
@@ -257,6 +382,18 @@ SPECIFIC_UNCLEAR_REASONS = ", ".join(
 )
 
 
+class SourceQuality(BaseModel):
+    """One row of the workbook's "3a Source Quality" tab, each cell word for word."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_type: NonEmptyStr | None = None  # "Source type"
+    empirical_theoretical: NonEmptyStr | None = None  # "Empirical / theoretical"
+    original_secondary: NonEmptyStr | None = None  # "Original / secondary"
+    peer_review: NonEmptyStr | None = None  # "Peer-review status"
+    affiliation: NonEmptyStr | None = None  # "Affiliation / independence"
+
+
 class Source(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -287,6 +424,10 @@ class Source(BaseModel):
     added_by: str | None = None
     reviewed_by: str | None = None
     reviewed_on: IsoDate | None = None
+    # The workbook's source quality tab (3a), word for word. null = not coded.
+    quality: SourceQuality | None = None
+    # True while the workbook marks the source "screening pending".
+    screening_pending: StrictBool = False
     sample: StrictBool = False
 
     @model_validator(mode="after")
@@ -346,18 +487,13 @@ class Source(BaseModel):
 
 
 CASE_RATING_VALUES = [member.value for member in CaseRating]
-RISK_RATING_VALUES = [member.value for member in RiskRating]
-# Every value a rating field can hold on either scale, for the JSON Schema.
-ANY_RATING_VALUES = sorted(set(CASE_RATING_VALUES + RISK_RATING_VALUES))
 
 
-def rating_problems(scale: str, value: str, path: str) -> list[RuleProblem]:
-    """A CaseRating on a "case" row, a RiskRating on a "risk" row. Shared by a
-    row's rating and the ratings in its history, so both get the same message."""
-    if scale == "case" and value not in CASE_RATING_VALUES:
+def rating_problems(value: str, path: str) -> list[RuleProblem]:
+    """A rating has to be on the case scale. Shared by a row's rating and the
+    ratings in its history, so both get the same message."""
+    if value not in CASE_RATING_VALUES:
         return [(path, f'"{value}" is not a case rating. Use one of: {", ".join(CASE_RATING_VALUES)}')]
-    if scale == "risk" and value not in RISK_RATING_VALUES:
-        return [(path, f'"{value}" is not a risk rating. Use one of: {", ".join(RISK_RATING_VALUES)}')]
     return []
 
 
@@ -371,10 +507,9 @@ class RatingChange(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     date: IsoDate
-    # On the row's scale, like ScorecardRow.rating. The row checks them,
-    # since only the row knows its scale.
-    rating_before: str = Field(json_schema_extra={"enum": ANY_RATING_VALUES})
-    rating_after: str = Field(json_schema_extra={"enum": ANY_RATING_VALUES})
+    # Case ratings, checked by the row so the message matches the row's own.
+    rating_before: str = Field(json_schema_extra={"enum": CASE_RATING_VALUES})
+    rating_after: str = Field(json_schema_extra={"enum": CASE_RATING_VALUES})
     confidence_before: Confidence
     confidence_after: Confidence
     note: Claim  # what changed and why; note.source_ids names the sources that caused it
@@ -404,59 +539,82 @@ class RatingTracker(BaseModel):
     # The milestones this rating informs, in the team's order. Written by the
     # team, never inferred.
     milestone_ids: list[Slug] = []
-    # True while this tracker (its register links, what_would_change,
-    # milestone_ids and last_updated) is an example the team hasn't checked.
-    # It isn't `sample`: a placeholder is shown, with a mark.
+    # True while this tracker (its what_would_change, milestone_ids and
+    # last_updated) is an example the team hasn't checked. It isn't `sample`:
+    # a placeholder is shown, with a mark.
     placeholder: StrictBool = False
 
 
 class ScorecardRow(BaseModel):
+    """One headline judgment. Case rows carry a rating; risk rows never do.
+
+    The workbook keeps a risk's severity, likelihood and confidence apart and
+    never combines them into one rating (its core principle 6), so a risk row
+    has severity and likelihood instead.
+    """
+
     model_config = ConfigDict(extra="forbid")
 
     # Stable and the same on every page. Never changes once public: the row's
-    # anchor (#scorecard-<id>), the evidence register's links and the compare
-    # address all use it.
+    # anchor (#scorecard-<id>) and the compare address use it.
     id: Slug
     dimension: NonEmptyStr
     problem: Problem | None
     scale: Literal["case", "risk"]
-    # A CaseRating when scale is "case", a RiskRating when scale is "risk".
-    # Typed as a plain string so the check below can say which list to use.
-    rating: str = Field(json_schema_extra={"enum": ANY_RATING_VALUES})
+    # A CaseRating on a case row, null on a risk row. A plain string so the
+    # check below can say which values to use.
+    rating: str | None = Field(default=None, json_schema_extra={"enum": CASE_RATING_VALUES})
     confidence: Confidence
-    unclear_reason: UnclearReason | None = None
-    # Risk rows only: how bad it could be, when the rating itself is still
-    # Unclear ("Unclear, with potentially high severity" in the scorecard).
-    potential_severity: Literal["high", "medium", "low"] | None = None
-    basis: Claim
+    unclear_reason: UnclearReason | None = None  # optional: the workbook states none
+    # Risk rows only. null until the workbook gives them, or when not applicable.
+    severity: Severity | None = None
+    likelihood: Likelihood | None = None
+    # Risk rows only: false when the workbook says the risk doesn't apply to
+    # this family ("Not applicable"), as for BCI and artificial minds.
+    applicable: StrictBool = True
+    basis: Claim | None = None  # required on case rows; optional on risk rows
     tracker: RatingTracker | None = None
 
     @model_validator(mode="after")
     def check_rating(self) -> "ScorecardRow":
         problems: list[RuleProblem] = []
 
-        if self.potential_severity is not None and self.scale != "risk":
-            problems.append(("potential_severity", 'only risk rows (scale "risk") can have a potential severity'))
+        if self.scale == "case":
+            if self.rating is None:
+                problems.append(
+                    ("rating", f'required on a case row. Use one of: {", ".join(CASE_RATING_VALUES)}')
+                )
+            else:
+                problems.extend(rating_problems(self.rating, "rating"))
+            if self.basis is None:
+                problems.append(("basis", "required on a case row: the reason for the rating"))
+            for field_name in ("severity", "likelihood"):
+                if getattr(self, field_name) is not None:
+                    problems.append((field_name, 'only risk rows (scale "risk") have one'))
+            if not self.applicable:
+                problems.append(("applicable", 'only a risk row (scale "risk") can be not applicable'))
+        else:
+            if self.rating is not None:
+                problems.append(
+                    (
+                        "rating",
+                        "must be null on a risk row. The workbook keeps severity, likelihood and confidence "
+                        "apart, so a risk row has severity and likelihood instead",
+                    )
+                )
+            if self.unclear_reason is not None:
+                problems.append(("unclear_reason", "must be null on a risk row, which has no rating"))
+            if not self.applicable:
+                for field_name in ("severity", "likelihood"):
+                    if getattr(self, field_name) is not None:
+                        problems.append((field_name, "must be null when applicable is false"))
 
-        problems.extend(rating_problems(self.scale, self.rating, "rating"))
-
-        if self.rating == "unclear" and self.unclear_reason is None:
-            problems.append(("unclear_reason", 'required when rating is "unclear"'))
         if self.unclear_reason == UnclearReason.OTHER:
             problems.append(
                 (
                     "unclear_reason",
                     '"other" needs a note to explain it, and scorecard rows have no note field. '
                     f"Use the closest of: {SPECIFIC_UNCLEAR_REASONS}, and explain the rest in the basis",
-                )
-            )
-
-        # Never infer Low risk from an absence of studies: it needs a source.
-        if self.scale == "risk" and self.rating == RiskRating.LOW and self.basis.provenance != Provenance.SOURCE:
-            problems.append(
-                (
-                    "basis.provenance",
-                    'must be "source" for a low risk rating. Low is never assumed from a lack of studies',
                 )
             )
 
@@ -468,14 +626,19 @@ class ScorecardRow(BaseModel):
 
     def tracker_problems(self, tracker: RatingTracker) -> list[RuleProblem]:
         """The history has to be a chain: oldest first, each change starting where
-        the one before it ended, and the newest ending at the row's current values."""
+        the one before it ended, and the newest ending at the row's current values.
+        A risk row has no rating, so it can't have a history."""
         problems: list[RuleProblem] = []
         history = tracker.history
 
+        if self.scale == "risk" and len(history) > 0:
+            problems.append(("tracker.history", "must be empty on a risk row, which has no rating to change"))
+            history = []
+
         for index, change in enumerate(history):
             path = f"tracker.history[{index}]"
-            problems.extend(rating_problems(self.scale, change.rating_before, f"{path}.rating_before"))
-            problems.extend(rating_problems(self.scale, change.rating_after, f"{path}.rating_after"))
+            problems.extend(rating_problems(change.rating_before, f"{path}.rating_before"))
+            problems.extend(rating_problems(change.rating_after, f"{path}.rating_after"))
             if index == 0:
                 continue
 
@@ -513,7 +676,7 @@ class ScorecardRow(BaseModel):
                 problems.append(
                     (
                         f"{newest_path}.rating_after",
-                        f'"{newest.rating_after}", but the row\'s rating is "{self.rating}". '
+                        f'"{newest.rating_after}", but the row\'s rating is {quoted_or_null(self.rating)}. '
                         "The newest change has to end at the current rating",
                     )
                 )
@@ -539,66 +702,33 @@ class ScorecardRow(BaseModel):
                     )
                 )
 
-        first_index_of_milestone: dict[str, int] = {}
-        for index, milestone_id in enumerate(tracker.milestone_ids):
-            if milestone_id in first_index_of_milestone:
-                problems.append((f"tracker.milestone_ids[{index}]", f'"{milestone_id}" is listed twice'))
-            else:
-                first_index_of_milestone[milestone_id] = index
-
+        problems.extend(repeated_problems(tracker.milestone_ids, "tracker.milestone_ids"))
         return problems
 
 
-# ---------- The populated scorecard (scorecard v0.1 sections 1 to 6) ----------
-# A technology page can carry the team's filled-in scorecard. Each section is
-# optional, so a page can start as an outline and fill in as the review goes.
+# ---------- The technology page's workbook sections (scorecard v0.4) ----------
+# Written by python -m sf_shared.import_workbook from the team's workbook, word
+# for word. Each section is optional, so a page can start as an outline. Codes
+# (E001, S13, WBE-O-L1) stay in the text as written; source_ids and entries
+# lists are parsed from the cells for links and counts.
 
 
 class Scope(BaseModel):
-    """Section 1: what exactly is proposed. Descriptive, not rated."""
+    """The workbook's "1 Scope" row for the family. Descriptive, not rated."""
 
     model_config = ConfigDict(extra="forbid")
 
-    intervention: Claim
-    deployment_scenario: Claim
-    affected_groups: Claim
+    intervention: Claim  # "Technology family definition"
+    deployment_scenario: Claim  # "Deployment scenarios considered (codes -> Codebook)"
+    affected_groups: Claim  # "Target population and affected groups (...)"
     time_horizon: Claim
     comparator: Claim
-    problem: Problem
-
-
-class EvidenceRow(BaseModel):
-    """One line of the evidence register (section 3).
-
-    The ids are the team's register ids ("S02"). They stay plain text until
-    the register's sources are added to sources.json.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    claim: NonEmptyStr
-    supporting_ids: list[NonEmptyStr]  # empty means none found
-    contrary_ids: list[NonEmptyStr]  # empty means none found
-    evidence_type: NonEmptyStr  # as the register words it, e.g. "Argument / review"
-    directness: Directness
-    limitation: NonEmptyStr
-    independence: NonEmptyStr  # e.g. "Independent", "Mixed", "Unclear"
-    provenance: Literal["team", "ai"]
-    # The ids of the scorecard rows on this page that this line bears on.
-    # Empty means not linked. TechnologyPage checks that each id exists.
-    scorecard_ids: list[Slug] = []
-
-    @model_validator(mode="after")
-    def check_links(self) -> "EvidenceRow":
-        problems: list[RuleProblem] = []
-        first_index_of_id: dict[str, int] = {}
-        for index, row_id in enumerate(self.scorecard_ids):
-            if row_id in first_index_of_id:
-                problems.append((f"scorecard_ids[{index}]", f'"{row_id}" is listed twice'))
-            else:
-                first_index_of_id[row_id] = index
-        raise_problems(problems)
-        return self
+    problems_claimed: Claim  # "Problem(s) claimed to address", without its trailing arrow and problem
+    problem: Problem  # the problem named after that arrow
+    source_ids: list[str] = []  # site source ids parsed from "Source IDs / basis"
+    # The "Source IDs / basis" cell word for word ("S01, S08, S24-S29"). Pages show
+    # this; source_ids (ranges expanded) is only for counts and links.
+    source_ids_text: NonEmptyStr | None = None
 
 
 class AssessmentQuestion(BaseModel):
@@ -608,54 +738,107 @@ class AssessmentQuestion(BaseModel):
     answer: Claim
 
 
-class Assessment(BaseModel):
-    """Sections 4 and 5: the alignment and Intelligence Curse assessments."""
+def assessment_reason_problems(unclear_reason: UnclearReason | None) -> list[RuleProblem]:
+    """An assessment's unclear_reason is optional (the workbook states none), but never "other"."""
+    if unclear_reason == UnclearReason.OTHER:
+        return [("unclear_reason", f'"other" needs a note. Use the closest of: {SPECIFIC_UNCLEAR_REASONS}')]
+    return []
+
+
+class AlignmentScenario(BaseModel):
+    """One scenario row of the workbook's "4 Alignment Judgment" tab, word for word."""
 
     model_config = ConfigDict(extra="forbid")
 
-    mechanism: Claim  # the alignment problem addressed, or the mechanism claimed
-    questions: list[AssessmentQuestion]
+    scenario: NonEmptyStr
+    problem: NonEmptyStr  # "Problem addressed"
+    mechanism: NonEmptyStr | None = None  # "Mechanism, or effect on the problem"
+    supporting: list[EntryId] = []  # "Supporting entries"
+    contrary_or_qualifying: list[EntryId] = []  # "Contrary or qualifying entries"
+    gap: NonEmptyStr | None = None  # "Main gap, or reason for rating"
+
+
+class AlignmentAssessment(BaseModel):
+    """The family row of "4 Alignment Judgment", plus its scenario rows."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    problem_addressed: NonEmptyStr
+    mechanism: Claim  # "Mechanism, or effect on the problem"
+    questions: list[AssessmentQuestion] = []
     rating: CaseRating
     confidence: Confidence
     unclear_reason: UnclearReason | None = None
-    reason: Claim
+    reason: Claim  # "Main gap, or reason for rating"
     decisive_question: Claim
+    scenarios: list[AlignmentScenario] = []
 
     @model_validator(mode="after")
-    def check_assessment(self) -> "Assessment":
-        problems: list[RuleProblem] = []
-        if self.rating == CaseRating.UNCLEAR and self.unclear_reason is None:
-            problems.append(("unclear_reason", 'required when rating is "unclear"'))
-        if self.unclear_reason == UnclearReason.OTHER:
-            problems.append(
-                ("unclear_reason", f'"other" needs a note. Use the closest of: {SPECIFIC_UNCLEAR_REASONS}')
-            )
-        raise_problems(problems)
+    def check_assessment(self) -> "AlignmentAssessment":
+        raise_problems(assessment_reason_problems(self.unclear_reason))
         return self
 
 
-class ArtificialMindsAssessment(BaseModel):
-    """Section 4.1: how the proposal deals with the minds it might create."""
+class AgencyRow(BaseModel):
+    """One row of the workbook's "6 Agency and Ownership" tab for the family."""
 
     model_config = ConfigDict(extra="forbid")
 
-    consciousness: Claim
-    moral_status: Claim
-    identity: Claim
-    welfare: Claim
+    group: NonEmptyStr  # "Group or dimension"
+    effect: AgencyEffect
+    mechanism: NonEmptyStr | None = None
+    ownership_questions: NonEmptyStr | None = None  # "Ownership questions (answered in database?)"
+    entries: list[EntryId] = []  # "Evidence entries"
+
+
+class IntelligenceCurseAssessment(BaseModel):
+    """The family's row of "5 Intelligence Curse Judgment", plus its agency rows (tab 6)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    mechanism: Claim  # "Mechanism claimed"
+    # The tab's four middle columns, each question being the column header word for word.
+    questions: list[AssessmentQuestion] = []
+    rating: CaseRating
+    confidence: Confidence
+    unclear_reason: UnclearReason | None = None
+    reason: Claim  # "Reason for rating"
+    decisive_question: Claim | None = None  # the tab has no such column
+    agency: list[AgencyRow] = []
+    ownership_gate: NonEmptyStr | None = None  # the tab 6 "Ownership gate" row
+
+    @model_validator(mode="after")
+    def check_assessment(self) -> "IntelligenceCurseAssessment":
+        raise_problems(assessment_reason_problems(self.unclear_reason))
+        return self
+
+
+class ArtificialMindsStage(BaseModel):
+    """One row of the workbook's "4.1 Artificial Minds" tab for the family. Every
+    row is kept, empty ones too, so the list of stages is complete."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    stage: StageCode | None = None  # "S3", from the Stage cell's leading number; null when it has none
+    stage_label: NonEmptyStr  # the Stage cell word for word, e.g. "3 Whole brain emulation (one instance)"
+    stage_number: Annotated[int, Strict()] | None = None
+    consciousness: NonEmptyStr | None = None
+    moral_status: NonEmptyStr | None = None  # "Moral status grounded in"
+    identity: NonEmptyStr | None = None  # "Identity, copying and modification"
+    welfare: NonEmptyStr | None = None  # "Welfare harms or benefits named"
+    protections: NonEmptyStr | None = None  # "Protections proposed"
+    source_ids: list[str] = []  # site source ids from "Sources"
+    entries: list[EntryId] = []  # "Evidence entries"
 
 
 class WelfareGovernance(BaseModel):
-    """Section 6: who could be harmed, how badly, and who can stop it."""
+    """The family's row of "9 Welfare and Governance Judgment". Severity,
+    likelihood and confidence per domain live on the scorecard's risk rows."""
 
     model_config = ConfigDict(extra="forbid")
 
-    exposed: Claim
-    harms: Claim
-    severity: Claim
-    detectability: Claim
-    control: Claim
-    confidence: Confidence
+    exposed: Claim  # "Who is exposed"
+    harms: Claim  # "Main harms (risk IDs)"
     rationale: Claim
 
 
@@ -698,32 +881,32 @@ def is_not_assessed(claim: Claim) -> bool:
 class TechnologyPage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    id: Literal["wbe", "bci", "neuromorphic"]
+    id: Family
     name: NonEmptyStr
     short_name: NonEmptyStr
     headline: NonEmptyStr  # *asterisks* around the one italic word or phrase
     intro: Claim
-    # The outline sections. A page with a populated scorecard can leave these empty.
+    # The outline sections, written on the site (BCI and NM: drafted by AI).
     claims_to_solve: list[Claim] = []
     mechanism: list[Claim] = []
     strongest_case: list[Claim] = []
     strongest_objections: list[Claim] = []
     scorecard: list[ScorecardRow]
     artificial_minds_questions: list[Claim] = []
-    # The populated scorecard, section by section.
+    alternatives: list[Claim] = []  # the most credible alternatives and counterarguments (site text)
+    # The workbook's sections (python -m sf_shared.import_workbook writes these).
     scope: Scope | None = None
-    theory_of_change: list[Claim] = []  # the causal chain, in order
-    alternatives: list[Claim] = []  # the most credible alternatives and counterarguments
-    evidence_register: list[EvidenceRow] = []
-    alignment_assessment: Assessment | None = None
-    intelligence_curse_assessment: Assessment | None = None
-    artificial_minds_assessment: ArtificialMindsAssessment | None = None
+    alignment_assessment: AlignmentAssessment | None = None
+    intelligence_curse_assessment: IntelligenceCurseAssessment | None = None
+    artificial_minds_by_stage: list[ArtificialMindsStage] = []
     welfare_governance: WelfareGovernance | None = None
-    evidence_gap: Claim | None = None  # the primary evidence gap from the synopsis
     # The central tension in two or three sentences, written by the team. Only
     # shown when set; nobody else writes it.
     tension: Claim | None = None
-    sample: StrictBool = False
+    # True while the page has AI-drafted outline sections nobody has reviewed
+    # (intro, claims_to_solve and the like). Their AI claims may skip
+    # reviewed_by; validate.py counts them in a warning.
+    unreviewed_ai_sections: StrictBool = False
 
     @model_validator(mode="after")
     def check_page_rules(self) -> "TechnologyPage":
@@ -739,10 +922,9 @@ class TechnologyPage(BaseModel):
             )
 
         problems.extend(self.scorecard_id_problems())
-        problems.extend(self.register_link_problems())
         problems.extend(self.placeholder_problems())
         problems.extend(self.assessment_match_problems())
-        problems.extend(ai_review_problems(self, self.sample))
+        problems.extend(ai_review_problems(self, self.unreviewed_ai_sections))
         raise_problems(problems)
         return self
 
@@ -771,33 +953,6 @@ class TechnologyPage(BaseModel):
                 problems.append((f"scorecard[{index}].id", reserved))
         return problems
 
-    def register_link_problems(self) -> list[RuleProblem]:
-        """Each evidence register link names a scorecard row on this page."""
-        problems: list[RuleProblem] = []
-        row_ids: list[str] = []
-        for row in self.scorecard:
-            row_ids.append(row.id)
-        for register_index, evidence in enumerate(self.evidence_register):
-            for link_index, row_id in enumerate(evidence.scorecard_ids):
-                if row_id in row_ids:
-                    continue
-                message = f'no scorecard row with id "{row_id}" on this page.'
-                matches = difflib.get_close_matches(row_id, row_ids, n=1, cutoff=0.6)
-                if len(matches) > 0:
-                    message += f' Did you mean "{matches[0]}"?'
-                elif len(row_ids) > 0:
-                    message += f" Use one of: {', '.join(row_ids)}"
-                else:
-                    message += " This page has no scorecard rows yet"
-                problems.append((f"evidence_register[{register_index}].scorecard_ids[{link_index}]", message))
-        return problems
-
-    def register_links_to(self, row_id: str) -> bool:
-        for evidence in self.evidence_register:
-            if row_id in evidence.scorecard_ids:
-                return True
-        return False
-
     def placeholder_problems(self) -> list[RuleProblem]:
         """A placeholder flag has to cover at least one example field, or it marks nothing on the site."""
         problems: list[RuleProblem] = []
@@ -810,7 +965,6 @@ class TechnologyPage(BaseModel):
                 (tracker.what_would_change is not None and not is_not_assessed(tracker.what_would_change))
                 or tracker.last_updated is not None
                 or len(tracker.milestone_ids) > 0
-                or self.register_links_to(row.id)
             )
             if not has_example:
                 problems.append(
@@ -825,7 +979,7 @@ class TechnologyPage(BaseModel):
         """The alignment and Intelligence Curse assessments repeat their scorecard
         row's rating, so the two copies have to agree. Skipped when the row is missing."""
         problems: list[RuleProblem] = []
-        pairs = [
+        pairs: list[tuple[str, AlignmentAssessment | IntelligenceCurseAssessment | None, Problem]] = [
             ("alignment_assessment", self.alignment_assessment, Problem.ALIGNMENT),
             ("intelligence_curse_assessment", self.intelligence_curse_assessment, Problem.INTELLIGENCE_CURSE),
         ]
@@ -853,6 +1007,252 @@ class TechnologyPage(BaseModel):
         return problems
 
 
+# ---------- content/scorecard.json: the workbook's shared tables ----------
+# Generated by python -m sf_shared.import_workbook, never edited by hand. Text
+# is the workbook's word for word (after the importer's listed glitch fixes).
+# Cross-record and cross-file checks (ids exist, ids unique) live in validate.py.
+
+
+class WorkbookInfo(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: NonEmptyStr  # the Overview tab's first cell, word for word
+    version: str  # e.g. "0.4": from the importer's --version, or the file name
+    source_sha256: str | None = None  # of the imported .xlsx; null only in a placeholder file
+
+    @model_validator(mode="after")
+    def check_workbook(self) -> "WorkbookInfo":
+        problems: list[RuleProblem] = []
+        if WORKBOOK_VERSION_PATTERN.fullmatch(self.version) is None:
+            problems.append(("version", 'must look like "0.4": numbers with one dot'))
+        if self.source_sha256 is not None and SHA256_PATTERN.fullmatch(self.source_sha256) is None:
+            problems.append(("source_sha256", "must be 64 lowercase hexadecimal characters"))
+        raise_problems(problems)
+        return self
+
+
+class Overview(BaseModel):
+    """The Overview tab's purpose, core principles and update protocol, word for word."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    purpose: NonEmptyStr
+    principles: list[NonEmptyStr] = []
+    update_protocol: list[NonEmptyStr] = []
+
+
+class CrossFamilyScope(BaseModel):
+    """The "1 Scope" tab's Cross-family row. Named like Scope's fields."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    intervention: NonEmptyStr  # "Technology family definition"
+    deployment_scenario: NonEmptyStr | None = None  # "Deployment scenarios considered (codes -> Codebook)"
+    source_ids: list[str] = []  # site source ids from "Source IDs / basis"
+    source_ids_text: NonEmptyStr | None = None  # that cell word for word, as on Scope
+
+
+class CodebookRow(BaseModel):
+    """One Codebook row, in sheet order. Family is the sheet's own word ("WBE", "All")."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: NonEmptyStr
+    code: NonEmptyStr
+    family: NonEmptyStr
+    definition: NonEmptyStr
+
+
+class Framework(BaseModel):
+    """One row of the "9 Reference Frameworks" tab."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: FrameworkId
+    reference: NonEmptyStr
+    url: NonEmptyStr
+    contributes: NonEmptyStr  # "What it contributes"
+    applied: NonEmptyStr  # "Applied in workbook"
+
+    @model_validator(mode="after")
+    def check_url(self) -> "Framework":
+        problems: list[RuleProblem] = []
+        if not (self.url.startswith("https://") or self.url.startswith("http://")) or not is_web_link(self.url):
+            problems.append(("url", "must be a full web address starting with https:// or http://"))
+        raise_problems(problems)
+        return self
+
+
+class MilestoneCategoryInfo(BaseModel):
+    """One of tab 1a's category header rows: "M1 Technical capability" and its question."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: MilestoneCode  # "M1"
+    category: MilestoneCategory
+    label: NonEmptyStr  # the header without its code, e.g. "Technical capability"
+    question: NonEmptyStr  # the header's question, with its "Counts as evidence" and "Does not count" text
+
+
+class MilestoneAssessment(BaseModel):
+    """One family row of tab 1a. BCI M1 and NM M1 have two rows each, told apart by applies_to."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    family: Family
+    milestone: MilestoneCode  # "M1"
+    category: MilestoneCategory
+    applies_to: NonEmptyStr
+    success_criterion: NonEmptyStr
+    status: MilestoneStatus
+    criterion_met: NonEmptyStr  # "Criterion met?", word for word
+    evidence: NonEmptyStr  # "Evidence (entries and basis)", word for word
+    # The E-ids that cell cites, for counts and filters, leaving out any marked
+    # "not admissible".
+    evidence_entries: list[EntryId] = []
+    bottleneck: NonEmptyStr | None = None  # "Main bottleneck"
+    timing: NonEmptyStr | None = None  # "Timing (dated sources only)"
+    confidence: Confidence
+    note: NonEmptyStr | None = None
+
+
+class EntryFeed(BaseModel):
+    """One headline rating or milestone row an entry feeds, parsed from the
+    register's "Ratings it feeds (direction)" column."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    family: Family
+    target: FeedTarget  # "alignment", "intelligence_curse" or "M1" to "M9"
+    direction: Literal["supports", "against_or_qualifies"]
+    note: NonEmptyStr | None = None  # e.g. "efficiency prerequisite only"
+
+
+class EvidenceEntry(BaseModel):
+    """One row of the "0 Evidence Register" tab."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: EntryId
+    source_id: NonEmptyStr  # the site's source id, e.g. "s01"
+    register_id: RegisterId  # the sheet's "Source ID", e.g. "S01"
+    locator: NonEmptyStr
+    claim: NonEmptyStr  # "Exact claim"
+    codes: list[NonEmptyStr] = []  # "Link / milestone / risk ID", split on ";"
+    family: EntryFamily
+    feeds: list[EntryFeed] = []
+    feeds_text: NonEmptyStr  # "Ratings it feeds (direction)", word for word
+    source_type_independence: NonEmptyStr  # "Source type and independence"
+    outcome: Outcome  # "Outcome addressed"
+    alignment_problem: AlignmentProblemCode
+    scenarios: list[ScenarioCode] = []  # "Scenario code 1" to "3", empty cells left out
+    stage: StageCode
+    directness: EvidenceDirectness
+    role: EvidenceRole  # "Evidence role"
+    basis: EvidenceBasis  # "Evidence basis"
+
+
+class CausalLink(BaseModel):
+    """One row of the "2 Theory of Change" tab."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: LinkId
+    family: Family
+    scenario_code: ScenarioCode
+    scenario: NonEmptyStr  # the tab's Scenario name
+    step: NonEmptyStr  # "Step in causal chain", word for word
+    outcome: Outcome
+    claim: NonEmptyStr
+    status: EvidenceStatus
+    supporting: list[EntryId] = []
+    contrary: list[EntryId] = []
+    qualifying: list[EntryId] = []
+    best_directness: EvidenceDirectness | None = None  # "Directness of best evidence"
+    assumption: NonEmptyStr | None = None  # "Assumption still required"
+    objection: NonEmptyStr | None = None  # "Strongest objection (and whether answered)"
+
+    @model_validator(mode="after")
+    def check_link(self) -> "CausalLink":
+        problems: list[RuleProblem] = []
+        match = LINK_ID_PATTERN.fullmatch(self.id)
+        if match is not None:
+            prefix_family = FAMILY_BY_PREFIX[match.group("prefix")]
+            if self.family != prefix_family:
+                problems.append(
+                    ("family", f'"{self.family}" doesn\'t match the id "{self.id}", which names {prefix_family}')
+                )
+            if self.scenario_code != match.group("scenario"):
+                problems.append(
+                    ("scenario_code", f'"{self.scenario_code}" doesn\'t match the id "{self.id}"')
+                )
+        raise_problems(problems)
+        return self
+
+
+class Risk(BaseModel):
+    """One row of the "7 Overall Risks" tab."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: RiskId
+    risk: NonEmptyStr
+    families: list[Family]  # "WBE; Neuromorphic AI; BCI" -> three families, in the cell's order
+    domain: RiskDomain
+    category: NonEmptyStr
+    exposed: NonEmptyStr  # "Who is exposed (scale)"
+    severity: Severity  # "Potential severity"
+    likelihood: Likelihood
+    reversibility: RiskLevel
+    detectability: RiskLevel
+    remedies: NonEmptyStr  # "Remedies and safeguards"
+    control: NonEmptyStr  # "Who controls / route to exit"
+    confidence: Confidence
+    entries: list[EntryId] = []  # "Evidence entries"
+
+    @model_validator(mode="after")
+    def check_families(self) -> "Risk":
+        problems: list[RuleProblem] = []
+        if len(self.families) == 0:
+            problems.append(("families", "needs at least one family"))
+        problems.extend(repeated_problems(self.families, "families"))
+        raise_problems(problems)
+        return self
+
+
+class GovernanceItem(BaseModel):
+    """One row of the "8 Governance Checklist" tab."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: GovernanceId
+    family: Family
+    question: NonEmptyStr  # "Governance question"
+    status: GovernanceStatus
+    entries: list[EntryId] = []  # "Evidence entries"
+    summary: NonEmptyStr | None = None
+
+
+class ScorecardFile(BaseModel):
+    """content/scorecard.json as a whole."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    generated: NonEmptyStr  # says the file is written by the importer
+    workbook: WorkbookInfo
+    overview: Overview | None = None  # null only in a placeholder file
+    codebook: list[CodebookRow] = []
+    frameworks: list[Framework] = []
+    milestone_categories: list[MilestoneCategoryInfo] = []
+    milestone_assessments: list[MilestoneAssessment] = []
+    entries: list[EvidenceEntry] = []
+    links: list[CausalLink] = []
+    risks: list[Risk] = []
+    governance: list[GovernanceItem] = []
+    scope_notes: list[NonEmptyStr] = []  # the "1 Scope" lines above its header (title, key question, time horizon bands)
+    cross_family_scope: CrossFamilyScope | None = None
+
+
 class PostFrontmatter(BaseModel):
     """The block between the --- lines at the top of content/posts/*.md."""
 
@@ -873,16 +1273,32 @@ ALL_MODELS: list[type[BaseModel]] = [
     Estimate,
     DisagreementOverride,
     Milestone,
+    SourceQuality,
     Source,
     RatingChange,
     RatingTracker,
     ScorecardRow,
     Scope,
-    EvidenceRow,
     AssessmentQuestion,
-    Assessment,
-    ArtificialMindsAssessment,
+    AlignmentScenario,
+    AlignmentAssessment,
+    AgencyRow,
+    IntelligenceCurseAssessment,
+    ArtificialMindsStage,
     WelfareGovernance,
     TechnologyPage,
+    WorkbookInfo,
+    Overview,
+    CrossFamilyScope,
+    CodebookRow,
+    Framework,
+    MilestoneCategoryInfo,
+    MilestoneAssessment,
+    EntryFeed,
+    EvidenceEntry,
+    CausalLink,
+    Risk,
+    GovernanceItem,
+    ScorecardFile,
     PostFrontmatter,
 ]

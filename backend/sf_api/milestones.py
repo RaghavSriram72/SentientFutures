@@ -3,7 +3,8 @@
 The milestone editor in admin saves through here. Every save:
 
   1. validates the milestone with the shared Milestone model (models.py), so
-     it follows the same rules as content/milestones.json, em dashes included
+     it follows the same rules as content/milestones.json, em and en dashes
+     included
   2. checks it against the other milestones: every depends_on exists and
      there are no dependency cycles
   3. checks every source id (source_ids, each forecast's source_id, and the
@@ -36,6 +37,7 @@ from sf_shared.editor_models import MILESTONE_EDITOR_FIELDS, MilestoneRevision, 
 from sf_shared.models import Milestone
 from sf_shared.validate import (
     EM_DASH_FIX,
+    EN_DASH_FIX,
     Record,
     check_claim_sources,
     check_dependencies,
@@ -44,6 +46,7 @@ from sf_shared.validate import (
     em_dash_paths,
     find_cycles,
     format_validation_error,
+    has_en_dash,
     record_label,
     sample_ids,
     sample_link_problems,
@@ -142,10 +145,32 @@ def parse_milestone(raw: dict) -> Milestone:
         raise invalid(validation_problems(error, "milestone")) from None
 
 
-def em_dash_problems(milestone: Milestone, prefix: str = "milestone") -> list[str]:
+def en_dash_paths(value: object, path: str = "") -> list[str]:
+    """The path of every string with an en dash inside a dict or list, like "summary.text".
+
+    The same walk as em_dash_paths in validate.py, which has no en dash twin.
+    """
+    found: list[str] = []
+    if isinstance(value, str):
+        if has_en_dash(value):
+            found.append(path)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            found.extend(en_dash_paths(item, join_path(path, str(key))))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            found.extend(en_dash_paths(item, join_path(path, f"[{index}]")))
+    return found
+
+
+def dash_problems(milestone: Milestone, prefix: str = "milestone") -> list[str]:
+    """One line per string with an em dash or an en dash, the site's house rule."""
+    fields = milestone.model_dump(mode="json")
     problems = []
-    for path in em_dash_paths(milestone.model_dump(mode="json"), prefix):
+    for path in em_dash_paths(fields, prefix):
         problems.append(f"{path}: has an em dash. {EM_DASH_FIX}")
+    for path in en_dash_paths(fields, prefix):
+        problems.append(f"{path}: has an en dash. {EN_DASH_FIX}")
     return problems
 
 
@@ -261,7 +286,7 @@ def check_milestone(db, content_dir: Path, raw: dict, published: bool) -> Milest
     """The validated milestone, or a 422 listing every problem."""
     milestone = parse_milestone(without_editor_fields(raw))
     others = other_milestones(db, milestone.id)
-    problems = em_dash_problems(milestone)
+    problems = dash_problems(milestone)
     problems.extend(link_problems(milestone, published, others))
     problems.extend(source_problems(milestone, catalog_ids(db, content_dir)))
     problems.extend(
@@ -435,7 +460,7 @@ def public_milestones(db, content_dir: Path) -> tuple[list[dict], list[dict]]:
             skipped.append({"id": document["_id"], "problems": validation_problems(error)})
             continue
         problems = source_problems(milestone, known_source_ids, prefix="")
-        problems.extend(em_dash_problems(milestone, prefix=""))
+        problems.extend(dash_problems(milestone, prefix=""))
         if len(problems) > 0:
             skipped.append({"id": milestone.id, "problems": problems})
             continue

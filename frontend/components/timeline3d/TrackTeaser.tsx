@@ -43,6 +43,7 @@ import {
   ROW_DEPTHS,
   settleScale,
   TEASER_CAMERA,
+  TEASER_MIN_HEIGHT,
   TEASER_SHORT_CAMERA,
   textFloors,
   type FloorView,
@@ -211,7 +212,7 @@ export function TrackTeaser({ milestones, nowYear, height = TEASER_CAMERA.height
   const [edges, setEdges] = useState({ atStart: false, atEnd: false });
   // False when every card fits in the window, so there is nowhere to move.
   // null until the first measurement, as in the prerendered page: the arrows
-  // then show only below 740px, where the cards don't all fit, so the row
+  // then show only below 818px, where the cards don't all fit, so the row
   // under the teaser keeps its height when the measurement lands (see
   // .unmeasured in TrackTeaser.module.css).
   const [canMove, setCanMove] = useState<boolean | null>(null);
@@ -431,7 +432,13 @@ export function TrackTeaser({ milestones, nowYear, height = TEASER_CAMERA.height
       <div
         ref={viewportRef}
         className={styles.viewport}
-        style={{ height, ["--tilt" as string]: `${lens.tiltDeg}deg`, ["--world-scale" as string]: String(scale) }}
+        style={{
+          height,
+          // The CSS caps the height on a short window, but never below this.
+          minHeight: Math.min(height, TEASER_MIN_HEIGHT),
+          ["--tilt" as string]: `${lens.tiltDeg}deg`,
+          ["--world-scale" as string]: String(scale),
+        }}
         data-still={canMove === false ? "true" : undefined}
         tabIndex={0}
         role="group"

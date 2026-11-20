@@ -5,6 +5,7 @@ import type { Source, Technology } from "@/lib/types";
 import { SourceDetails } from "./CatalogCard";
 import { ClaimDirectionChip } from "./ClaimDirectionChip";
 import styles from "./SourceRow.module.css";
+import { isScreeningPending, shownDirections, shownSourceType } from "./sourceFacts";
 
 // The short names the site's navigation uses, so a row's tags stay on one line.
 // The source search reads these too, so a word on a tag finds its row.
@@ -34,12 +35,13 @@ function shortAuthors(authors: string[]): string {
   return `${lastNames[0]} et al.`;
 }
 
-// "Lisa Thiergart, 2023 · Talk", or "Psychology Today, 2026 · Blog" without authors.
-// Also searched, so the year and the source type find a row.
+// "Lisa Thiergart, 2023 · Presentation", or "Psychology Today, 2026 · Blog"
+// without authors. The type is the workbook's 3a "Source type" where it has
+// one. Also searched, so the year and the source type find a row.
 export function rowByline(source: Source): string {
   const who = shortAuthors(source.authors) || source.venue || "";
   const when = who ? `${who}, ${source.year}` : String(source.year);
-  return `${when} · ${enumLabel("SourceType", source.source_type)}`;
+  return `${when} · ${shownSourceType(source)}`;
 }
 
 interface SourceRowProps {
@@ -47,13 +49,15 @@ interface SourceRowProps {
   sources: Record<string, SourceRef>;
   sharedAddedBy: string | null;
   hideUnrated: boolean;
+  // How many evidence register entries cite it, or null to leave the line out.
+  entryCount?: number | null;
 }
 
 // One source as a single line of the list: id, title, byline and tags. It is a
 // native <details>, so one click (or Enter) opens the full card underneath, and
 // it carries the source's id so links like /sources/#s02 still land on it.
-export function SourceRow({ source, sources, sharedAddedBy, hideUnrated }: SourceRowProps) {
-  const directions = source.claim_directions ?? [];
+export function SourceRow({ source, sources, sharedAddedBy, hideUnrated, entryCount = null }: SourceRowProps) {
+  const directions = shownDirections(source);
   const isAiTechnology = source.ai_suggested_fields.includes("technology");
 
   return (
@@ -78,6 +82,8 @@ export function SourceRow({ source, sources, sharedAddedBy, hideUnrated }: Sourc
           {directions.map((direction) => (
             <ClaimDirectionChip key={direction} direction={direction} />
           ))}
+          {/* The workbook's own words for a source not yet screened (S17). */}
+          {isScreeningPending(source) && <span className={`chip ${styles.screening}`}>screening pending</span>}
         </span>
         <span className={styles.chevron} aria-hidden="true" />
       </summary>
@@ -89,6 +95,7 @@ export function SourceRow({ source, sources, sharedAddedBy, hideUnrated }: Sourc
           sharedAddedBy={sharedAddedBy}
           hideUnrated={hideUnrated}
           hideSummaryFields
+          entryCount={entryCount}
         />
       </div>
     </details>

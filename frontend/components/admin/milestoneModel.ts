@@ -22,9 +22,12 @@ export interface ForecastDraft extends Omit<Forecast, "made_in"> {
   made_in: number | null;
 }
 
-export interface MilestoneDraft extends Omit<Milestone, "estimate" | "forecasts"> {
+// main_bottleneck is always a claim in the form; an empty one saves as null
+// (the workbook leaves some bottleneck cells empty).
+export interface MilestoneDraft extends Omit<Milestone, "estimate" | "forecasts" | "main_bottleneck"> {
   estimate: EstimateDraft | null;
   forecasts: ForecastDraft[];
+  main_bottleneck: Claim;
   published: boolean;
 }
 
@@ -38,6 +41,20 @@ const WINDOW_YEARS = { min: 1900, max: 3000 };
 
 export function blankClaim(): Claim {
   return { text: "", provenance: "team", source_ids: [] };
+}
+
+// Nothing typed or picked: no text, quote, sources, reason, note or reviewer.
+export function isEmptyClaim(claim: Claim): boolean {
+  const blank = (value: string | null | undefined) => value === null || value === undefined || value.trim() === "";
+  return (
+    blank(claim.text) &&
+    blank(claim.quote) &&
+    blank(claim.quote_location) &&
+    blank(claim.unclear_note) &&
+    blank(claim.reviewed_by) &&
+    (claim.source_ids ?? []).length === 0 &&
+    !claim.unclear_reason
+  );
 }
 
 export function blankForecast(id: string): ForecastDraft {
@@ -81,6 +98,12 @@ export function blankMilestone(): MilestoneDraft {
     would_move_earlier: [blankClaim()],
     would_move_later: [blankClaim()],
     artificial_minds_questions: [],
+    assessment_confidence: null,
+    applies_to: null,
+    criterion_met: null,
+    evidence_entries: [],
+    timing: null,
+    note: null,
     published: false,
   };
 }
@@ -90,6 +113,8 @@ export function toDraft(milestone: Milestone, published: boolean): MilestoneDraf
     ...milestone,
     estimate: milestone.estimate ? { ...milestone.estimate } : null,
     forecasts: milestone.forecasts.map((forecast) => ({ ...forecast })),
+    main_bottleneck: milestone.main_bottleneck ? { ...milestone.main_bottleneck } : blankClaim(),
+    evidence_entries: [...(milestone.evidence_entries ?? [])],
     published,
   };
 }
@@ -200,7 +225,7 @@ export function toMilestone(
     confidence: estimate === null ? null : draft.confidence,
     summary: tidyClaim(draft.summary),
     success_criterion: tidyClaim(draft.success_criterion),
-    main_bottleneck: tidyClaim(draft.main_bottleneck),
+    main_bottleneck: isEmptyClaim(draft.main_bottleneck) ? null : tidyClaim(draft.main_bottleneck),
     depends_on: [...draft.depends_on],
     source_ids: [...draft.source_ids],
     estimate,
@@ -210,6 +235,14 @@ export function toMilestone(
     would_move_earlier: tidyClaims(draft.would_move_earlier),
     would_move_later: tidyClaims(draft.would_move_later),
     artificial_minds_questions: tidyClaims(draft.artificial_minds_questions),
+    // The workbook's fields (tab 1a). The import fills them; saving keeps them.
+    // assessment_confidence is separate from the team range's confidence above.
+    assessment_confidence: draft.assessment_confidence ?? null,
+    applies_to: trimmedOrNull(draft.applies_to),
+    criterion_met: trimmedOrNull(draft.criterion_met),
+    evidence_entries: [...(draft.evidence_entries ?? [])],
+    timing: trimmedOrNull(draft.timing),
+    note: trimmedOrNull(draft.note),
   };
   if (draft.sample) {
     milestone.sample = true;
@@ -296,7 +329,10 @@ export function milestoneProblems(draft: MilestoneDraft): MilestoneErrors {
   checkClaim(draft.status_basis, "status_basis", sample, errors);
   checkClaim(draft.summary, "summary", sample, errors);
   checkClaim(draft.success_criterion, "success_criterion", sample, errors);
-  checkClaim(draft.main_bottleneck, "main_bottleneck", sample, errors);
+  // Optional: an empty bottleneck saves as none.
+  if (!isEmptyClaim(draft.main_bottleneck)) {
+    checkClaim(draft.main_bottleneck, "main_bottleneck", sample, errors);
+  }
 
   checkYear(draft.achieved_in, "achieved_in", EVENT_YEARS, errors);
   if (draft.achieved_in !== null) {
@@ -378,6 +414,10 @@ export function milestoneProblems(draft: MilestoneDraft): MilestoneErrors {
       summary: draft.summary,
       success_criterion: draft.success_criterion,
       main_bottleneck: draft.main_bottleneck,
+      applies_to: draft.applies_to,
+      criterion_met: draft.criterion_met,
+      timing: draft.timing,
+      note: draft.note,
       achieved_in_basis: draft.achieved_in_basis,
       estimate: draft.estimate ? { basis: draft.estimate.basis } : null,
       forecasts: draft.forecasts,
@@ -401,6 +441,9 @@ const FORM_ORDER = [
   "stage",
   "category",
   "status",
+  "assessment_confidence",
+  "applies_to",
+  "criterion_met",
   "status_basis",
   "achieved_in",
   "achieved_in_basis",
@@ -409,6 +452,9 @@ const FORM_ORDER = [
   "summary",
   "success_criterion",
   "main_bottleneck",
+  "timing",
+  "note",
+  "evidence_entries",
   "would_move_earlier",
   "would_move_later",
   "artificial_minds_questions",
@@ -577,6 +623,13 @@ const PART_LABELS: Record<string, string> = {
   stage: "Stage",
   category: "Category",
   status: "Status",
+  // The workbook's own column headers (tab 1a).
+  assessment_confidence: "Confidence",
+  applies_to: "Applies to",
+  criterion_met: "Criterion met?",
+  timing: "Timing (dated sources only)",
+  note: "Note",
+  evidence_entries: "Evidence entries",
   published: "Published",
   status_basis: "Why it has this status",
   summary: "Summary",

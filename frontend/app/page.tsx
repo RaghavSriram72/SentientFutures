@@ -4,14 +4,13 @@ import { EmphasisText } from "@/components/common/Emphasis";
 import { ARTIFICIAL_MINDS_DEFINITION, INTELLIGENCE_CURSE_DEFINITION } from "@/components/common/keyTerms";
 import { StageLegend } from "@/components/provenance/Legends";
 import { ProvenanceGlyph } from "@/components/provenance/ProvenanceTag";
-import { RatingChip } from "@/components/technology/Scorecard";
-import { stillNeedsClauses, unclearReasonSentence } from "@/components/technology/text";
+import { RatingChip } from "@/components/technology/RatingChip";
 import { TrackTeaser } from "@/components/timeline3d/TrackTeaser";
-import { getPublicMilestones, getSiteData, getSources, getTechnologies } from "@/lib/data";
+import { getPublicMilestones, getScorecard, getSiteData, getSources, getTechnologies } from "@/lib/data";
 import { COMPARE_MINDS_KEY, compareHref } from "@/lib/dimensions";
 import { enumDescription, enumLabel } from "@/lib/enums";
 import { realSources } from "@/lib/sources";
-import type { Claim, Milestone, ScorecardRow, TechnologyPage } from "@/lib/types";
+import type { Confidence, Milestone, ScorecardData, ScorecardRow, TechnologyPage } from "@/lib/types";
 
 import styles from "./page.module.css";
 
@@ -43,10 +42,11 @@ function joinWithAnd(items: string[]): string {
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
-// A page the team has reviewed is not a sample. The BCI and neuromorphic pages
-// are AI drafts, marked sample: true until the team reviews them.
-function isTeamReviewed(tech: TechnologyPage): boolean {
-  return !tech.sample;
+// The BCI and neuromorphic pages still have AI-drafted outline sections,
+// marked unreviewed_ai_sections: true until the team reviews them. Their
+// ratings and workbook sections are the team's.
+function hasAiSections(tech: TechnologyPage): boolean {
+  return tech.unreviewed_ai_sections === true;
 }
 
 // A milestone has a place on the dates once it has a team range, a forecast
@@ -67,58 +67,102 @@ function countDated(milestones: Milestone[]): number {
 
 // ---------- "Where things stand" ----------
 
-// "All six of its scorecard ratings are Unclear." or "Its six scorecard
-// ratings: two Moderate and four Unclear."
-function ratingsSentence(rows: ScorecardRow[]): string {
-  const counts = new Map<string, number>();
-  for (const row of rows) {
-    const label = enumLabel(row.scale === "case" ? "CaseRating" : "RiskRating", row.rating);
-    counts.set(label, (counts.get(label) ?? 0) + 1);
-  }
-  if (counts.size === 1) {
-    const [label] = counts.keys();
-    return `All ${numberWord(rows.length)} of its scorecard ratings are ${label}.`;
-  }
-  const parts: string[] = [];
-  for (const [label, count] of counts) {
-    parts.push(`${numberWord(count)} ${label}`);
-  }
-  return `Its ${numberWord(rows.length)} scorecard ratings: ${joinWithAnd(parts)}.`;
+// A risk row the workbook marks "Not applicable" (BCI, artificial minds).
+// Its stored confidence is never shown, so it never counts here either.
+function isNotApplicable(row: ScorecardRow): boolean {
+  return row.scale === "risk" && row.applicable === false;
 }
 
-// When every rating is held back by a gap the team has found, say what's
-// missing rather than "All six of its ratings are Unclear".
-function statusSentence(rows: ScorecardRow[]): string {
-  const stillNeeds = stillNeedsClauses(rows);
-  if (stillNeeds !== null) {
-    return `Each of its ${numberWord(rows.length)} ratings names what's missing: ${stillNeeds}.`;
+// "The team has rated all three proposals."
+function ratedSentence(technologies: TechnologyPage[]): string | null {
+  const rated: TechnologyPage[] = [];
+  for (const tech of technologies) {
+    if (tech.scorecard.length > 0) {
+      rated.push(tech);
+    }
   }
-  return `${ratingsSentence(rows)} ${unclearReasonSentence(rows)}`.trim();
+  if (rated.length === 0) {
+    return null;
+  }
+  if (rated.length === 1) {
+    return `The team has rated ${lowerFirst(rated[0].name)}.`;
+  }
+  const which =
+    rated.length === technologies.length
+      ? `all ${numberWord(rated.length)} proposals`
+      : `${numberWord(rated.length)} of the ${numberWord(technologies.length)} proposals`;
+  return `The team has rated ${which}.`;
+}
+
+// "Every rating so far has low confidence." when every row on every page
+// shares one confidence; null when they differ.
+function confidenceSentence(technologies: TechnologyPage[]): string | null {
+  let shared: Confidence | null = null;
+  let count = 0;
+  for (const tech of technologies) {
+    for (const row of tech.scorecard) {
+      if (isNotApplicable(row)) {
+        continue;
+      }
+      if (shared !== null && row.confidence !== shared) {
+        return null;
+      }
+      shared = row.confidence;
+      count += 1;
+    }
+  }
+  if (shared === null || count < 2) {
+    return null;
+  }
+  return `Every rating so far has ${enumLabel("Confidence", shared).toLowerCase()} confidence.`;
+}
+
+// "brain-computer interfaces" -> "brain-computer interface", for a name used
+// before a noun ("the brain-computer interface page"). A name that doesn't
+// end in a plural s ("neuromorphic AI") stays as it is.
+function beforeNoun(name: string): string {
+  return name.endsWith("s") && !name.endsWith("ss") ? name.slice(0, -1) : name;
+}
+
+// "Some sections of the brain-computer interface and neuromorphic AI pages
+// are still AI drafts. Each one is marked."
+function aiSectionsSentence(technologies: TechnologyPage[]): string | null {
+  const names: string[] = [];
+  for (const tech of technologies) {
+    if (hasAiSections(tech)) {
+      names.push(beforeNoun(lowerFirst(tech.name)));
+    }
+  }
+  if (names.length === 0) {
+    return null;
+  }
+  const pages = names.length === 1 ? "page" : "pages";
+  return `Some sections of the ${joinWithAnd(names)} ${pages} are still AI drafts. Each one is marked.`;
 }
 
 function WhereThingsStand({
   technologies,
   milestones,
   sourceCount,
+  scorecard,
 }: {
   technologies: TechnologyPage[];
   milestones: Milestone[];
   sourceCount: number;
+  scorecard: ScorecardData;
 }) {
-  const reviewed: TechnologyPage[] = [];
-  const drafts: TechnologyPage[] = [];
-  for (const tech of technologies) {
-    if (isTeamReviewed(tech)) {
-      reviewed.push(tech);
-    } else {
-      drafts.push(tech);
+  const lines: string[] = [];
+  for (const line of [
+    ratedSentence(technologies),
+    confidenceSentence(technologies),
+    aiSectionsSentence(technologies),
+  ]) {
+    if (line !== null) {
+      lines.push(line);
     }
   }
-  const draftNames: string[] = [];
-  for (const tech of drafts) {
-    draftNames.push(lowerFirst(tech.name));
-  }
   const dated = countDated(milestones);
+  const entryCount = scorecard.entries?.length ?? 0;
 
   // A section, not an <aside>: the box sits inside <main>, and an <aside>
   // there is a complementary landmark nested in another landmark, which axe
@@ -128,22 +172,13 @@ function WhereThingsStand({
       <p id="standing-heading" className={`eyebrow ${styles.standingTitle}`}>
         Where things stand
       </p>
-      <ul className={styles.standingList}>
-        {reviewed.map((tech) => (
-          <li key={tech.id}>
-            {reviewed.length === 1
-              ? `${tech.name} is the only proposal the team has rated so far.`
-              : `The team has rated ${lowerFirst(tech.name)}.`}{" "}
-            {statusSentence(tech.scorecard)}
-          </li>
-        ))}
-        {drafts.length > 0 && (
-          <li>
-            The {drafts.length === 1 ? "page" : "pages"} on {joinWithAnd(draftNames)}{" "}
-            {drafts.length === 1 ? "is an AI draft" : "are AI drafts"} nobody on the team has reviewed yet.
-          </li>
-        )}
-      </ul>
+      {lines.length > 0 && (
+        <ul className={styles.standingList}>
+          {lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
       {/* Each stat links to the page that lists what it counts. "With a date"
           only shows once a milestone has one, since a big 0 reads as "nothing
           done". */}
@@ -164,6 +199,16 @@ function WhereThingsStand({
               </Link>
             </dt>
             <dd>{dated}</dd>
+          </div>
+        )}
+        {entryCount > 0 && (
+          <div className={styles.stat}>
+            <dt>
+              <Link href="/evidence/" className={styles.statLink}>
+                Evidence entries
+              </Link>
+            </dt>
+            <dd>{entryCount}</dd>
           </div>
         )}
         <div className={styles.stat}>
@@ -215,27 +260,29 @@ function headlineRatings(rows: ScorecardRow[]): HeadlineRating[] {
   return ratings;
 }
 
-interface OpenQuestion {
-  label: string;
-  claim: Claim;
+// A risk row has no rating chip: the workbook keeps its severity and
+// likelihood apart. "Severity" and "Likelihood" are its own headers, and the
+// values its labels: ["Severity very high", "Likelihood not assessable"], or
+// ["Not applicable"] when it says so. Shown joined by a middle dot.
+function riskMeta(row: ScorecardRow): string[] {
+  if (isNotApplicable(row)) {
+    return ["Not applicable"];
+  }
+  const parts: string[] = [];
+  if (row.severity) {
+    parts.push(`Severity ${enumLabel("Severity", row.severity).toLowerCase()}`);
+  }
+  if (row.likelihood) {
+    parts.push(`Likelihood ${enumLabel("Likelihood", row.likelihood).toLowerCase()}`);
+  }
+  return parts;
 }
 
-// WBE has the team's decisive question for the alignment case. The drafts
-// don't, so they show their first question about artificial minds instead.
-function openQuestion(tech: TechnologyPage): OpenQuestion | null {
-  if (tech.alignment_assessment?.decisive_question) {
-    return { label: "Decisive open question", claim: tech.alignment_assessment.decisive_question };
-  }
-  const mindsQuestions = tech.artificial_minds_questions ?? [];
-  if (mindsQuestions.length > 0) {
-    return { label: "An open question about minds", claim: mindsQuestions[0] };
-  }
-  return null;
-}
-
+// Everything on a card is the team's: the ratings, the decisive question from
+// the alignment judgment, and the site's own headline. The AI-drafted outline
+// sections never appear here, so a card has no mark (unmarked is the team's).
 function ProposalCard({ tech, number }: { tech: TechnologyPage; number: number }) {
-  const reviewed = isTeamReviewed(tech);
-  const question = openQuestion(tech);
+  const question = tech.alignment_assessment?.decisive_question ?? null;
   const ratings = headlineRatings(tech.scorecard);
   const href = `/${tech.id}/`;
   const titleId = `proposal-${tech.id}`;
@@ -244,10 +291,6 @@ function ProposalCard({ tech, number }: { tech: TechnologyPage; number: number }
     <article className={`paper ${styles.proposal}`} aria-labelledby={titleId}>
       <div className={styles.proposalTop}>
         <span className={styles.proposalNumber}>0{number}</span>
-        <span className={`chip ${reviewed ? styles.statusTeam : styles.statusAi}`}>
-          <ProvenanceGlyph kind={reviewed ? "team" : "ai"} />
-          {reviewed ? "Written by the team" : "AI draft, not yet reviewed"}
-        </span>
       </div>
       <h3 id={titleId} className={styles.proposalTitle}>
         {tech.name}
@@ -257,19 +300,26 @@ function ProposalCard({ tech, number }: { tech: TechnologyPage; number: number }
         <EmphasisText text={tech.headline} />
       </p>
 
-      {/* The scorecard's own chips, so an Unclear shows its reason and an
-          Unclear risk that could be severe shows the warning beside the chip. */}
+      {/* The scorecard's own chips for the two cases; the risk row's
+          severity and likelihood in words, as in the page's hero. */}
       <dl className={styles.ratings}>
         {ratings.map((item) => (
           <div key={item.label} className={styles.ratingRow}>
             <dt>{item.label}</dt>
             <dd>
-              <RatingChip
-                scale={item.row.scale}
-                rating={item.row.rating}
-                unclearReason={item.row.unclear_reason}
-                potentialSeverity={item.row.scale === "risk" ? item.row.potential_severity : null}
-              />
+              {item.row.scale === "risk" ? (
+                <span className={styles.riskMeta}>
+                  {riskMeta(item.row).map((part, index) => (
+                    <span key={part}>
+                      {/* A no-break space before the dot, so a line ends on it */}
+                      {index > 0 && "\u00a0· "}
+                      <span className={styles.riskMetaPart}>{part}</span>
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <RatingChip scale={item.row.scale} rating={item.row.rating} unclearReason={item.row.unclear_reason} />
+              )}
             </dd>
           </div>
         ))}
@@ -278,15 +328,15 @@ function ProposalCard({ tech, number }: { tech: TechnologyPage; number: number }
       {question && (
         <div className={styles.question}>
           <p className={styles.questionLabel}>
-            <ProvenanceGlyph kind={question.claim.provenance} />
-            {question.label}
+            <ProvenanceGlyph kind={question.provenance} />
+            Decisive open question
           </p>
-          <p className={styles.questionText}>{question.claim.text}</p>
+          <p className={styles.questionText}>{question.text}</p>
         </div>
       )}
 
       <Link href={href} className={styles.proposalLink}>
-        {reviewed ? "Read the assessment" : "Read the draft"}
+        Read the assessment
         <span className="visually-hidden"> on {lowerFirst(tech.name)}</span>
         <span aria-hidden="true"> &rarr;</span>
       </Link>
@@ -348,6 +398,7 @@ export default function HomePage() {
   const technologies = getTechnologies();
   const milestones = getPublicMilestones();
   const sourceCount = realSources(getSources()).length;
+  const scorecard = getScorecard();
   const nowYear = getSiteData().nowYear;
 
   return (
@@ -374,7 +425,12 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          <WhereThingsStand technologies={technologies} milestones={milestones} sourceCount={sourceCount} />
+          <WhereThingsStand
+            technologies={technologies}
+            milestones={milestones}
+            sourceCount={sourceCount}
+            scorecard={scorecard}
+          />
         </div>
 
         <div className={styles.terms}>
@@ -441,15 +497,17 @@ export default function HomePage() {
               {technologies.map((tech) => (
                 <li key={tech.id}>
                   <Link href={`/${tech.id}/#minds`}>{tech.name}</Link>
-                  {!isTeamReviewed(tech) && <span className={styles.mindsDraft}> (AI draft)</span>}
                 </li>
               ))}
             </ul>
           </nav>
-          {/* The three side by side on the same questions */}
+          {/* The three side by side on the same questions. The aria-label gives
+              screen readers the full name, "Compare side by side: Artificial minds".
+              A visually-hidden span would not work here: its absolute positioning
+              makes the browser add a space, giving "side by side : Artificial". */}
           <p className={styles.mindsCompare}>
-            <Link href={compareHref(COMPARE_MINDS_KEY)}>
-              Compare side by side<span className="visually-hidden">: Artificial minds</span>
+            <Link href={compareHref(COMPARE_MINDS_KEY)} aria-label="Compare side by side: Artificial minds">
+              Compare side by side
               <span aria-hidden="true"> &rarr;</span>
             </Link>
           </p>
@@ -471,7 +529,7 @@ export default function HomePage() {
             </Link>
           </div>
           <div className={styles.stageKey}>
-            <span className={styles.stageKeyLabel}>Color shows the stage</span>
+            <span className={styles.stageKeyLabel}>Colour shows the stage</span>
             <StageLegend />
             <Link href="/methodology/#stages" className={styles.stageKeyLink}>
               What the stages mean<span aria-hidden="true"> &rarr;</span>

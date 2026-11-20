@@ -195,6 +195,7 @@
 }
 
 /* ---------- 01 How to read this site ---------- */
+/* Section 08's steps for a new source use the same numbered list. */
 .readingList {
   display: grid;
   gap: 0;
@@ -240,7 +241,7 @@
   margin-inline: 0.35em;
 }
 
-/* ---------- 02 The four marks ---------- */
+/* ---------- 02 The marks ---------- */
 /* The shared legend auto-fits; in this column that leaves 3 + 1, so pin it to 2 by 2 */
 @media (min-width: 560px) {
   .legendWrap > div {
@@ -559,4 +560,11 @@
   .section > :first-child {
     break-inside: avoid;
   }
+}
+
+/* ---------- Header: the scorecard and rubric versions ---------- */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
 }

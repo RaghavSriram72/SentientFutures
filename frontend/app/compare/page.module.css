@@ -1,0 +1,5 @@
+/* Less space under the compact header than other pages have, as on
+   /sources/, so the ratings fit on a laptop's first screen */
+.body {
+  padding-block: clamp(24px, 3vw, 32px) 0;
+}

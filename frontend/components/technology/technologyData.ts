@@ -43,13 +43,16 @@ export function nextTechnology(id: TechnologyId): TechnologyPage | null {
   return null;
 }
 
-// The description shows up in link previews, away from the page's banner, so
-// an AI-drafted page says so there too.
+// The description shows up in link previews, away from the page's marks. The
+// ratings and workbook sections are the team's on every page, but a page that
+// still has AI-drafted sections (its intro among them) says so first.
+export const AI_SECTIONS_NOTE = "Some sections are AI drafts the team hasn't reviewed yet.";
+
 export function technologyMetadata(id: TechnologyId): Metadata {
   const technology = requireTechnology(id);
   const description =
-    technology.sample === true
-      ? `An AI draft the team hasn't reviewed yet. ${technology.intro.text}`
+    technology.unreviewed_ai_sections === true
+      ? `${AI_SECTIONS_NOTE} ${technology.intro.text}`
       : technology.intro.text;
   return {
     title: technology.name,

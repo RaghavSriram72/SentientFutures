@@ -1,18 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useEffectEvent, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 
-import { isReturnVisit, OPEN_ROWS_KEY, ownHistoryState } from "@/components/common/HashLinkHistory";
+import { isReturnVisit, ownHistoryState } from "@/components/common/HashLinkHistory";
 import { enumLabel, enumValues } from "@/lib/enums";
 import { sourceRefsById } from "@/lib/sources";
 import type { ClaimDirection, Source } from "@/lib/types";
 
 import { directionTone } from "./ClaimDirectionChip";
+import {
+  applyRowRequest,
+  clearHighlight,
+  currentAddress,
+  LIVE,
+  rememberedRows,
+  rememberOpenRows,
+  rowIdFromHash,
+  type ListAddress,
+  type RowRequest,
+} from "./linkedRows";
+import { ActiveFilterChips, AddressWatcher, SearchIcon, type FilterChip } from "./ListParts";
 import styles from "./SourceDatabase.module.css";
 import { SourceRow, TECHNOLOGY_SHORT, rowByline } from "./SourceRow";
+import { isScreeningPending, shownDirections } from "./sourceFacts";
 
 const ALL = "all";
 // Select values for the empty cases, which have no enum value of their own.
@@ -43,6 +55,13 @@ interface SearchState {
 const NO_SEARCH: SearchState = { query: "", technology: ALL, direction: ALL, problem: ALL };
 
 type FilterName = "technology" | "direction" | "problem";
+
+// Each select's label, shown over the select and on its chip on phones.
+const FILTER_LABELS: Record<FilterName, string> = {
+  technology: "Technology",
+  direction: "Which way it argues",
+  problem: "Problem",
+};
 
 // Lowercase with the accents taken off, so "Fidencio" finds "Fidêncio", and
 // with hyphens and dashes read as spaces, so "whole-brain emulation" finds
@@ -91,9 +110,10 @@ function searchText(source: Source): string {
 }
 
 // The words of the source's claim direction tags, e.g. ["human", "disempowerment"].
+// None while screening is pending, since the row doesn't show them.
 function directionWords(source: Source): string[] {
   const labels: string[] = [];
-  for (const direction of source.claim_directions ?? []) {
+  for (const direction of shownDirections(source)) {
     labels.push(enumLabel("ClaimDirection", direction));
   }
   return splitQuery(labels.join(" "));
@@ -176,8 +196,10 @@ function matchesTechnology(source: Source, technology: string): boolean {
   return false;
 }
 
+// A source whose screening is pending shows no claim directions, so it
+// matches none.
 function matchesDirection(source: Source, direction: string): boolean {
-  for (const value of source.claim_directions ?? []) {
+  for (const value of shownDirections(source)) {
     if (value === direction) {
       return true;
     }
@@ -187,8 +209,12 @@ function matchesDirection(source: Source, direction: string): boolean {
 
 // problem is a select value: an enum value, or NEITHER for a null problem.
 // A source tagged "both" addresses alignment and the Intelligence Curse, so it
-// shows under either one as well as under "Both".
+// shows under either one as well as under "Both". A source whose screening is
+// pending shows no problem, so it matches no problem, Neither included.
 function matchesProblem(source: Source, problem: string): boolean {
+  if (isScreeningPending(source)) {
+    return false;
+  }
   if (problem === NEITHER) {
     return source.problem === null;
   }
@@ -279,6 +305,27 @@ function directionSign(direction: string): string {
   return directionTone(direction as ClaimDirection) === "for" ? "\u2295" : "\u2296";
 }
 
+// The selects that are filtering, for the chips under the phone's folded
+// "Filters" button: each select's label and its picked option, written as the
+// select writes it (a direction keeps its plus or minus sign).
+function filterChips(search: SearchState): FilterChip[] {
+  const chips: FilterChip[] = [];
+  const selects: { key: FilterName; values: { value: string; label: string }[] }[] = [
+    { key: "technology", values: TECHNOLOGY_VALUES },
+    { key: "direction", values: DIRECTION_VALUES },
+    { key: "problem", values: PROBLEM_VALUES },
+  ];
+  for (const select of selects) {
+    const picked = select.values.find((info) => info.value === search[select.key]);
+    if (picked === undefined) {
+      continue;
+    }
+    const value = select.key === "direction" ? `${directionSign(picked.value)} ${picked.label}` : picked.label;
+    chips.push({ key: select.key, filter: FILTER_LABELS[select.key], value });
+  }
+  return chips;
+}
+
 // How many of the three selects are filtering, for the phone's "Filters (2)".
 function countActiveFilters(search: SearchState): number {
   let count = 0;
@@ -322,17 +369,6 @@ function addressFor(search: SearchState, keepHash: boolean): string {
   return window.location.pathname + (query === "" ? "" : `?${query}`) + (keepHash ? window.location.hash : "");
 }
 
-// The row id a hash points at. The ids are lowercase, so "#S02" (the id as
-// the site prints it) finds s02 too.
-function rowIdFromHash(): string {
-  try {
-    return decodeURIComponent(window.location.hash.slice(1)).toLowerCase();
-  } catch {
-    // A malformed hash such as "#%E0" can't point at a row.
-    return "";
-  }
-}
-
 function findSource(sources: Source[], id: string): Source | null {
   for (const source of sources) {
     if (source.id === id) {
@@ -340,108 +376,6 @@ function findSource(sources: Source[], id: string): Source | null {
     }
   }
   return null;
-}
-
-// The ring a linked row wears. :target gives it before the list's script
-// runs; this gives the same ring after a link from another page, where
-// :target stays false.
-const HIGHLIGHT = "data-highlight";
-
-// Set on the list once its script runs, so :target no longer rings a row (see
-// SourceRow.module.css): Next changes the address without updating :target,
-// so it kept ringing a row the address no longer names.
-const LIVE = "data-rows-live";
-
-function clearHighlight() {
-  for (const row of document.querySelectorAll(`[${HIGHLIGHT}]`)) {
-    row.removeAttribute(HIGHLIGHT);
-  }
-}
-
-// Rings the row a link points at, like /sources/#s02 from an evidence
-// register. Returns the row, or null when it isn't on the page.
-function ringRow(id: string): HTMLDetailsElement | null {
-  const row = document.getElementById(id);
-  if (!(row instanceof HTMLDetailsElement)) {
-    return null;
-  }
-  clearHighlight();
-  row.setAttribute(HIGHLIGHT, "");
-  return row;
-}
-
-// Opens the row a link points at, rings it and scrolls it into view.
-function openRow(id: string) {
-  const row = ringRow(id);
-  if (row === null) {
-    return;
-  }
-  row.open = true;
-  row.scrollIntoView({ block: "start" });
-}
-
-function listRows(list: HTMLUListElement | null): HTMLDetailsElement[] {
-  const rows: HTMLDetailsElement[] = [];
-  if (list === null) {
-    return rows;
-  }
-  for (const row of list.querySelectorAll(":scope > li > details")) {
-    if (row instanceof HTMLDetailsElement) {
-      rows.push(row);
-    }
-  }
-  return rows;
-}
-
-// The open rows stored on the current history entry, or null when none were.
-function rememberedRows(): string[] | null {
-  const state: unknown = window.history.state;
-  if (state === null || typeof state !== "object") {
-    return null;
-  }
-  const stored: unknown = (state as Record<string, unknown>)[OPEN_ROWS_KEY];
-  if (!Array.isArray(stored)) {
-    return null;
-  }
-  const ids: string[] = [];
-  for (const id of stored) {
-    if (typeof id === "string") {
-      ids.push(id);
-    }
-  }
-  return ids;
-}
-
-// Stores the rows open in the list on the current history entry, by id, so
-// Back, Forward or a reload opens the ones the reader had open. Only on an
-// entry the router wrote, so its state is kept.
-function rememberOpenRows(list: HTMLUListElement | null) {
-  const state: unknown = window.history.state;
-  if (state === null || typeof state !== "object" || !("__NA" in state)) {
-    return;
-  }
-  const open: string[] = [];
-  for (const row of listRows(list)) {
-    if (row.open) {
-      open.push(row.id);
-    }
-  }
-  const stored = rememberedRows();
-  if (stored !== null && stored.join(" ") === open.join(" ")) {
-    return;
-  }
-  try {
-    window.history.replaceState({ ...state, [OPEN_ROWS_KEY]: open }, "");
-  } catch {
-    // Safari's limit on history writes. The next change tries again.
-  }
-}
-
-// Opens the rows with these ids and closes the rest.
-function setOpenRows(list: HTMLUListElement | null, ids: string[]) {
-  for (const row of listRows(list)) {
-    row.open = ids.includes(row.id);
-  }
 }
 
 // The search and filters the address asks for, and the source its hash links
@@ -486,29 +420,6 @@ function writeAddress(search: SearchState, sources: Source[]) {
   }
 }
 
-// The parts of the address the list follows.
-interface ListAddress {
-  search: string;
-  hash: string;
-}
-
-function currentAddress(): ListAddress {
-  return { search: window.location.search, hash: window.location.hash };
-}
-
-// What to do with the rows once the list the address asks for has rendered.
-interface RowRequest {
-  // The row the hash links to, or null.
-  linkedId: string | null;
-  // Coming back to this history entry (Back, Forward or a reload). The linked
-  // row is ringed but not scrolled to, since HashLinkHistory puts the
-  // reader's place back.
-  returning: boolean;
-  // The rows to have open, all others closed, before the linked row opens.
-  // Null leaves them as they are.
-  openIds: string[] | null;
-}
-
 interface SourceDatabaseProps {
   sources: Source[];
   // Passed on to each row: see CatalogCard's CardOptions.
@@ -518,6 +429,18 @@ interface SourceDatabaseProps {
   marks?: ReactNode;
   // Shown between the filters and the results: the key to the plus and minus glyphs.
   directionKey?: ReactNode;
+  // Source id -> how many evidence register entries cite it. A source with a
+  // register id that isn't here has none. Leave it out to show no counts.
+  entryCounts?: Record<string, number>;
+}
+
+// The count a row shows: null when the page passes no counts or the source
+// isn't in the register (no register id).
+function entryCountFor(source: Source, entryCounts: Record<string, number> | undefined): number | null {
+  if (entryCounts === undefined || !source.register_id) {
+    return null;
+  }
+  return entryCounts[source.id] ?? 0;
 }
 
 // The searchable source list. Gets every source to show as a prop, already in
@@ -528,6 +451,7 @@ export function SourceDatabase({
   hideUnrated = false,
   marks,
   directionKey,
+  entryCounts,
 }: SourceDatabaseProps) {
   const [search, setSearch] = useState<SearchState>(NO_SEARCH);
   const { query, technology, direction, problem } = search;
@@ -539,6 +463,7 @@ export function SourceDatabase({
   const databaseRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const filtersToggleRef = useRef<HTMLButtonElement>(null);
   const resultsBarRef = useRef<HTMLDivElement>(null);
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
   // The query string and hash the list last read from the address or wrote
@@ -633,19 +558,8 @@ export function SourceDatabase({
 
   // Runs after the render that put the requested rows on the page.
   useEffect(() => {
-    if (rowRequest === null) {
-      return;
-    }
-    if (rowRequest.openIds !== null) {
-      setOpenRows(listRef.current, rowRequest.openIds);
-    }
-    if (rowRequest.linkedId === null) {
-      return;
-    }
-    if (rowRequest.returning) {
-      ringRow(rowRequest.linkedId);
-    } else {
-      openRow(rowRequest.linkedId);
+    if (rowRequest !== null) {
+      applyRowRequest(listRef.current, rowRequest);
     }
   }, [rowRequest]);
 
@@ -713,6 +627,15 @@ export function SourceDatabase({
   const activeFilters = countActiveFilters(search);
   const isFiltered = words.length > 0 || activeFilters > 0;
 
+  // A chip under the folded "Filters" button turns its select back to all.
+  // The chip goes away, so focus moves to the button above it.
+  function removeFilter(key: string) {
+    if (key === "technology" || key === "direction" || key === "problem") {
+      changeSearch({ ...search, [key]: ALL });
+    }
+    filtersToggleRef.current?.focus();
+  }
+
   function clearFilters() {
     changeSearch(NO_SEARCH);
     // The button just used goes away with the filters. Moving focus to the
@@ -777,6 +700,7 @@ export function SourceDatabase({
             sources fit on the first screen. Its count keeps a folded panel from
             hiding that the list is filtered. Wider screens never show it. */}
         <button
+          ref={filtersToggleRef}
           type="button"
           className={styles.filtersToggle}
           aria-expanded={filtersOpen}
@@ -788,13 +712,15 @@ export function SourceDatabase({
           <span className={styles.filtersChevron} aria-hidden="true" />
         </button>
 
+        {!filtersOpen && <ActiveFilterChips chips={filterChips(search)} onRemove={removeFilter} />}
+
         <div
           id="source-filter-selects"
           className={`${styles.selects} ${filtersOpen ? styles.selectsOpen : ""}`}
         >
           <div className={styles.control}>
             <label htmlFor="source-technology" className={styles.label}>
-              Technology
+              {FILTER_LABELS.technology}
             </label>
             <div className={styles.selectWrap}>
               <select
@@ -815,7 +741,7 @@ export function SourceDatabase({
 
           <div className={styles.control}>
             <label htmlFor="source-direction" className={styles.label}>
-              Which way it argues
+              {FILTER_LABELS.direction}
             </label>
             <div className={styles.selectWrap}>
               <select
@@ -836,7 +762,7 @@ export function SourceDatabase({
 
           <div className={styles.control}>
             <label htmlFor="source-problem" className={styles.label}>
-              Problem
+              {FILTER_LABELS.problem}
             </label>
             <div className={styles.selectWrap}>
               <select
@@ -887,6 +813,7 @@ export function SourceDatabase({
                   sources={sourceRefs}
                   sharedAddedBy={sharedAddedBy}
                   hideUnrated={hideUnrated}
+                  entryCount={entryCountFor(source, entryCounts)}
                 />
               </li>
             ))}
@@ -909,31 +836,5 @@ export function SourceDatabase({
         )}
       </section>
     </div>
-  );
-}
-
-// Calls onChange after each render, which checks the address. A link or Back
-// that stays on /sources/ doesn't remount the list, but it changes the
-// router's address, and useSearchParams renders this again whenever that
-// changes, the hash included. So a link that only drops the hash, like
-// /sources/#s02 to /sources/, is noticed too. Renders nothing.
-function AddressWatcher({ onChange }: { onChange: () => void }) {
-  // Only read so this renders again when the address changes.
-  useSearchParams();
-  const notify = useEffectEvent(onChange);
-
-  useEffect(() => {
-    notify();
-  });
-
-  return null;
-}
-
-function SearchIcon() {
-  return (
-    <svg className={styles.searchIcon} viewBox="0 0 16 16" aria-hidden="true">
-      <circle cx="7" cy="7" r="4.75" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <path d="m10.5 10.5 3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
   );
 }

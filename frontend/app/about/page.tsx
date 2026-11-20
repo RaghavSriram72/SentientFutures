@@ -65,16 +65,18 @@ function pagesLine(technologies: TechnologyPage[]): LinePart[] {
 
 // What's on the site, one line per part of it, each linking there. The rules
 // behind them are on the methodology page, so they aren't repeated here.
-// The scorecard links to /wbe/ and not /wbe/#scorecard, because that anchor
-// sits inside the collapsed Full assessment.
+// Since workbook v0.4 every technology has a team scorecard, so the line
+// links to the compare page, which shows all three side by side.
 function siteIs(technologies: TechnologyPage[]): LinePart[][] {
   return [
     pagesLine(technologies),
-    [{ text: "The team's completed scorecard for whole brain emulation", href: "/wbe/" }, { text: "." }],
+    [{ text: "The team's scorecards", href: "/compare/" }, { text: " for all three, side by side." }],
     [{ text: "A timeline", href: "/timeline/" }, { text: " that places each milestone by its estimated window." }],
     [
       { text: "A source database", href: "/sources/" },
-      { text: " of the papers and essays we've collected, each with a summary the team wrote." },
+      {
+        text: " of the papers, talks and other work we've collected, each with a summary the team wrote and details on its type, peer review and affiliation.",
+      },
     ],
     [{ text: "The methodology", href: "/methodology/" }, { text: ", which explains the marks, ratings and timeline rules." }],
   ];
@@ -89,19 +91,28 @@ function lineText(line: LinePart[]): string {
   return text;
 }
 
+// "brain-computer interfaces" -> "brain-computer interface", for a name used
+// before a noun ("the brain-computer interface page"), as the home page does.
+// A name that doesn't end in a plural s ("neuromorphic AI") stays as it is.
+function beforeNoun(name: string): string {
+  return name.endsWith("s") && !name.endsWith("ss") ? name.slice(0, -1) : name;
+}
+
 function siteIsnt(technologies: TechnologyPage[], milestones: Milestone[]): string[] {
   const lines = [
-    "This is an early draft. Some categories are still being decided, including how we rate a source's relevance and credibility.",
+    "This is an early draft. Some of the site's own categories are still being decided, including how we rate a source's relevance and credibility.",
   ];
   const drafts: string[] = [];
   for (const tech of technologies) {
-    if (tech.sample) {
-      drafts.push(tech.name.charAt(0).toLowerCase() + tech.name.slice(1));
+    if (tech.unreviewed_ai_sections) {
+      drafts.push(beforeNoun(tech.name.charAt(0).toLowerCase() + tech.name.slice(1)));
     }
   }
+  // Only some sections of these pages are AI drafts: their ratings and
+  // workbook sections are the team's.
   if (drafts.length > 0) {
     lines.push(
-      `The ${drafts.join(" and ")} ${drafts.length === 1 ? "page is" : "pages are"} still AI-written drafts that nobody on the team has reviewed.`,
+      `Some sections of the ${drafts.join(" and ")} ${drafts.length === 1 ? "page" : "pages"} are still AI drafts that nobody on the team has reviewed. Each carries the AI-suggested mark.`,
     );
   }
   const undated = countUndated(milestones);

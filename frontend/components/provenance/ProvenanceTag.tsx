@@ -12,8 +12,13 @@ interface ProvenanceTagProps {
 }
 
 // The small monospace label that names a claim's provenance. Each kind has its
-// own glyph and line style, so the four are distinct without relying on color.
+// own glyph and line style, so they are distinct without relying on color.
+// The team's own claims are never labelled (anything unmarked is the team's),
+// so "team" renders nothing.
 export function ProvenanceTag({ kind, reviewedBy, unclearReason, plain = false }: ProvenanceTagProps) {
+  if (kind === "team") {
+    return null;
+  }
   let label = enumLabel("Provenance", kind);
   if (plain) {
     // no details
@@ -32,20 +37,16 @@ export function ProvenanceTag({ kind, reviewedBy, unclearReason, plain = false }
   );
 }
 
+// The team's own claims carry no mark, so "team" draws nothing.
 export function ProvenanceGlyph({ kind }: { kind: Provenance }) {
+  if (kind === "team") {
+    return null;
+  }
   if (kind === "source") {
     // A pair of quote marks
     return (
       <svg className={styles.glyph} viewBox="0 0 12 12" aria-hidden="true">
         <path d="M2 7.5c0-2 1-3.5 2.8-4.3l.4.7C4.2 4.5 3.7 5.3 3.6 6H5v3H2V7.5Zm5 0c0-2 1-3.5 2.8-4.3l.4.7C9.2 4.5 8.7 5.3 8.6 6H10v3H7V7.5Z" fill="currentColor" />
-      </svg>
-    );
-  }
-  if (kind === "team") {
-    // A solid diamond, like a margin mark
-    return (
-      <svg className={styles.glyph} viewBox="0 0 12 12" aria-hidden="true">
-        <path d="M6 1.5 10.5 6 6 10.5 1.5 6Z" fill="currentColor" />
       </svg>
     );
   }

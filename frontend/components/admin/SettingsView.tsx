@@ -710,11 +710,12 @@ function QueryEditor({ index, query, errors, disabled, onChange, onToggleCollect
               checked={query.enabled}
               onChange={(event) => onChange({ enabled: event.target.checked })}
               disabled={disabled}
+              // The label tells screen reader users which search this is. It is
+              // set here rather than in a hidden span, because a hidden span
+              // makes Chromium read a stray space before the colon.
+              aria-label={`Use this search: ${name}`}
             />
-            {/* The hidden name tells screen reader users which search this is */}
-            <span>
-              Use this search<span className="visually-hidden">: {name}</span>
-            </span>
+            <span>Use this search</span>
           </label>
           {!query.enabled && <span className={styles.offNote}>Off. Runs skip this search.</span>}
         </div>

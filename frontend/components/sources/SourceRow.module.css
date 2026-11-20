@@ -149,6 +149,14 @@
   color: var(--grape);
 }
 
+/* The workbook's "screening pending" mark (S17): hatched, like other
+   provisional marks on the site */
+.screening {
+  background: var(--hatch), var(--paper-2);
+  border-color: var(--rule-strong);
+  color: var(--ink-body);
+}
+
 /* A chevron drawn with borders that turns when the row opens */
 .chevron {
   grid-area: chevron;

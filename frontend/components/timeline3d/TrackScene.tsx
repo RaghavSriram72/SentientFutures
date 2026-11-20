@@ -12,7 +12,9 @@
 // second at most.
 //
 // The world scale is fitted to the screen: the tallest card in the back row
-// must stay below the measured top bar, so cards never rise behind it.
+// must stay below the measured top bar, so cards never rise behind it. On a
+// small phone where three rows of cards would leave their small lines too
+// small to read, the cards stand in two rows instead (see needsFewerRows).
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,13 +59,16 @@ import {
 import { FloorMarks, FloorTrace, TECHNOLOGIES, TechGlyph, TrackCard, yearLabels, type CardTone } from "./TrackParts";
 import {
   CARD_WIDTH,
+  FEWER_ROW_COUNT,
   FLOOR_DEPTH,
   LAST_YEAR,
+  ROW_COUNT,
   cardsFit,
   centerOf,
   fitScale,
   highestFloorBottom,
   layoutTrack,
+  needsFewerRows,
   rowY,
   settleScale,
   textFloors,
@@ -106,12 +111,25 @@ const SMALLEST_SCALE = 0.15;
 // The mini map labels every free decade above this width, and only a few
 // years below it.
 const SPARSE_MAP_WIDTH = 600;
+// Below this width (a phone, as in geometryFor) the cards stand in two rows
+// instead of three when three can't keep their small lines readable.
+const FEWER_ROWS_WIDTH = 600;
 
 // ---------- Screen geometry ----------
 
 interface SceneGeometry extends FloorView {
   scale: number;
   screenWidth: number;
+}
+
+// Where the camera goes just after the cards change rows (see the fit
+// effect): back to the start (`restart`), or else to the card that was in
+// the middle of the screen (`cardId`). An open dossier's card comes first
+// either way. `instant` is false after a filter change, when it glides.
+interface RowSwitch {
+  restart: boolean;
+  cardId: string | null;
+  instant: boolean;
 }
 
 // What the CSS uses before the first measurement (a 1440x900 desktop).
@@ -193,11 +211,75 @@ function applyTextFloors(floor: HTMLElement | null, view: FloorView, scale: numb
   }
 }
 
+// The world scale that fits, and the tallest card in each row, if the cards
+// stood in the rows `rows` gives them (the three-row or the two-row layout),
+// with the text floors those rows settle at. needsFewerRows uses it to tell
+// whether three rows can be read on this screen. It works whatever layout is
+// showing: while it measures, each card gets the text floor of its row in
+// `rows` straight on its own style (which wins over the one its data-row
+// picks), and loses it again after.
+function fitInRows(
+  floor: HTMLElement | null,
+  view: SceneGeometry,
+  safeTop: number,
+  rows: TrackLayout,
+): { heights: number[]; scale: number } {
+  let heights = [0, 0, 0];
+  if (!floor) {
+    return { heights, scale: view.scale };
+  }
+  const rowOf = new Map<string, number>();
+  for (const trackItem of rows.items) {
+    rowOf.set(trackItem.item.milestone.id, trackItem.row);
+  }
+  const cards = Array.from(floor.querySelectorAll<HTMLElement>("[data-card-id]"));
+  let floors = [0, 0, 0];
+  // Sets every card's floor first and only then reads the heights, so the
+  // browser lays the cards out once per round, not once per card.
+  function measure(): number[] {
+    for (const card of cards) {
+      const row = rowOf.get(card.dataset.cardId ?? "") ?? 0;
+      card.style.setProperty("--text-floor", `${floors[row].toFixed(1)}px`);
+    }
+    heights = [0, 0, 0];
+    for (const card of cards) {
+      const row = rowOf.get(card.dataset.cardId ?? "") ?? 0;
+      heights[row] = Math.max(heights[row], card.offsetHeight);
+    }
+    return heights;
+  }
+  const scale = settleScale(
+    () => fitScale(view, measure(), safeTop, view.scale),
+    (fitted) => {
+      floors = textFloors(view, fitted);
+    },
+  );
+  for (const card of cards) {
+    card.style.removeProperty("--text-floor");
+  }
+  return { heights, scale };
+}
+
+// The id of the card whose middle is nearest a world x, or null with no cards.
+function nearestCardId(layout: TrackLayout, worldX: number): string | null {
+  let nearest: TrackItem | null = null;
+  for (const trackItem of layout.items) {
+    if (nearest === null || Math.abs(centerOf(trackItem) - worldX) < Math.abs(centerOf(nearest) - worldX)) {
+      nearest = trackItem;
+    }
+  }
+  return nearest ? nearest.item.milestone.id : null;
+}
+
 // The largest world scale (up to the view's own, down to minScale) at which
 // the cards stay below safeTop. The far rows' bigger small text makes those
 // cards a little taller, so settleScale fits again with the new heights
-// until the scale stops moving.
+// until the scale stops moving. Every fit starts from the floors of the
+// view's own scale, as a fresh load does. Starting from the floors a smaller
+// screen left behind can settle on a lower scale, because wrapped text makes
+// the card heights step and two scales can both settle.
 function fitWorld(floor: HTMLElement | null, view: SceneGeometry, safeTop: number, minScale?: number): number {
+  applyTextFloors(floor, view, view.scale);
   return settleScale(
     () => fitScale(view, measureRowHeights(floor), safeTop, view.scale, minScale),
     (scale) => applyTextFloors(floor, view, scale),
@@ -489,7 +571,16 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
     return set;
   }, [filter]);
 
-  const layout: TrackLayout = useMemo(() => layoutTrack(allItems, shown, nowYear), [allItems, shown, nowYear]);
+  // The usual three rows, or two on a small phone where three can't be read
+  // (fewerRows, chosen in the fit effect). Both are worked out, since the fit
+  // effect measures the cards as they'd stand in either.
+  const threeRowLayout: TrackLayout = useMemo(() => layoutTrack(allItems, shown, nowYear, ROW_COUNT), [allItems, shown, nowYear]);
+  const fewerRowLayout: TrackLayout = useMemo(
+    () => layoutTrack(allItems, shown, nowYear, FEWER_ROW_COUNT),
+    [allItems, shown, nowYear],
+  );
+  const [fewerRows, setFewerRows] = useState(false);
+  const layout = fewerRows ? fewerRowLayout : threeRowLayout;
   const trackItemsById = useMemo(() => {
     const map: Record<string, TrackItem> = {};
     for (const trackItem of layout.items) {
@@ -538,6 +629,19 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
   const placedRef = useRef(false);
   // Whether the list is the better view on this screen (see the fit effect).
   const listFirstRef = useRef(false);
+  // fewerRows as the fit effect last chose it, whether it has chosen yet (it
+  // waits for the fonts), and, just after it changes, where the camera goes
+  // once the cards have moved.
+  const fewerRowsRef = useRef(false);
+  const rowsChosenRef = useRef(false);
+  const rowSwitchRef = useRef<RowSwitch | null>(null);
+  // Whether the camera has left the start (see startCenter) since it was put
+  // there, by the first fit or by a change to the Show filter. The reader
+  // moving it sets this (the wheel, keys, a drag, the mini map, opening a
+  // card), and so does a link that opens the timeline on a milestone. When
+  // the cards change rows, the camera goes back to the start only while
+  // this is false; otherwise it stays with the card in the middle.
+  const leftStartRef = useRef(false);
   // Set when the open dossier was picked from the list, so closing it on a
   // phone or tablet goes back to the list rather than the track.
   const fromListRef = useRef(false);
@@ -684,9 +788,46 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
     [moveTo],
   );
 
+  // moveTo and centerOn, for a move the reader asked for. The move is noted
+  // (leftStartRef), so a later change to the rows keeps the reader's place
+  // instead of sending the camera back to the start.
+  const readerMoveTo = useCallback(
+    (offset: number, instant = false) => {
+      leftStartRef.current = true;
+      moveTo(offset, instant);
+    },
+    [moveTo],
+  );
+
+  const readerCenterOn = useCallback(
+    (worldX: number, instant = false) => {
+      leftStartRef.current = true;
+      centerOn(worldX, instant);
+    },
+    [centerOn],
+  );
+
   // The world x currently at the focus point.
   function focusWorldX(): number {
     return targetRef.current + focusPoint() / geometryRef.current.scale;
+  }
+
+  // Where the camera goes once the cards stand in the rows of `target` (the
+  // layout just switched to), in world x: the open dossier's card, or the
+  // start, or the card that was in the middle before. `fallback` (or null)
+  // when none of those applies. Read from `target`, not from the layout on
+  // screen, so the camera can be placed before the cards have moved.
+  function rowSwitchCenter(target: TrackLayout, rowSwitch: RowSwitch, fallback: number | null): number | null {
+    const findCard = (id: string | null) => (id ? target.items.find((trackItem) => trackItem.item.milestone.id === id) : undefined);
+    const selected = findCard(selectedId);
+    if (selected) {
+      return centerOf(selected);
+    }
+    if (rowSwitch.restart) {
+      return startCenter(target, freeWorldWidth());
+    }
+    const middleCard = findCard(rowSwitch.cardId);
+    return middleCard ? centerOf(middleCard) : fallback;
   }
 
   useEffect(() => {
@@ -726,6 +867,7 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
       setIntroOpen(false);
       panelOpenRef.current = true;
       introOpenRef.current = false;
+      leftStartRef.current = true;
       const trackItem = trackItemsById[id];
       if (trackItem) {
         centerOn(centerOf(trackItem));
@@ -900,6 +1042,62 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
     const bottomReserve = footer ? Math.ceil(window.innerHeight - footer.getBoundingClientRect().top) + YEAR_LABEL_ROOM : 0;
     const base = geometryFor(window.innerWidth, window.innerHeight, bottomReserve);
     const floor = floorRef.current;
+
+    // On a phone, the cards stand in two rows instead of three when three
+    // can't keep every row's small lines at 11px (see needsFewerRows). It's
+    // chosen from the cards measured as they'd stand in three rows, so the
+    // answer doesn't depend on the layout showing now, and only once the
+    // fonts are in, since the fallback fonts set the text at other sizes.
+    // When the answer changes, so does the layout, and this runs again.
+    if (fontsReady) {
+      const safeTop = topHeight + 12;
+      // The first choice, and the one after the Show filter changes the
+      // cards, start fresh. After that (the window resized, say), going back
+      // to three rows takes a little margin, so it can't flip back and forth.
+      const fresh = !rowsChosenRef.current || filterChangedRef.current;
+      rowsChosenRef.current = true;
+      const fewer =
+        window.innerWidth < FEWER_ROWS_WIDTH &&
+        needsFewerRows(
+          base,
+          fitInRows(floor, base, safeTop, threeRowLayout).heights,
+          safeTop,
+          base.scale,
+          fresh ? false : fewerRowsRef.current,
+        );
+      if (fewer !== fewerRowsRef.current) {
+        fewerRowsRef.current = fewer;
+        const nextLayout = fewer ? fewerRowLayout : threeRowLayout;
+        // The cards are about to move. If the camera is still at the start
+        // (the reader hasn't moved it since the page loaded, or the filter
+        // just changed, which puts it back there), it starts again on the
+        // new layout. Otherwise it stays on the card in the middle. After a
+        // filter change it glides, as it does anyway.
+        const keepX = placedRef.current ? focusWorldX() : null;
+        const rowSwitch: RowSwitch = {
+          restart: filterChangedRef.current || !leftStartRef.current,
+          cardId: keepX !== null ? nearestCardId(layout, keepX) : null,
+          instant: !filterChangedRef.current,
+        };
+        rowSwitchRef.current = rowSwitch;
+        // Fit the cards as they'll stand in the new rows now, so the new
+        // layout first shows at its own scale, not the old one. The next run
+        // fits it again in full (and places the camera again).
+        const scale = fitInRows(floor, base, safeTop, nextLayout).scale;
+        applyTextFloors(floor, base, scale);
+        geometryRef.current = { ...base, scale };
+        setGeometry(geometryRef.current);
+        // The camera goes where it will stand in the new rows now too, so
+        // their first frame already shows the cards it will settle on.
+        const center = keepX !== null ? rowSwitchCenter(nextLayout, rowSwitch, keepX) : null;
+        if (center !== null) {
+          centerOn(center, rowSwitch.instant);
+        }
+        setFewerRows(fewer);
+        return;
+      }
+    }
+
     let fitted = fitScene(floor, base, bottomReserve, topHeight + 12);
     // On a short screen, such as a phone held sideways, the cards come out
     // too small to read (or can't fit at all), so the list is the first view.
@@ -915,6 +1113,8 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
       fitted = belowNotice.fits || !fitted.fits ? belowNotice : fitScene(floor, base, bottomReserve, topHeight + 12);
     }
     const keep = placedRef.current ? focusWorldX() : null;
+    const rowSwitch = rowSwitchRef.current;
+    rowSwitchRef.current = null;
     const next = fitted.view;
     geometryRef.current = next;
     setGeometry(next);
@@ -929,6 +1129,7 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
         setIntroOpen(false);
         panelOpenRef.current = true;
         introOpenRef.current = false;
+        leftStartRef.current = true;
         centerOn(centerOf(trackItemsById[id]), true);
         return;
       }
@@ -942,14 +1143,22 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
       if (listFirst) {
         setShowList(true);
       }
+      leftStartRef.current = false;
       centerOn(startCenter(layout, freeWorldWidth()), true);
-    } else if (keep !== null) {
+    } else {
       // Turning a phone sideways opens the list too, as a fresh load would.
       // An open dossier stays, and closing it brings the list back.
       if (becameListFirst && !panelOpenRef.current) {
         setShowList(true);
       }
-      centerOn(keep, true);
+      // Just after the rows change, the cards stand somewhere else. The open
+      // dossier's card stays in view (a link to /timeline/#id opens on it),
+      // or else the camera goes where rowSwitch says (see rowSwitchCenter),
+      // now at the scale just fitted. Otherwise it keeps its place.
+      const center = rowSwitch ? rowSwitchCenter(layout, rowSwitch, keep) : keep;
+      if (center !== null) {
+        centerOn(center, rowSwitch ? rowSwitch.instant : true);
+      }
     }
     // Runs when the screen, the cards or the bar change size, and when the
     // notice comes or goes. Selection and intro changes move the camera themselves.
@@ -969,6 +1178,7 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
       centerOn(centerOf(trackItemsById[pending]));
       return;
     }
+    leftStartRef.current = false;
     centerOn(startCenter(layout, freeWorldWidth()));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout]);
@@ -1073,11 +1283,11 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
       event.preventDefault();
       const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
       const lineScale = event.deltaMode === 1 ? 32 : 1;
-      moveTo(targetRef.current + (delta * lineScale * 1.1) / geometryRef.current.scale);
+      readerMoveTo(targetRef.current + (delta * lineScale * 1.1) / geometryRef.current.scale);
     }
     scene.addEventListener("wheel", onWheel, { passive: false });
     return () => scene.removeEventListener("wheel", onWheel);
-  }, [moveTo, showList]);
+  }, [readerMoveTo, showList]);
 
   // Keyboard: arrows and Page keys move through time, Home is Now, End is the
   // far end, Esc closes whatever is on top.
@@ -1113,21 +1323,21 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
       const width = geometryRef.current.screenWidth / geometryRef.current.scale;
       if (event.key === "ArrowRight" || event.key === "PageDown") {
         event.preventDefault();
-        moveTo(targetRef.current + width * (event.key === "PageDown" ? 0.8 : 0.3));
+        readerMoveTo(targetRef.current + width * (event.key === "PageDown" ? 0.8 : 0.3));
       } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
         event.preventDefault();
-        moveTo(targetRef.current - width * (event.key === "PageUp" ? 0.8 : 0.3));
+        readerMoveTo(targetRef.current - width * (event.key === "PageUp" ? 0.8 : 0.3));
       } else if (event.key === "Home") {
         event.preventDefault();
-        centerOn(layout.nowX);
+        readerCenterOn(layout.nowX);
       } else if (event.key === "End") {
         event.preventDefault();
-        centerOn(endCenter(layout));
+        readerCenterOn(endCenter(layout));
       }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [close, layout, moveTo, centerOn, selectedId, showLegend, showFilter, showList, showMenu, notice]);
+  }, [close, layout, readerMoveTo, readerCenterOn, selectedId, showLegend, showFilter, showList, showMenu, notice]);
 
   // Drags can start anywhere on the track, cards included. Pointer capture
   // starts only once the pointer has really moved, so a plain click still
@@ -1167,7 +1377,7 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
       event.currentTarget.setPointerCapture(event.pointerId);
       drag.captured = true;
     }
-    moveTo(drag.startOffset - (delta * 1.4) / geometryRef.current.scale, true);
+    readerMoveTo(drag.startOffset - (delta * 1.4) / geometryRef.current.scale, true);
   }
 
   function onPointerUp(event: ReactPointerEvent<HTMLElement>) {
@@ -1214,7 +1424,7 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
     setFocusedId(id);
     const trackItem = trackItemsById[id];
     if (trackItem && event.currentTarget.matches(":focus-visible")) {
-      centerOn(centerOf(trackItem));
+      readerCenterOn(centerOf(trackItem));
     }
   }
 
@@ -1552,12 +1762,12 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
               onScreen={emptyNoteOnScreen}
               hasUnknown={layout.unknownZone !== null}
               onGo={() => {
-                centerOn(endCenter(layout));
+                readerCenterOn(endCenter(layout));
                 // The button slides off screen with the note, so focus moves to
                 // the track. The next Tab reaches the first card there.
                 stageRef.current?.focus({ preventScroll: true });
               }}
-              onFocus={() => centerOn(layout.nowX + 290)}
+              onFocus={() => readerCenterOn(layout.nowX + 290)}
             />
           )}
           {layout.items.map((trackItem, index) => {
@@ -1597,7 +1807,7 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
                 type="button"
                 className={`${styles.edgeChip} ${side === "left" ? styles.edgeLeft : styles.edgeRight}`}
                 aria-label={`Show ${code}, ${trackItem.item.milestone.name} (${how})`}
-                onClick={() => centerOn(centerOf(trackItem))}
+                onClick={() => readerCenterOn(centerOf(trackItem))}
               >
                 {side === "left" && <span aria-hidden="true">&larr;</span>}
                 {code}
@@ -1615,8 +1825,8 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
           windowRef={windowRef}
           value={sliderValue}
           valueText={readout ? readout.text : ""}
-          onScrub={(worldX, instant) => centerOn(worldX, instant)}
-          onStep={(direction) => moveTo(targetRef.current + direction * viewWidth * 0.3)}
+          onScrub={(worldX, instant) => readerCenterOn(worldX, instant)}
+          onStep={(direction) => readerMoveTo(targetRef.current + direction * viewWidth * 0.3)}
         />
         {/* The intro says the same thing, so this waits until it closes. It
             keeps its space meanwhile, so the mini map doesn't jump. */}
@@ -1904,7 +2114,7 @@ function Legend({ onClose, onFocusLeave, onShowIntro, layout }: LegendProps) {
       </div>
       {shownRows.length > 0 && <LegendRows rows={shownRows} />}
       <div className={`${styles.legendStages} ${shownRows.length === 0 ? styles.legendStagesFirst : ""}`}>
-        <p className={styles.legendStagesLabel}>Color shows the stage:</p>
+        <p className={styles.legendStagesLabel}>Colour shows the stage:</p>
         <ul className={styles.legendStageList}>
           {enumValues("Stage").map((info, index) => (
             <li key={info.value} className={styles.legendStage}>

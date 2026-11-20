@@ -147,9 +147,14 @@
 }
 
 /* The link sits on the label, and its ::after stretches over the whole stat,
-   so the big number can be clicked too */
+   so the big number can be clicked too. The label sits at the top and the
+   number at the foot, so the numbers stay level when one label ("Evidence
+   entries") wraps to two lines. */
 .stat {
   position: relative;
+  display: grid;
+  align-content: space-between;
+  gap: 0.15rem;
 }
 
 .statLink {
@@ -332,24 +337,6 @@
   color: var(--ink-faint);
 }
 
-/* Review status: a solid chip for the team's page, a dashed one for AI drafts */
-.statusTeam {
-  border-color: var(--rule-strong);
-  color: var(--prov-team);
-}
-
-.statusAi {
-  border: 1px dashed var(--rule-strong);
-  background: var(--grape-tint);
-  color: var(--grape);
-}
-
-.statusTeam svg,
-.statusAi svg {
-  width: 10px;
-  height: 10px;
-}
-
 .proposalTitle {
   font-size: clamp(1.5rem, 1.25rem + 0.8vw, 1.875rem);
 }
@@ -380,10 +367,9 @@
 }
 
 /* Two columns, like the scorecard's dimension and rating, so the chips line up
-   from card to card. The chip comes from the scorecard, with its reason under it. */
-/* The chip side gets more room, so "Potentially high severity" and the
-   Unclear reasons stay on one line under the chip. Narrow cards stack each
-   row instead (the container query below). */
+   from card to card. The chip side gets more room, so a risk row's
+   "Severity very high · Likelihood not assessable" wraps at the dot at most.
+   Narrow cards stack each row instead (the container query below). */
 .ratingRow {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -400,11 +386,10 @@
 }
 
 /* In a narrow card (the three-column grid from 1024px to about 1080px, and
-   phones under about 350px) the chip column would drop under the 151px that
-   "Potentially high severity" and "No relevant evidence found" need, so they
-   would wrap. There each label sits over its chip instead, and the chip line
-   gets the card's full width. 17rem is the card's content width, inside its
-   padding. */
+   phones under about 350px) the value column gets too narrow for a risk
+   row's severity and likelihood. There each label sits over its value
+   instead, and the value gets the card's full width. 17rem is the card's
+   content width, inside its padding. */
 @container proposal (width < 17rem) {
   .ratingRow {
     grid-template-columns: minmax(0, 1fr);
@@ -415,6 +400,18 @@
 .question {
   display: grid;
   gap: 0.35rem;
+}
+
+/* A risk row's severity and likelihood, in words where a case row has its
+   chip. A narrow card breaks the line at the dot, never inside a value. */
+.riskMeta {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--ink-body);
+}
+
+.riskMetaPart {
+  white-space: nowrap;
 }
 
 .questionLabel {
@@ -507,10 +504,6 @@
   flex-wrap: wrap;
   gap: 0.35rem 1.25rem;
   list-style: none;
-}
-
-.mindsDraft {
-  color: var(--ink-faint);
 }
 
 /* The one link after the section links, set like the head links */

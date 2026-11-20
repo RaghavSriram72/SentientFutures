@@ -49,23 +49,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Site copy never uses em dashes. content/ is checked by the validator;
-      # this covers text written into the pages and the shared enum labels.
-      # Matches the character itself, the HTML entity and the JS escape.
-      - name: No em dashes in site copy
+      # Site copy never uses em dashes or en dashes. content/ is checked by the
+      # validator; this covers text written into the pages and the shared enum
+      # labels. Matches each character itself, its HTML entity and its JS escape.
+      - name: No em or en dashes in site copy
         working-directory: .
         env:
           LC_ALL: C.UTF-8
         run: |
-          pattern='\x{2014}|&mdash;|\\u2014'
+          pattern='\x{2014}|&mdash;|\\u2014|\x{2013}|&ndash;|\\u2013'
           found=0
           grep -rnP --include='*.tsx' --include='*.ts' "$pattern" frontend/app frontend/components frontend/lib && found=1
           grep -nP "$pattern" shared/schema/enums.json && found=1
           if [ "$found" = 1 ]; then
-            echo "::error::Found an em dash in site copy (see the lines above). Use a period, comma, colon or parentheses instead."
+            echo "::error::Found an em or en dash in site copy (see the lines above). Use a hyphen for a range, or a period, comma, colon or parentheses instead."
             exit 1
           fi
-          echo "No em dashes found"
+          echo "No em or en dashes found"
 
       - uses: actions/setup-node@v4
         with:
@@ -91,7 +91,19 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # Node's own test runner, no extra packages (see register.mjs). The app
+      # glob picks up tests kept next to a page, like the methodology codebook.
+      - name: Run the unit tests
+        run: node --import ./components/admin/tests/register.mjs --test "components/**/tests/*.test.ts" "lib/tests/*.test.ts" "app/**/tests/*.test.ts"
+
       - name: Build the static site the way Pages does
         run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /SentientFutures
+
+      # Reads the exported pages in out/, so it runs after the build and with
+      # the same base path.
+      - name: Check the compare page links
+        run: node scripts/check-compare-links.mjs
         env:
           NEXT_PUBLIC_BASE_PATH: /SentientFutures

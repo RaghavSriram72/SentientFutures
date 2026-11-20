@@ -1,0 +1,76 @@
+/* The evidence register reuses the sources list's filter bar and results bar
+   (SourceDatabase.module.css). These rules only change what differs: four
+   selects instead of three, and no marks disclosure. The element in each
+   selector makes it win over the shared class, whatever order the two files
+   load in. */
+
+/* Search beside the first select, then the other three, so the longest
+   rating ("Neuromorphic AI Intelligence Curse (2)") still fits its select */
+@media (min-width: 1000px) {
+  form.filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  div.search {
+    grid-column: span 2;
+  }
+}
+
+/* No marks disclosure on this page, so no empty row above the count */
+div.resultsBar {
+  grid-template-areas: "count clear";
+}
+
+@media (min-width: 900px) {
+  div.resultsBar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "count clear";
+  }
+}
+
+/* The Scope tab's Cross-family row, under the filters while Cross-family is
+   picked */
+.scopeNote {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--grape);
+  border-radius: var(--radius-panel);
+  background: var(--paper-2);
+}
+
+.scopeTitle {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--grape);
+}
+
+.scopeFields {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.scopeField {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.scopeLabel {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.scopeValue {
+  max-width: 72ch;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink-body);
+}

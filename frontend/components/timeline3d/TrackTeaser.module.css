@@ -12,7 +12,10 @@
      header, so it can be seen whole. svh, not dvh, so it doesn't change size
      as the browser's bars come and go. Shorter than its full height, the
      teaser switches to its farther camera (TEASER_SHORT_CAMERA), which still
-     draws the far cards' small lines at 11px. */
+     draws the far cards' small lines at 11px. TrackTeaser also sets a
+     min-height (TEASER_MIN_HEIGHT, 420px), which wins over this cap on a
+     window just over 500px tall: the teaser then keeps less than 2rem of
+     room, rather than getting short enough to shrink the far cards' text. */
   max-height: calc(100svh - var(--header-height) - 2rem);
   overflow: clip;
   border: 1px solid var(--rule-soft);
@@ -103,7 +106,14 @@
    about where today's eight milestones first all fit with TEASER_CAMERA, so
    the row under the teaser keeps its height when the measurement lands. The
    point moves as milestones are added: to find it again, widen the window
-   until the teaser's data-still="true" appears, and set this to match. */
+   until the teaser's data-still="true" appears, and set this to match.
+   On a window 501 to 575px tall the teaser is shorter and uses its other
+   camera, and the cards all fit from somewhere between 735px wide (501px
+   tall) and 845px wide (575px tall), so there the guess can be one control
+   row (about 22px) off. It's put right about 0.2s after the page loads,
+   while the teaser is still far below the bottom of the window. Keeping the
+   row 44px tall on those windows would stop that, but would also leave the
+   hint twice as far under the teaser for everyone, so it stays a guess. */
 @media (min-width: 818px) {
   .unmeasured {
     display: none;

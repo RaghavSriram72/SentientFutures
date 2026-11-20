@@ -1,0 +1,4 @@
+/* A hyphenated word in a headline, kept on one line */
+.unbroken {
+  white-space: nowrap;
+}

@@ -7,9 +7,10 @@ import type { Provenance, Stage } from "@/lib/types";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./Provenance.module.css";
 
-const PROVENANCE_ORDER: Provenance[] = ["source", "team", "ai", "unclear"];
+// The team's own claims carry no mark, so the key leaves them out.
+const PROVENANCE_ORDER: Provenance[] = ["source", "ai", "unclear"];
 
-// The site-wide key for the four kinds of content. Shown on the timeline,
+// The site-wide key for the marked kinds of content. Shown on the timeline,
 // the sources page, technology pages and methodology.
 export function ProvenanceLegend({ compact = false }: { compact?: boolean }) {
   if (compact) {

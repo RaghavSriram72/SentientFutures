@@ -191,6 +191,24 @@
   font-style: italic;
 }
 
+/* The workbook's 3a cells: plain text, since they are the sheet's own words
+   and some run long ("Peer-reviewed (OUP book; review process not verified)") */
+.qualityFields {
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+/* Straight after the tags, whose rule already closes the block above */
+.fields + .qualityFields {
+  border-top: 0;
+}
+
+.qualityValue {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--ink-body);
+  overflow-wrap: anywhere;
+}
+
 /* The rubric before anyone has rated it: one muted line in place of five cells */
 .notRated {
   display: flex;
@@ -268,6 +286,12 @@
 
 .openLink a {
   overflow-wrap: anywhere;
+}
+
+/* "Evidence entries: 12", linking to the evidence register */
+.entryCount {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
 }
 
 /* Chrome can't split a grid inside a <details> at a page break: it prints the

@@ -1,0 +1,685 @@
+/* Rating cards: one per scorecard row, inside the scorecard's paper card.
+   Each card measures its own width (container queries), not the window's,
+   so the same card works in the 856px content column and on a 320px phone.
+   Mobile-first: under 40rem a card is an inset card of its own, stacked;
+   from 40rem the cards are ruled rows with a rail beside the main column. */
+
+/* The list measures itself too, at the same 40rem, so the list and its cards
+   always switch together: a list 40rem wide drops its insets, which makes
+   each card exactly that wide. */
+.list {
+  container: rating-card-list / inline-size;
+  list-style: none;
+}
+
+.item {
+  container: rating-card / inline-size;
+  padding: 0.75rem 0.75rem 0;
+}
+
+.item:last-child {
+  padding-bottom: 0.75rem;
+}
+
+@container rating-card-list (min-width: 40rem) {
+  .item,
+  .item:last-child {
+    padding: 0;
+  }
+
+  .item + .item {
+    border-top: 1px solid var(--rule-soft);
+  }
+}
+
+/* ---------- The card ---------- */
+.card {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.1rem 0.9rem 1.2rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background-color: var(--paper);
+  /* Cards are link targets (the hero arrows, "Why: see the ... rating");
+     leave room for the sticky site header. */
+  scroll-margin-top: calc(var(--header-height) + 2rem);
+}
+
+/* The rail (name, scale, rating and confidence) beside the main column */
+@container rating-card (min-width: 40rem) {
+  .card {
+    grid-template-columns: 13rem minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "head main"
+      "rail main";
+    gap: 1.25rem 2rem;
+    padding: 1.5rem clamp(16px, 2.5vw, 28px) 1.6rem;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .head {
+    grid-area: head;
+  }
+
+  .rail {
+    grid-area: rail;
+    align-self: start;
+  }
+
+  .main {
+    grid-area: main;
+  }
+}
+
+/* The card a link just landed on: a grape bar down its left edge and a
+   faint grape wash. Static, so it needs no reduced-motion variant, and
+   screen only, so it never prints. */
+@media screen {
+  .card:target {
+    background-image: linear-gradient(var(--grape-tint), var(--grape-tint));
+    box-shadow: inset 3px 0 0 var(--grape);
+  }
+}
+
+/* ---------- Head ---------- */
+.name {
+  font-family: var(--font-display);
+  font-size: 1.3125rem;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.scale {
+  margin-top: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* ---------- Main column ---------- */
+.main {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  align-content: start;
+}
+
+/* Stacked under the rail on narrow cards, so a hairline starts the reading */
+@container rating-card (width < 40rem) {
+  .main {
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--rule-soft);
+  }
+}
+
+/* The small caps label over each value, as in RatingFacts */
+.label {
+  margin-bottom: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* "More in Welfare and governance risks" under a one-sentence basis */
+.detailLink {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: var(--text-sm);
+}
+
+/* ---------- Tracker ---------- */
+.tracker {
+  display: grid;
+  gap: 1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--rule-soft);
+}
+
+/* The placeholder box: the sample ochre from Marks.module.css, dashed, so
+   it reads as an example and not as data, in grayscale too. */
+.tracker.placeholder {
+  padding: 0.85rem 0.9rem 1rem;
+  border: 1.5px dashed color-mix(in srgb, var(--stage-widely) 60%, transparent);
+  border-radius: var(--radius-md);
+  background-color: color-mix(in srgb, var(--stage-widely) 5%, var(--paper));
+}
+
+@container rating-card (width < 40rem) {
+  .tracker.placeholder {
+    padding: 0.7rem;
+  }
+}
+
+/* "Placeholder" and its note, the first thing in the box */
+.placeholderNote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px dashed color-mix(in srgb, var(--stage-widely) 35%, transparent);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--stage-widely-ink);
+}
+
+.fields {
+  display: grid;
+  gap: 1.15rem;
+}
+
+/* ---------- A risk card's count of risks ---------- */
+.riskLine {
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+/* ---------- Evidence ---------- */
+/* The register entries that feed the rating, folded under one ruled line.
+   Closed, the line counts them; open, the entries follow in two groups. */
+.evidenceFold {
+  border-top: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  /* A link to the fold (#scorecard-<id>-evidence) clears the sticky header. */
+  scroll-margin-top: calc(var(--header-height) + 2rem);
+}
+
+/* "EVIDENCE  5 supports · 7 against or qualifies", with a chevron at the end.
+   The whole line is the button. */
+.evidenceSummary {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.85rem;
+  padding: 0.8rem 1.75rem 0.8rem 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.evidenceSummary::-webkit-details-marker {
+  display: none;
+}
+
+.evidenceSummary:focus-visible {
+  outline: 2px solid var(--grape);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.evidenceLabel {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.evidenceCounts {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--grape);
+}
+
+.evidenceSummary:hover .evidenceCounts {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Each count wraps as one piece, so "Against or qualifies: 7" stays together */
+.evidenceCount {
+  display: inline-block;
+}
+
+/* The dot between two counts, spaced by margins: a space at the edge of an
+   inline-block would collapse. */
+.evidenceDot {
+  margin-inline: 0.45em;
+  color: var(--ink-faint);
+}
+
+/* A chevron drawn with borders that turns when the fold opens, as on the
+   sources page */
+.chevron {
+  position: absolute;
+  top: 1.1rem;
+  right: 0.35rem;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--grape);
+  border-bottom: 1.5px solid var(--grape);
+  transform: rotate(45deg);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.evidenceFold[open] .chevron {
+  top: 1.3rem;
+  transform: rotate(-135deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}
+
+.evidenceBody {
+  display: grid;
+  gap: 1.1rem;
+  padding: 0.15rem 0 1rem;
+}
+
+/* "Supports", "Against or qualifies": column G's direction words */
+.groupHeading {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.entryList {
+  list-style: none;
+  border-top: 1px dotted var(--rule);
+}
+
+/* One entry per line: its id in a narrow column, then the claim with its
+   basis and source under it */
+.entry {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px dotted var(--rule);
+}
+
+.entryId {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.entryText {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.entryClaim {
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--ink-body);
+}
+
+.entryMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+}
+
+.entrySource {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+/* On the narrowest cards the id sits over its claim, so the claim keeps
+   the whole width */
+@container rating-card (width < 18rem) {
+  .entry {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.2rem;
+  }
+}
+
+/* "All 12 entries", to the register filtered to this rating */
+.allEntries {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+/* ---------- Milestones it informs ---------- */
+.milestoneList {
+  list-style: none;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.milestoneList > li {
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+/* Code, name and arrow on one line, the type under the name. Long names
+   wrap; the code never does. */
+.milestone {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "code name arrow"
+    ". type arrow";
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  padding: 0.6rem 0.4rem;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.milestone:hover {
+  background-color: var(--grape-tint);
+}
+
+.milestoneCode {
+  grid-area: code;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--ink-muted);
+}
+
+.milestoneName {
+  grid-area: name;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.milestone:hover .milestoneName {
+  color: var(--grape);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.milestoneType {
+  grid-area: type;
+}
+
+.milestoneArrow {
+  grid-area: arrow;
+  align-self: center;
+  color: var(--grape);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.milestone:hover .milestoneArrow {
+  transform: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .milestone:hover .milestoneArrow {
+    transform: none;
+  }
+}
+
+/* ---------- Not added yet ---------- */
+/* The same line as the timeline dossier's */
+.notAssessed {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
+.notAssessedGlyph {
+  display: inline-flex;
+  flex: none;
+  margin-top: 0.2rem;
+  color: var(--prov-unclear);
+}
+
+.notAssessedLabel {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ---------- Ledger ---------- */
+/* Last updated, then History, above a dotted rule */
+.ledger {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 2.5rem;
+  padding-top: 0.9rem;
+  border-top: 1px dotted var(--rule-strong);
+}
+
+.ledgerDate {
+  flex: none;
+}
+
+.ledgerHistory {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.date {
+  font-size: var(--text-sm);
+  color: var(--ink-body);
+}
+
+.empty {
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--ink-muted);
+}
+
+/* The changes as a ledger with a rule down its left side */
+.history {
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+  padding-left: 0.85rem;
+  border-left: 1px solid var(--rule);
+}
+
+.change {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.changeDate {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.changeValues {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+/* Each value wraps as one piece when the line is full, so "Confidence:"
+   never ends a line without its "Low → Medium" */
+.value {
+  display: inline-block;
+}
+
+/* A value that changed is the news, so it is set in ink */
+.valueChanged {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* ---------- Compare ---------- */
+.compareLine {
+  font-size: var(--text-sm);
+}
+
+.compareLine a {
+  font-weight: 500;
+}
+
+/* ---------- Print ---------- */
+/* On paper a card stays on one page when it fits, and its head stays with
+   what follows. A card taller than a page splits between fields, never
+   inside one, and each field's label stays with its value. The list and the
+   cards are plain blocks, never grids: Chrome lays out a grid of
+   unbreakable cards wrongly across pages, and a card whose main column
+   spans the rail's two rows grows past its own end when it splits, so the
+   next card overprints it. The rail floats beside the main column instead,
+   and the grids inside the card are blocks as well. The compare link has
+   nowhere to go on paper. The placeholder box keeps its dashed border and
+   its "Placeholder" chip. The evidence fold prints open (globals.css and
+   PrintOpenDetails) and may split between entries, never inside one. */
+@media print {
+  .card {
+    display: flow-root;
+    break-inside: avoid;
+  }
+
+  /* The first card is the exception: it may split between fields, like a
+     tall card. The headings above it and the scorecard's head all stay with
+     what follows, so an unbreakable first card that didn't fit in the space
+     left pulled that whole chain onto the next page. That left the page
+     before half blank, and a tall first card still split on the new page. */
+  .item:first-child .card {
+    break-inside: auto;
+  }
+
+  .card > * + * {
+    margin-top: 1.1rem;
+  }
+
+  /* The grids inside the card print as blocks too, with margins in place of
+     their gaps. As grids, a field pushed to the next page made its grid
+     taller than its row, so the lines after it overprinted it. */
+  .main,
+  .tracker,
+  .fields,
+  .evidenceBody,
+  .history {
+    display: block;
+  }
+
+  .main > * + * {
+    margin-top: 1.25rem;
+  }
+
+  .tracker > * + * {
+    margin-top: 1rem;
+  }
+
+  .fields > * + * {
+    margin-top: 1.15rem;
+  }
+
+  .evidenceBody > * + * {
+    margin-top: 1.1rem;
+  }
+
+  .history > * + * {
+    margin-top: 1rem;
+  }
+
+  /* "Placeholder" stays on the page with the first field it labels, and a
+     label such as "Why" stays on the page with its value */
+  .head,
+  .placeholderNote,
+  .label,
+  .evidenceSummary,
+  .groupHeading {
+    break-after: avoid;
+  }
+
+  /* Every fold prints open, so the open-or-closed arrow means nothing on paper. */
+  .chevron {
+    display: none;
+  }
+
+  .evidenceSummary {
+    padding-right: 0;
+  }
+
+  @container rating-card (min-width: 40rem) {
+    .head,
+    .rail {
+      float: left;
+      clear: left;
+      width: 13rem;
+    }
+
+    .rail {
+      margin-top: 1.25rem;
+    }
+
+    /* 13rem rail plus the screen's 2rem gap */
+    .main {
+      margin-top: 0;
+      margin-left: 15rem;
+    }
+  }
+
+  /* The fields that never split. The rail (the rating and the confidence)
+     is one of them: when the first card splits beside it, the whole rail
+     moves to the next page, never just the end of the Unclear reason. */
+  .rail,
+  .why,
+  .fields > div,
+  .entry,
+  .notAssessed,
+  .ledger,
+  .change,
+  .placeholderNote {
+    break-inside: avoid;
+  }
+
+  /* In a wide card the rail is a column of two facts, Current rating over
+     Confidence, so it may split between them. Each fact stays whole. When
+     the first card splits just under its name, the rating can then stay on
+     the page with the name, and only the confidence moves on. A narrow card
+     keeps its whole rail together, as above. */
+  @container rating-card (min-width: 40rem) {
+    .rail {
+      break-inside: auto;
+    }
+  }
+
+  /* Wherever the two facts are stacked, they print as blocks, and a break
+     can only fall between them, never between a label and its value.
+     RatingFacts stacks them when its box is 20rem wide or less (its
+     rating-facts container), which is always the case in a wide card's
+     13rem rail, and in narrow cards on small paper such as A5. RatingFacts
+     lays them out as a grid (a dl holding two divs); as blocks they split
+     cleanly, and the margin stands in for the grid's 1rem gap. When a
+     narrow card's whole rail can't stay together (on A5 with 1in margins
+     the headings above the first card leave too little room), the break
+     now falls between the facts instead of between "Confidence" and its
+     value. Side by side (20rem to 40rem) the facts keep their grid. */
+  @container rating-facts (width <= 20rem) {
+    .rail dl {
+      display: block;
+    }
+
+    .rail dl > div {
+      break-inside: avoid;
+    }
+
+    .rail dl > div + div {
+      margin-top: 1rem;
+    }
+  }
+
+  .compareLine {
+    display: none;
+  }
+}

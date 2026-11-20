@@ -390,16 +390,15 @@
   },
   {
     "id": "wbe-reliability",
-    "name": "A human brain emulation reproduces relevant behavior in controlled tests",
+    "name": "An emulation behaves stably and reproducibly across relevant tasks",
     "technology": "wbe",
     "stage": "possible",
     "category": "reliability_robustness",
     "status": "not_demonstrated",
     "status_basis": {
-      "text": "Not demonstrated for a human brain. Timing is unclear.",
+      "text": "E041 (argued)",
       "provenance": "team",
       "source_ids": [
-        "s02",
         "s13"
       ]
     },
@@ -407,20 +406,22 @@
     "achieved_in_basis": null,
     "confidence": "low",
     "summary": {
-      "text": "In controlled tests, a working emulation would have to reproduce relevant behavior, and do it reliably.",
+      "text": "Across relevant tasks, the emulation's behaviour has to hold steady and its results have to be reproducible.",
       "provenance": "team"
     },
     "success_criterion": {
-      "text": "A working emulation reproduces relevant behavior under controlled tests.",
+      "text": "Fidelity (WBE-M2) holds for the subjective runtime the intended use needs and survives copying.",
       "provenance": "team"
     },
     "main_bottleneck": {
-      "text": "Scanning, functional modeling, simulation fidelity and validation.",
-      "provenance": "team"
+      "text": "Chaotic long-run dynamics; gap between simulation and reality (S13)",
+      "provenance": "team",
+      "source_ids": [
+        "s13"
+      ]
     },
     "depends_on": [],
     "source_ids": [
-      "s02",
       "s13"
     ],
     "estimate": null,
@@ -442,42 +443,51 @@
       }
     ],
     "artificial_minds_questions": [],
+    "assessment_confidence": "low",
+    "applies_to": "All WBE uses",
+    "criterion_met": "No",
+    "evidence_entries": [
+      "E041"
+    ],
+    "timing": "Not sourced",
+    "note": "Single source.",
     "sample": false
   },
   {
     "id": "wbe-technical-capability",
-    "name": "An emulation behaves stably and reproducibly across relevant tasks",
+    "name": "A human brain emulation reproduces relevant behaviour in controlled tests",
     "technology": "wbe",
     "stage": "possible",
     "category": "technical_capability",
     "status": "not_demonstrated",
     "status_basis": {
-      "text": "Timing is unclear.",
+      "text": "E037, E043, E065 (components demonstrated; whole brain argued)",
       "provenance": "team",
       "source_ids": [
-        "s02",
-        "s13"
+        "s13",
+        "s16"
       ]
     },
     "achieved_in": null,
     "achieved_in_basis": null,
     "confidence": "low",
     "summary": {
-      "text": "Across relevant tasks, the emulation's behavior has to hold steady and its results have to be reproducible.",
+      "text": "In controlled tests, a working emulation would have to reproduce relevant behaviour, and do it reliably.",
       "provenance": "team"
     },
     "success_criterion": {
-      "text": "Stable, reproducible behavior across relevant tasks.",
+      "text": "Five prerequisites: (P1) whole-brain scanning of a human brain; (P2) models turning structure into dynamics; (P3) compute and storage to run in real time; (P4) a validation method; (P5) body and environment input/output. Met = all five at the scale the intended use needs. Partly = at least one at mammalian whole-brain scale.",
       "provenance": "team"
     },
     "main_bottleneck": {
-      "text": "The functional requirements and the validation standards are both unknown.",
+      "text": "P2 turning a connectome into a runnable model; P1 scanning throughput",
       "provenance": "team"
     },
     "depends_on": [],
     "source_ids": [
-      "s02",
-      "s13"
+      "s13",
+      "s16",
+      "s21"
     ],
     "estimate": null,
     "forecasts": [],
@@ -498,6 +508,16 @@
       }
     ],
     "artificial_minds_questions": [],
+    "assessment_confidence": "medium",
+    "applies_to": "All WBE uses",
+    "criterion_met": "No",
+    "evidence_entries": [
+      "E037",
+      "E043",
+      "E065"
+    ],
+    "timing": "No date in any source; signals point to a long horizon (S13 'many years out'; S21 expects other AI first)",
+    "note": "Best result: 1 mm³ of human cortex (S16), about a millionth of the brain. Evidence on parts of the brain does not meet the whole-emulation criterion.",
     "sample": false
   },
   {
@@ -508,11 +528,8 @@
     "category": "safety_welfare_assurance",
     "status": "not_demonstrated",
     "status_basis": {
-      "text": "Timing is unclear.",
-      "provenance": "team",
-      "source_ids": [
-        "s02"
-      ]
+      "text": "None",
+      "provenance": "team"
     },
     "achieved_in": null,
     "achieved_in_basis": null,
@@ -522,17 +539,15 @@
       "provenance": "team"
     },
     "success_criterion": {
-      "text": "A defensible welfare and consent framework exists before any emulation is created.",
+      "text": "A validated method to detect suffering or welfare states in emulations, plus consent protocols for copying and modification.",
       "provenance": "team"
     },
     "main_bottleneck": {
-      "text": "Moral status, consent, identity and welfare safeguards are all unresolved.",
+      "text": "No welfare-detection or consent protocol in the database",
       "provenance": "team"
     },
     "depends_on": [],
-    "source_ids": [
-      "s02"
-    ],
+    "source_ids": [],
     "estimate": null,
     "forecasts": [],
     "disagreement_override": null,
@@ -552,6 +567,12 @@
       }
     ],
     "artificial_minds_questions": [],
+    "assessment_confidence": "low",
+    "applies_to": "All WBE uses",
+    "criterion_met": "Unclear (search incomplete)",
+    "evidence_entries": [],
+    "timing": "Not sourced",
+    "note": "Absence in the database is not evidence that no method exists.",
     "sample": false
   },
   {
@@ -562,11 +583,11 @@
     "category": "scalable_production",
     "status": "not_demonstrated",
     "status_basis": {
-      "text": "Timing is unclear.",
+      "text": "E042, E076 (projected)",
       "provenance": "team",
       "source_ids": [
-        "s02",
-        "s13"
+        "s13",
+        "s16"
       ]
     },
     "achieved_in": null,
@@ -577,17 +598,21 @@
       "provenance": "team"
     },
     "success_criterion": {
-      "text": "Cost and infrastructure allow controlled research or deployment.",
+      "text": "Projected scanning throughput, compute and storage meet the scale the intended use needs.",
       "provenance": "team"
     },
     "main_bottleneck": {
-      "text": "Data acquisition, compute, storage and the cost of emulation.",
-      "provenance": "team"
+      "text": "Recording 10⁴ neurons by 2035 (S13) is far below whole-brain needs; the low-fidelity route needs about 10⁶ hours of data (S16)",
+      "provenance": "team",
+      "source_ids": [
+        "s13",
+        "s16"
+      ]
     },
     "depends_on": [],
     "source_ids": [
-      "s02",
-      "s13"
+      "s13",
+      "s16"
     ],
     "estimate": null,
     "forecasts": [],
@@ -608,40 +633,49 @@
       }
     ],
     "artificial_minds_questions": [],
+    "assessment_confidence": "low",
+    "applies_to": "Researcher and labour uses; low-fidelity routes",
+    "criterion_met": "No",
+    "evidence_entries": [
+      "E042",
+      "E076"
+    ],
+    "timing": "Recording capacity projected to 2035 (S13); whole-brain scale not dated",
+    "note": null,
     "sample": false
   },
   {
     "id": "wbe-economics",
-    "name": "A cost-benefit case holds up without exploitative labor conditions",
+    "name": "A cost-benefit case holds up without exploitative labour conditions",
     "technology": "wbe",
     "stage": "widely_available",
     "category": "economic_viability",
-    "status": "not_demonstrated",
+    "status": "unclear",
     "status_basis": {
-      "text": "Timing is unclear.",
+      "text": "E067 (projected)",
       "provenance": "team",
       "source_ids": [
-        "s02"
+        "s16"
       ]
     },
     "achieved_in": null,
     "achieved_in_basis": null,
     "confidence": "low",
     "summary": {
-      "text": "Someone would have to show that emulation is worth what it costs without relying on exploitative labor conditions.",
+      "text": "Someone would have to show that emulation is worth what it costs without relying on exploitative labour conditions.",
       "provenance": "team"
     },
     "success_criterion": {
-      "text": "A cost-benefit case is demonstrated without exploitative labor conditions.",
+      "text": "A cost model covers scanning, compute, storage, maintenance and infrastructure, and the cost per unit of benefit is no higher than the comparator's (draft).",
       "provenance": "team"
     },
     "main_bottleneck": {
-      "text": "The cost curve is unknown, and so is the value of emulated labor.",
+      "text": "No cost model for running emulations; development estimates conflict",
       "provenance": "team"
     },
     "depends_on": [],
     "source_ids": [
-      "s02"
+      "s16"
     ],
     "estimate": null,
     "forecasts": [],
@@ -662,21 +696,26 @@
       }
     ],
     "artificial_minds_questions": [],
+    "assessment_confidence": "low",
+    "applies_to": "All WBE uses",
+    "criterion_met": "Unclear (conflicting evidence)",
+    "evidence_entries": [
+      "E067"
+    ],
+    "timing": "Not sourced",
+    "note": "High-fidelity development estimated at $2-4B over about 10 years (S16, no consensus); S16's figures conflict (mouse connectome $30-400M vs $2.5-10M low-fidelity). A possible further source on running costs, not yet reviewed: Andregg 2023.",
     "sample": false
   },
   {
     "id": "wbe-legal",
-    "name": "Clear legal authorization and safeguards exist",
+    "name": "Clear legal authorisation and safeguards exist",
     "technology": "wbe",
     "stage": "widely_available",
     "category": "legal_regulatory",
-    "status": "not_demonstrated",
+    "status": "unclear",
     "status_basis": {
-      "text": "Timing is unclear.",
-      "provenance": "team",
-      "source_ids": [
-        "s02"
-      ]
+      "text": "None",
+      "provenance": "team"
     },
     "achieved_in": null,
     "achieved_in_basis": null,
@@ -686,17 +725,12 @@
       "provenance": "team"
     },
     "success_criterion": {
-      "text": "Clear legal authorization and safeguards exist.",
+      "text": "A legal basis exists for creating, copying and running emulations for the intended use.",
       "provenance": "team"
     },
-    "main_bottleneck": {
-      "text": "Legal status, consent, copying and liability are unresolved.",
-      "provenance": "team"
-    },
+    "main_bottleneck": null,
     "depends_on": [],
-    "source_ids": [
-      "s02"
-    ],
+    "source_ids": [],
     "estimate": null,
     "forecasts": [],
     "disagreement_override": null,
@@ -716,17 +750,23 @@
       }
     ],
     "artificial_minds_questions": [],
+    "assessment_confidence": "low",
+    "applies_to": "All WBE uses",
+    "criterion_met": "Unclear (search incomplete)",
+    "evidence_entries": [],
+    "timing": "Not sourced",
+    "note": null,
     "sample": false
   },
   {
     "id": "wbe-institutions",
-    "name": "Independent oversight and legitimate authorization processes exist",
+    "name": "Independent oversight and legitimate authorisation processes exist",
     "technology": "wbe",
     "stage": "widely_available",
     "category": "institutional_legitimacy",
-    "status": "not_demonstrated",
+    "status": "unclear",
     "status_basis": {
-      "text": "Timing is unclear.",
+      "text": "E005 (argued)",
       "provenance": "team",
       "source_ids": [
         "s02"
@@ -736,16 +776,19 @@
     "achieved_in_basis": null,
     "confidence": "low",
     "summary": {
-      "text": "Emulation would need someone independent watching over it, and legitimate processes for authorizing it.",
+      "text": "Emulation would need someone independent watching over it, and legitimate processes for authorising it.",
       "provenance": "team"
     },
     "success_criterion": {
-      "text": "Independent oversight and legitimate authorization processes exist.",
+      "text": "A governing institution is identified and public-attitude data show acceptance.",
       "provenance": "team"
     },
     "main_bottleneck": {
-      "text": "Public trust, oversight and moral controversy.",
-      "provenance": "team"
+      "text": "Regulatory and moral bottlenecks (S02)",
+      "provenance": "team",
+      "source_ids": [
+        "s02"
+      ]
     },
     "depends_on": [],
     "source_ids": [
@@ -770,6 +813,14 @@
       }
     ],
     "artificial_minds_questions": [],
+    "assessment_confidence": "low",
+    "applies_to": "All WBE uses",
+    "criterion_met": "Unclear (indirect evidence only)",
+    "evidence_entries": [
+      "E005"
+    ],
+    "timing": "Not sourced",
+    "note": null,
     "sample": false
   },
   {
@@ -778,13 +829,10 @@
     "technology": "wbe",
     "stage": "widely_available",
     "category": "equitable_access",
-    "status": "not_claimed",
+    "status": "unclear",
     "status_basis": {
-      "text": "Timing is unclear.",
-      "provenance": "team",
-      "source_ids": [
-        "s02"
-      ]
+      "text": "None",
+      "provenance": "team"
     },
     "achieved_in": null,
     "achieved_in_basis": null,
@@ -794,17 +842,12 @@
       "provenance": "team"
     },
     "success_criterion": {
-      "text": "Access and returns aren't restricted to a narrow group.",
+      "text": "Pricing or distribution data show broad access, if broad benefit is claimed.",
       "provenance": "team"
     },
-    "main_bottleneck": {
-      "text": "Ownership, access to compute and concentration of power.",
-      "provenance": "team"
-    },
+    "main_bottleneck": null,
     "depends_on": [],
-    "source_ids": [
-      "s02"
-    ],
+    "source_ids": [],
     "estimate": null,
     "forecasts": [],
     "disagreement_override": null,
@@ -824,6 +867,12 @@
       }
     ],
     "artificial_minds_questions": [],
+    "assessment_confidence": "low",
+    "applies_to": "Digital labour",
+    "criterion_met": "Unclear (outcome not defined)",
+    "evidence_entries": [],
+    "timing": "Not sourced",
+    "note": "No source claims broad access.",
     "sample": false
   }
 ]

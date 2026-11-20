@@ -58,6 +58,10 @@
     grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
     align-items: baseline;
   }
+
+  .row.labelsOnly {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .term {
@@ -201,5 +205,26 @@
   .row,
   .group {
     break-inside: avoid;
+  }
+}
+
+/* ---------- A line under the values (where the meanings come from) ---------- */
+.withFooter {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.footer {
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+}
+
+@media print {
+  .withFooter {
+    display: block;
+  }
+
+  .footer {
+    margin-top: 0.6rem;
   }
 }

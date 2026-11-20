@@ -1,275 +1,515 @@
 import type { ReactNode } from "react";
 
+import { CodeText } from "@/components/common/CodeText";
 import { TextWithTerm } from "@/components/glossary/Term";
-import { ClaimText } from "@/components/provenance/ClaimText";
+import type { CodeIndex } from "@/lib/codes";
+import { enumLabel } from "@/lib/enums";
 import type { SourceRef } from "@/lib/sources";
 import type {
-  ArtificialMindsAssessment,
-  Assessment,
+  AlignmentAssessment,
+  AlignmentScenario,
+  CaseRating,
   Claim,
+  Confidence,
+  Family,
+  IntelligenceCurseAssessment,
   Problem,
   Provenance,
   Scope,
   WelfareGovernance,
 } from "@/lib/types";
 
-import { mindsParts } from "./mindsParts";
 import { ConfidenceMeter, RatingChip } from "./RatingChip";
+import { idText, registerIdText } from "./sections/pageModel";
+import { WorkbookClaim } from "./sections/WorkbookClaim";
 import styles from "./ScorecardSections.module.css";
 
-// The sections of the team's populated scorecard (scorecard v0.1, sections 1
-// to 6). TechnologyPageView decides which ones a page has and in what order.
-// Every component takes `quiet`, the page's default provenance, so claims of
-// that kind show only their glyph.
+// The technology page's sheets and assessment parts, built from the team's
+// workbook: the scope sheet, the welfare sheet and the alignment and
+// Intelligence Curse parts of the Full assessment. Most labels are the
+// workbook's own column headers; a few are reworded so a reader who never
+// sees the workbook can follow them (noted where they are). Every workbook
+// string goes through CodeText (or WorkbookClaim for a Claim), so its codes
+// link and its words stay as written.
 
 type Sources = Record<string, SourceRef>;
 
+// What every workbook block needs to link codes and mark provenance.
+export interface WorkbookContext {
+  index: CodeIndex;
+  family: Family;
+  sources: Sources;
+  // Site source id -> register id ("s16" -> "S16").
+  registerIds: Record<string, string | null>;
+  quiet: Provenance;
+}
+
 interface SheetItem {
-  label: string;
+  label: ReactNode;
+  key: string;
   value: ReactNode;
   wide?: boolean; // spans both columns in a two-column sheet
 }
 
+// Which cells sit in the right-hand column of a two-column sheet, and which
+// are on its first line, so the rules between cells fall in the right places.
+function placeCells(items: SheetItem[]): { item: SheetItem; right: boolean; first: boolean }[] {
+  const placed: { item: SheetItem; right: boolean; first: boolean }[] = [];
+  let column = 0;
+  let firstLine = true;
+  for (const item of items) {
+    if (item.wide) {
+      placed.push({ item, right: false, first: firstLine });
+      column = 0;
+      firstLine = false;
+      continue;
+    }
+    placed.push({ item, right: column === 1, first: firstLine });
+    if (column === 1) {
+      firstLine = false;
+    }
+    column = column === 0 ? 1 : 0;
+  }
+  return placed;
+}
+
 // A ruled definition list on a paper card, like the spec sheet at the back of
-// a manual. Used for the scope and for welfare and governance. With
-// columns={2} the rows pair up side by side on wide screens.
-function SpecSheet({
-  title,
-  note,
-  items,
-  columns = 1,
-}: {
-  title: string;
-  note?: string;
-  items: SheetItem[];
-  columns?: 1 | 2;
-}) {
-  const listClass = columns === 2 ? styles.sheetListTwo : "";
+// a manual. With columns={2} the rows pair up side by side on wide screens,
+// label over value; a wide row takes a line of its own.
+function SpecSheet({ title, items, columns = 1 }: { title: string; items: SheetItem[]; columns?: 1 | 2 }) {
   return (
     <div className={`paper ${styles.sheet}`}>
-      <div className={styles.sheetHead}>
-        <span>{title}</span>
-        {note && <span>{note}</span>}
-      </div>
-      <dl className={listClass}>
-        {items.map((item) => (
-          <div key={item.label} className={item.wide ? `${styles.sheetRow} ${styles.sheetRowWide}` : styles.sheetRow}>
+      <SheetHead title={title} />
+      <SheetList items={items} columns={columns} />
+    </div>
+  );
+}
+
+function SheetHead({ title }: { title: string }) {
+  return (
+    <div className={styles.sheetHead}>
+      <span>{title}</span>
+    </div>
+  );
+}
+
+// The ruled cells of a sheet, without its card.
+function SheetList({ items, columns }: { items: SheetItem[]; columns: 1 | 2 }) {
+  const placed = placeCells(items);
+  return (
+    <dl className={columns === 2 ? styles.sheetListTwo : ""}>
+      {placed.map(({ item, right, first }) => {
+        const classes = [styles.sheetRow];
+        if (item.wide) {
+          classes.push(styles.sheetRowWide);
+        }
+        if (right) {
+          classes.push(styles.sheetRowRight);
+        }
+        if (first) {
+          classes.push(styles.sheetRowFirstLine);
+        }
+        return (
+          <div key={item.key} className={classes.join(" ")}>
             <dt className={styles.sheetLabel}>{item.label}</dt>
             <dd className={styles.sheetValue}>{item.value}</dd>
           </div>
-        ))}
-      </dl>
-    </div>
-  );
-}
-
-export function problemText(problem: Problem): string {
-  if (problem === "alignment") {
-    return "Alignment";
-  }
-  if (problem === "intelligence_curse") {
-    return "The Intelligence Curse";
-  }
-  return "Both alignment and the Intelligence Curse";
-}
-
-interface ScopeSheetProps {
-  scope: Scope;
-  shortName: string;
-  sources: Sources;
-  quiet?: Provenance;
-}
-
-export function ScopeSheet({ scope, shortName, sources, quiet }: ScopeSheetProps) {
-  function claim(value: Claim) {
-    return <ClaimText claim={value} sources={sources} variant="compact" quiet={quiet} />;
-  }
-  return (
-    <SpecSheet
-      title={`Scope · ${shortName}`}
-      items={[
-        { label: "Intervention", value: claim(scope.intervention) },
-        { label: "Deployment scenario", value: claim(scope.deployment_scenario) },
-        { label: "Who it affects", value: claim(scope.affected_groups) },
-        { label: "Time horizon", value: claim(scope.time_horizon) },
-        { label: "Compared with", value: claim(scope.comparator) },
-        { label: "Claims to address", value: <p className={styles.plainValue}>{problemText(scope.problem)}</p> },
-      ]}
-    />
-  );
-}
-
-// The theory of change as numbered steps joined by a rule.
-export function CausalChain({ steps, sources, quiet }: { steps: Claim[]; sources: Sources; quiet?: Provenance }) {
-  return (
-    <ol className={styles.chain}>
-      {steps.map((step, index) => (
-        <li key={index} className={`${styles.chainStep} reveal`}>
-          <span className={styles.chainNumber} aria-hidden="true">
-            {index + 1}
-          </span>
-          <div className={styles.chainClaim}>
-            <ClaimText claim={step} sources={sources} quiet={quiet} />
-          </div>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-interface AssessmentViewProps {
-  assessment: Assessment;
-  // "The alignment problem it targets" or "The mechanism it claims"
-  mechanismLabel: string;
-  sources: Sources;
-  quiet?: Provenance;
-  // The scorecard row that gives the reason for this rating. The reason
-  // lives there only, so it isn't printed twice.
-  whyHref: string;
-  whyLabel: string;
-  // Set on the first assessment on the page, so "comparator" is defined
-  // where a reader first meets it.
-  comparatorDefinition?: string;
-}
-
-// One evaluative section (alignment or the Intelligence Curse): what it
-// targets, the scorecard's questions with our answers, the rating with a link
-// to its reason, and the open question that would settle it.
-export function AssessmentView({
-  assessment,
-  mechanismLabel,
-  sources,
-  quiet,
-  whyHref,
-  whyLabel,
-  comparatorDefinition,
-}: AssessmentViewProps) {
-  return (
-    <div className={styles.assessment}>
-      <div className={styles.mechanism}>
-        <p className={styles.label}>{mechanismLabel}</p>
-        <ClaimText claim={assessment.mechanism} sources={sources} quiet={quiet} />
-      </div>
-
-      {assessment.questions.length > 0 && (
-        <ol className={styles.qaList}>
-          {assessment.questions.map((item, index) => (
-            <li key={index} className={styles.qaItem}>
-              <span className={styles.qaMark} aria-hidden="true">
-                Q{index + 1}
-              </span>
-              <div className={styles.qaBody}>
-                <p className={styles.question}>
-                  {comparatorDefinition ? (
-                    <TextWithTerm
-                      text={item.question}
-                      phrase="comparator"
-                      name="comparator"
-                      definition={comparatorDefinition}
-                    />
-                  ) : (
-                    item.question
-                  )}
-                </p>
-                <ClaimText claim={item.answer} sources={sources} quiet={quiet} />
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      <div className={`paper ${styles.verdict}`}>
-        <dl className={styles.verdictFacts}>
-          <div>
-            <dt className={styles.label}>Rating</dt>
-            <dd>
-              <RatingChip scale="case" rating={assessment.rating} unclearReason={assessment.unclear_reason} />
-            </dd>
-          </div>
-          <div>
-            <dt className={styles.label}>Confidence</dt>
-            <dd>
-              <ConfidenceMeter confidence={assessment.confidence} />
-            </dd>
-          </div>
-        </dl>
-        <a href={whyHref} className={styles.whyLink}>
-          Why: {whyLabel}
-        </a>
-      </div>
-
-      <div className={styles.decisive}>
-        <p className={styles.label}>Decisive open question</p>
-        <div className={styles.decisiveClaim}>
-          <ClaimText claim={assessment.decisive_question} sources={sources} quiet={quiet} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function MindsGrid({
-  minds,
-  sources,
-  quiet,
-}: {
-  minds: ArtificialMindsAssessment;
-  sources: Sources;
-  quiet?: Provenance;
-}) {
-  return (
-    <dl className={styles.minds}>
-      {mindsParts(minds).map((item) => (
-        <div key={item.label} className={`paper ${styles.mindCard}`}>
-          <dt className={styles.mindLabel}>{item.label}</dt>
-          <dd>
-            <ClaimText claim={item.claim} sources={sources} quiet={quiet} />
-          </dd>
-        </div>
-      ))}
+        );
+      })}
     </dl>
   );
 }
 
+function claimValue(claim: Claim, context: WorkbookContext): ReactNode {
+  return (
+    <WorkbookClaim
+      claim={claim}
+      index={context.index}
+      family={context.family}
+      sources={context.sources}
+      variant="compact"
+      quiet={context.quiet}
+    />
+  );
+}
+
+// The workbook's "1 Scope" row for the family. "Problem(s) claimed to
+// address" stays open; the other cells are folded under it in a native
+// <details>, so the section doesn't open on a wall of codes. PrintOpenDetails
+// prints it open. The card itself is id="scope", so a link to #scope lands on
+// its title and first cell. Labels are the tab's column headers word for
+// word, except "Deployment scenarios considered" (the header adds "(codes →
+// Codebook)") and "Sources" (the header is "Source IDs / basis"). The
+// problem named after the arrow at the end of "Problem(s) claimed to address"
+// ("→ Both") is stored apart from the text; it is shown under it, with
+// "Both" spelled out as the two problems (problemText).
+// The problem a scope claims, after its arrow. "Both" alone means nothing to
+// a reader, so it names the two problems with their own labels.
+function problemText(problem: Problem): string {
+  if (problem === "both") {
+    return `${enumLabel("Problem", "alignment")} · ${enumLabel("Problem", "intelligence_curse")}`;
+  }
+  return enumLabel("Problem", problem);
+}
+
+export function ScopeSheet({ scope, shortName, context }: { scope: Scope; shortName: string; context: WorkbookContext }) {
+  // The "Source IDs / basis" cell word for word, so a range such as "S24-S29"
+  // stays as the cell writes it. Only an older import without that text falls
+  // back to the expanded ids.
+  const sourceText = scope.source_ids_text ?? registerIdText(scope.source_ids ?? [], context.registerIds);
+  const problems: SheetItem = {
+    key: "problems",
+    label: "Problem(s) claimed to address",
+    wide: true,
+    value: (
+      <>
+        {claimValue(scope.problems_claimed, context)}
+        <p className={styles.problemSuffix}>&rarr; {problemText(scope.problem)}</p>
+      </>
+    ),
+  };
+  const rest: SheetItem[] = [
+    { key: "definition", label: "Technology family definition", value: claimValue(scope.intervention, context) },
+    {
+      key: "scenarios",
+      // The header without its "(codes → Codebook)". Each code in the value
+      // still links to its definition.
+      label: "Deployment scenarios considered",
+      value: claimValue(scope.deployment_scenario, context),
+    },
+    {
+      key: "groups",
+      label: "Target population and affected groups (who benefits / who bears risk)",
+      value: claimValue(scope.affected_groups, context),
+    },
+    { key: "horizon", label: "Time horizon", value: claimValue(scope.time_horizon, context) },
+    {
+      key: "comparator",
+      // Its first use on the page, so the glossary's definition goes here.
+      label: <TextWithTerm text="Comparator" phrase="Comparator" name="comparator" />,
+      value: claimValue(scope.comparator, context),
+    },
+  ];
+  if (sourceText !== "") {
+    rest.push({
+      key: "sources",
+      label: "Sources",
+      value: (
+        <p className={styles.plainValue}>
+          <CodeText text={sourceText} index={context.index} family={context.family} mode="workbook" />
+        </p>
+      ),
+    });
+  }
+  return (
+    <div id="scope" className={`paper ${styles.sheet} ${styles.scopeCard}`}>
+      <SheetHead title={`Scope · ${shortName}`} />
+      <SheetList items={[problems]} columns={1} />
+      <details className={styles.sheetFold}>
+        <summary className={styles.sheetFoldSummary}>
+          <span className={styles.closedLabel}>Show the full scope</span>
+          <span className={styles.openLabel}>Hide the full scope</span>
+          <span className={styles.sheetFoldChevron} aria-hidden="true" />
+        </summary>
+        <SheetList items={rest} columns={2} />
+      </details>
+    </div>
+  );
+}
+
+// The family's row of "9 Welfare and Governance Judgment": who is exposed, the
+// main harms with their risk ids (each links to its risk below) and the
+// rationale. Labels are the tab's headers word for word.
 export function WelfareSheet({
   welfare,
   shortName,
-  sources,
-  quiet,
+  context,
 }: {
   welfare: WelfareGovernance;
   shortName: string;
-  sources: Sources;
-  quiet?: Provenance;
+  context: WorkbookContext;
 }) {
-  function claim(value: Claim) {
-    return <ClaimText claim={value} sources={sources} variant="compact" quiet={quiet} />;
-  }
   return (
     <SpecSheet
       title={`Welfare and governance · ${shortName}`}
       columns={2}
       items={[
-        { label: "Who could be harmed", value: claim(welfare.exposed) },
-        { label: "Possible harms", value: claim(welfare.harms) },
-        { label: "Severity and reversibility", value: claim(welfare.severity) },
-        { label: "Detectability and remedies", value: claim(welfare.detectability) },
-        { label: "Control, oversight and exit", value: claim(welfare.control) },
-        { label: "Confidence", value: <ConfidenceMeter confidence={welfare.confidence} /> },
-        { label: "Basis", value: claim(welfare.rationale), wide: true },
+        { key: "exposed", label: "Who is exposed", value: claimValue(welfare.exposed, context) },
+        { key: "harms", label: "Main harms (risk IDs)", value: claimValue(welfare.harms, context) },
+        { key: "rationale", label: "Rationale", value: claimValue(welfare.rationale, context), wide: true },
       ]}
     />
   );
 }
 
-// The primary evidence gap from the synopsis, set under the scorecard.
-export function EvidenceGap({ claim, sources, quiet }: { claim: Claim; sources: Sources; quiet?: Provenance }) {
+// ---------- The Full assessment's alignment and Intelligence Curse parts ----------
+
+interface VerdictProps {
+  rating: CaseRating;
+  confidence: Confidence;
+  // The scorecard row that gives the reason for this rating. The reason
+  // lives there only, so it isn't printed twice.
+  whyHref: string;
+  whyLabel: string;
+}
+
+function Verdict({ rating, confidence, whyHref, whyLabel }: VerdictProps) {
   return (
-    <div className={styles.gap}>
-      <p className={`${styles.label} ${styles.gapLabel}`}>Main gap in the evidence</p>
-      <div className={styles.gapClaim}>
-        <ClaimText claim={claim} sources={sources} quiet={quiet} />
+    <div className={`paper ${styles.verdict}`}>
+      <dl className={styles.verdictFacts}>
+        <div>
+          <dt className={styles.label}>Rating</dt>
+          <dd>
+            <RatingChip scale="case" rating={rating} />
+          </dd>
+        </div>
+        <div>
+          <dt className={styles.label}>Confidence</dt>
+          <dd>
+            <ConfidenceMeter confidence={confidence} />
+          </dd>
+        </div>
+      </dl>
+      <a href={whyHref} className={styles.whyLink}>
+        Why: {whyLabel}
+      </a>
+    </div>
+  );
+}
+
+function DecisiveQuestion({ claim, context }: { claim: Claim; context: WorkbookContext }) {
+  return (
+    <div className={styles.decisive}>
+      <p className={styles.label}>Decisive open question</p>
+      <div className={styles.decisiveClaim}>
+        <WorkbookClaim
+          claim={claim}
+          index={context.index}
+          family={context.family}
+          sources={context.sources}
+          quiet={context.quiet}
+        />
       </div>
+    </div>
+  );
+}
+
+// A label over its value, the way the parts set each workbook cell.
+function Pair({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className={styles.pair}>
+      <dt className={styles.label}>{label}</dt>
+      <dd className={styles.pairValue}>{children}</dd>
+    </div>
+  );
+}
+
+function CodeLine({ text, context }: { text: string; context: WorkbookContext }) {
+  return (
+    <p className={styles.plainValue}>
+      <CodeText text={text} index={context.index} family={context.family} />
+    </p>
+  );
+}
+
+interface AlignmentPartProps {
+  assessment: AlignmentAssessment;
+  context: WorkbookContext;
+  // Scenario name -> its pathway in "How it would work", only where the two
+  // tabs use the very same name.
+  pathwayHrefs: Record<string, string>;
+  whyHref: string;
+  whyLabel: string;
+}
+
+// The family row of "4 Alignment Judgment": the problem addressed, the
+// mechanism and the decisive open question, then the tab's scenario rows
+// word for word, then the rating with a link to its reason on the card.
+export function AlignmentPart({ assessment, context, pathwayHrefs, whyHref, whyLabel }: AlignmentPartProps) {
+  const scenarios = assessment.scenarios ?? [];
+  return (
+    <div className={styles.assessment}>
+      <dl className={styles.pairs}>
+        <Pair label="Problem addressed">
+          <CodeLine text={assessment.problem_addressed} context={context} />
+        </Pair>
+        <Pair label="Mechanism, or effect on the problem">
+          <WorkbookClaim
+            claim={assessment.mechanism}
+            index={context.index}
+            family={context.family}
+            sources={context.sources}
+            quiet={context.quiet}
+          />
+        </Pair>
+      </dl>
+
+      <DecisiveQuestion claim={assessment.decisive_question} context={context} />
+
+      {scenarios.length > 0 && (
+        <ul className={styles.rowList}>
+          {scenarios.map((scenario, position) => (
+            // Two rows can share a scenario name (neuromorphic AI), so the key is the position.
+            <ScenarioItem key={position} scenario={scenario} href={pathwayHrefs[scenario.scenario]} context={context} />
+          ))}
+        </ul>
+      )}
+
+      <Verdict rating={assessment.rating} confidence={assessment.confidence} whyHref={whyHref} whyLabel={whyLabel} />
+    </div>
+  );
+}
+
+function ScenarioItem({
+  scenario,
+  href,
+  context,
+}: {
+  scenario: AlignmentScenario;
+  href: string | undefined;
+  context: WorkbookContext;
+}) {
+  const supporting = idText(scenario.supporting);
+  const contrary = idText(scenario.contrary_or_qualifying);
+  return (
+    <li className={styles.rowItem}>
+      <p className={styles.rowTitle}>
+        <span className="visually-hidden">Scenario: </span>
+        {href ? <a href={href}>{scenario.scenario}</a> : scenario.scenario}
+      </p>
+      <dl className={styles.rowFacts}>
+        <Pair label="Problem addressed">
+          <CodeLine text={scenario.problem} context={context} />
+        </Pair>
+        {scenario.mechanism && (
+          <Pair label="Mechanism, or effect on the problem">
+            <CodeLine text={scenario.mechanism} context={context} />
+          </Pair>
+        )}
+        {supporting !== "" && (
+          <Pair label="Supporting entries">
+            <CodeLine text={supporting} context={context} />
+          </Pair>
+        )}
+        {contrary !== "" && (
+          <Pair label="Contrary or qualifying entries">
+            <CodeLine text={contrary} context={context} />
+          </Pair>
+        )}
+        {scenario.gap && (
+          <Pair label="Main gap, or reason for rating">
+            <CodeLine text={scenario.gap} context={context} />
+          </Pair>
+        )}
+      </dl>
+    </li>
+  );
+}
+
+interface IntelligenceCursePartProps {
+  assessment: IntelligenceCurseAssessment;
+  context: WorkbookContext;
+  whyHref: string;
+  whyLabel: string;
+}
+
+// The family row of "5 Intelligence Curse Judgment": the mechanism claimed and
+// the tab's four questions (their column headers word for word) with the
+// answers, then the family's rows of "6 Agency and Ownership" and its
+// ownership gate, with a note on what the gate counts, then the rating with
+// a link to its reason on the card. The ownership questions' header,
+// "Ownership questions (answered in database?)", is reworded for readers.
+export function IntelligenceCursePart({ assessment, context, whyHref, whyLabel }: IntelligenceCursePartProps) {
+  const questions = assessment.questions ?? [];
+  const agency = assessment.agency ?? [];
+  return (
+    <div className={styles.assessment}>
+      <dl className={styles.pairs}>
+        <Pair label="Mechanism claimed">
+          <WorkbookClaim
+            claim={assessment.mechanism}
+            index={context.index}
+            family={context.family}
+            sources={context.sources}
+            quiet={context.quiet}
+          />
+        </Pair>
+      </dl>
+
+      {questions.length > 0 && (
+        <dl className={styles.qaList}>
+          {questions.map((item) => (
+            <div key={item.question} className={styles.qaItem}>
+              <dt className={styles.question}>{item.question}</dt>
+              <dd>
+                <WorkbookClaim
+                  claim={item.answer}
+                  index={context.index}
+                  family={context.family}
+                  sources={context.sources}
+                  quiet={context.quiet}
+                />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {/* The tab has no decisive question column, so it is usually missing. */}
+      {assessment.decisive_question && <DecisiveQuestion claim={assessment.decisive_question} context={context} />}
+
+      {(agency.length > 0 || assessment.ownership_gate) && (
+        <div className={styles.agency}>
+          <h4 className={styles.blockTitle}>Agency and ownership</h4>
+          {agency.length > 0 && (
+            <ul className={styles.rowList}>
+              {agency.map((row) => {
+                const entries = idText(row.entries);
+                return (
+                  <li key={row.group} className={styles.rowItem}>
+                    <p className={styles.rowHead}>
+                      <span className={styles.rowTitle}>{row.group}</span>
+                      <span className={`chip ${styles.neutralChip}`}>
+                        <span className="visually-hidden">Effect: </span>
+                        {enumLabel("AgencyEffect", row.effect)}
+                      </span>
+                    </p>
+                    {(row.mechanism || row.ownership_questions || entries !== "") && (
+                      <dl className={styles.rowFacts}>
+                        {row.mechanism && (
+                          <Pair label="Mechanism">
+                            <CodeLine text={row.mechanism} context={context} />
+                          </Pair>
+                        )}
+                        {row.ownership_questions && (
+                          <Pair label="Ownership questions, and whether our sources answer them">
+                            <CodeLine text={row.ownership_questions} context={context} />
+                          </Pair>
+                        )}
+                        {entries !== "" && (
+                          <Pair label="Evidence entries">
+                            <CodeLine text={entries} context={context} />
+                          </Pair>
+                        )}
+                      </dl>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {assessment.ownership_gate && (
+            <dl className={styles.gate}>
+              <Pair label="Ownership gate">
+                <CodeLine text={assessment.ownership_gate} context={context} />
+                <p className={styles.gateNote}>How many of the ownership questions above are answered by our sources.</p>
+              </Pair>
+            </dl>
+          )}
+        </div>
+      )}
+
+      <Verdict rating={assessment.rating} confidence={assessment.confidence} whyHref={whyHref} whyLabel={whyLabel} />
     </div>
   );
 }

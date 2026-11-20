@@ -8,21 +8,30 @@ first one) and exits with status 1. Each problem names where it is, e.g.
 
 What it checks:
   1. Each file parses and each record matches its model in models.py.
+     scorecard.json (the workbook's shared tables, written by
+     python -m sf_shared.import_workbook) is one object, checked as a whole.
   2. Cross-record rules: unique ids, every source id exists, every
      depends_on exists, no dependency cycles, and nothing real links to a
      sample (the public site leaves samples out). Every technology page has
      the same scorecard rows (same ids, dimensions, scales and problems, in
      the same order), and each scorecard row's milestone links point to real
      milestones of that page's technology.
-  3. Scorecard history dates and last_updated aren't in the future (a typo
+  3. The workbook's codes: entry, link, risk and checklist ids are unique;
+     every entry id, link id, risk id, checklist id and milestone row that
+     scorecard.json, technologies.json or milestones.json names exists; every
+     evidence entry's source is in sources.json. These are existence checks
+     only: two tabs that list different entries for the same thing are the
+     workbook's to settle, not this check's.
+  4. Scorecard history dates and last_updated aren't in the future (a typo
      guard for the year).
-  4. Every milestone category belongs to exactly one milestone type.
-  5. Blog posts: valid frontmatter, unique slugs, at least one post.
-  6. No em dashes (U+2014) in any content file.
+  5. Every milestone category belongs to exactly one milestone type.
+  6. Blog posts: valid frontmatter, unique slugs, at least one post.
+  7. No em dashes (U+2014) or en dashes (U+2013) in any content file.
 
 It also prints warnings, which don't fail the check: a count of the
-AI-suggested claims in sample records that nobody has reviewed yet, and the
-scorecard rows whose tracker is still a placeholder.
+AI-suggested claims nobody has reviewed yet (in sample records and in pages
+with unreviewed_ai_sections), and the scorecard rows whose tracker is still a
+placeholder.
 """
 
 import difflib
@@ -39,8 +48,14 @@ from sf_shared.claims import RULES_ERROR_TYPE, find_claims, is_blank, join_path
 from sf_shared.enums import Provenance, milestone_type_problems
 from sf_shared.models import (
     ALL_MODELS,
+    FAMILY_BY_PREFIX,
+    FAMILY_MILESTONE_PATTERN,
+    GOVERNANCE_ID_PATTERN,
+    LINK_ID_PATTERN,
+    RISK_ID_PATTERN,
     Milestone,
     PostFrontmatter,
+    ScorecardFile,
     ScorecardRow,
     Source,
     TechnologyPage,
@@ -49,6 +64,7 @@ from sf_shared.models import (
 
 TECHNOLOGY_PAGE_IDS = ["wbe", "bci", "neuromorphic"]
 EM_DASH = "\u2014"
+EN_DASH = "\u2013"
 
 
 def all_field_names() -> list[str]:
@@ -87,6 +103,7 @@ class Report:
     sources: list[Record] = field(default_factory=list)
     technologies: list[Record] = field(default_factory=list)
     posts: list[Post] = field(default_factory=list)
+    scorecard: ScorecardFile | None = None  # None when scorecard.json is missing or invalid
 
     @property
     def ok(self) -> bool:
@@ -123,6 +140,9 @@ def describe_error(error_type: str, message: str, location: tuple[int | str, ...
         return "required"
     if error_type == "extra_forbidden":
         unknown_name = str(location[-1]) if len(location) > 0 else ""
+        # A name another model uses (or one the schema dropped) isn't a typo, so it gets no suggestion.
+        if unknown_name in ALL_FIELD_NAMES:
+            return "not a field here (remove it, or check where it belongs)"
         matches = difflib.get_close_matches(unknown_name, ALL_FIELD_NAMES, n=1, cutoff=0.7)
         if len(matches) > 0:
             return f'unknown field. Did you mean "{matches[0]}"?'
@@ -206,6 +226,25 @@ def raw_id(record: Record) -> str | None:
     return None
 
 
+SCORECARD_LABEL = "scorecard"
+
+
+def load_scorecard(path: Path, errors: list[str]) -> ScorecardFile | None:
+    """Reads scorecard.json, one object checked as a whole. Returns None (after
+    adding the errors) when it can't be read or doesn't match the model."""
+    data = read_json_file(path, errors)
+    if data is None:
+        return None
+    if not isinstance(data, dict):
+        errors.append(f"{path}: should be one object, starting with {{ and ending with }}")
+        return None
+    try:
+        return ScorecardFile.model_validate(data)
+    except ValidationError as problem:
+        errors.extend(format_validation_error(SCORECARD_LABEL, problem))
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Cross-record rules
 
@@ -268,6 +307,11 @@ def check_source_references(report: Report, known_source_ids: set[str]) -> None:
         check_claim_sources(record, known_source_ids, report.errors)
     for record in report.technologies:
         check_claim_sources(record, known_source_ids, report.errors)
+        if isinstance(record.model, TechnologyPage):
+            for path, source_id in page_source_ids(record.model):
+                if source_id not in known_source_ids:
+                    location = join_path(record.label, path)
+                    report.errors.append(f'{location}: no source with id "{source_id}" in sources.json')
 
 
 SAMPLE_SOURCE_HINT = "The public site leaves samples out, so a real record has to cite a real source"
@@ -328,9 +372,11 @@ def check_sample_links(report: Report) -> None:
             report.errors.extend(
                 sample_link_problems(record.model, sample_source_ids, sample_milestone_ids, record.label)
             )
+    # Every page, including one with unreviewed AI sections: its ratings are the team's.
     for record in report.technologies:
-        if isinstance(record.model, TechnologyPage) and not record.model.sample:
+        if isinstance(record.model, TechnologyPage):
             report.errors.extend(sample_source_problems(record.model, sample_source_ids, record.label))
+            report.errors.extend(page_sample_source_problems(record.model, record.label, sample_source_ids))
 
 
 def check_dependencies(records: list[Record], errors: list[str]) -> None:
@@ -505,6 +551,224 @@ def check_scorecard_milestones(report: Report) -> None:
                     )
 
 
+# ---------------------------------------------------------------------------
+# The workbook's codes (scorecard.json and what refers to it)
+
+
+def page_source_ids(page: TechnologyPage) -> list[tuple[str, str]]:
+    """(path, source id) for every source id a page lists outside its Claims."""
+    found: list[tuple[str, str]] = []
+    if page.scope is not None:
+        for index, source_id in enumerate(page.scope.source_ids):
+            found.append((f"scope.source_ids[{index}]", source_id))
+    for stage_index, stage in enumerate(page.artificial_minds_by_stage):
+        for index, source_id in enumerate(stage.source_ids):
+            found.append((f"artificial_minds_by_stage[{stage_index}].source_ids[{index}]", source_id))
+    return found
+
+
+def page_sample_source_problems(page: TechnologyPage, label: str, sample_source_ids: set[str]) -> list[str]:
+    """Source ids outside the page's Claims that name a sample source."""
+    problems: list[str] = []
+    for path, source_id in page_source_ids(page):
+        if source_id in sample_source_ids:
+            problems.append(f'{join_path(label, path)}: "{source_id}" is a sample source. {SAMPLE_SOURCE_HINT}')
+    return problems
+
+
+def page_entry_ids(page: TechnologyPage) -> list[tuple[str, str]]:
+    """(path, entry id) for every evidence entry a technology page names."""
+    found: list[tuple[str, str]] = []
+    if page.alignment_assessment is not None:
+        for scenario_index, scenario in enumerate(page.alignment_assessment.scenarios):
+            base = f"alignment_assessment.scenarios[{scenario_index}]"
+            for index, entry_id in enumerate(scenario.supporting):
+                found.append((f"{base}.supporting[{index}]", entry_id))
+            for index, entry_id in enumerate(scenario.contrary_or_qualifying):
+                found.append((f"{base}.contrary_or_qualifying[{index}]", entry_id))
+    if page.intelligence_curse_assessment is not None:
+        for row_index, row in enumerate(page.intelligence_curse_assessment.agency):
+            for index, entry_id in enumerate(row.entries):
+                found.append((f"intelligence_curse_assessment.agency[{row_index}].entries[{index}]", entry_id))
+    for stage_index, stage in enumerate(page.artificial_minds_by_stage):
+        for index, entry_id in enumerate(stage.entries):
+            found.append((f"artificial_minds_by_stage[{stage_index}].entries[{index}]", entry_id))
+    return found
+
+
+def report_repeated_ids(items: list[tuple[str, str]], errors: list[str]) -> None:
+    """Reports every (label, id) whose id an earlier item already used."""
+    first_label_for_id: dict[str, str] = {}
+    for label, item_id in items:
+        if item_id in first_label_for_id:
+            errors.append(f'{label}.id: "{item_id}" is already used by {first_label_for_id[item_id]}')
+        else:
+            first_label_for_id[item_id] = label
+
+
+def check_scorecard_ids(scorecard: ScorecardFile, errors: list[str]) -> None:
+    """Every entry, link, risk, checklist item, framework and milestone category has its own id."""
+    collections: list[tuple[str, list]] = [
+        ("entries", scorecard.entries),
+        ("links", scorecard.links),
+        ("risks", scorecard.risks),
+        ("governance", scorecard.governance),
+        ("frameworks", scorecard.frameworks),
+        ("milestone_categories", scorecard.milestone_categories),
+    ]
+    for name, items in collections:
+        labelled: list[tuple[str, str]] = []
+        for index, item in enumerate(items):
+            labelled.append((f"{SCORECARD_LABEL}.{name}[{index}] ({item.id})", item.id))
+        report_repeated_ids(labelled, errors)
+
+    # A milestone row is named by its family and code, and BCI M1 and NM M1
+    # have two rows each, told apart by what they apply to.
+    first_label_for_row: dict[tuple[str, str, str], str] = {}
+    for index, row in enumerate(scorecard.milestone_assessments):
+        key = (row.family, row.milestone, row.applies_to)
+        label = f"{SCORECARD_LABEL}.milestone_assessments[{index}] ({row.family} {row.milestone})"
+        if key in first_label_for_row:
+            errors.append(
+                f'{label}: {row.family} {row.milestone} applying to "{row.applies_to}" is already '
+                f"{first_label_for_row[key]}"
+            )
+        else:
+            first_label_for_row[key] = label
+
+
+def check_scorecard_milestone_rows(scorecard: ScorecardFile, errors: list[str]) -> None:
+    """Each milestone row names a category header that exists, with the same category."""
+    category_of: dict[str, str] = {}
+    for info in scorecard.milestone_categories:
+        category_of[info.id] = info.category
+    for index, row in enumerate(scorecard.milestone_assessments):
+        label = f"{SCORECARD_LABEL}.milestone_assessments[{index}] ({row.family} {row.milestone})"
+        if row.milestone not in category_of:
+            errors.append(f'{label}.milestone: no milestone category with id "{row.milestone}" in milestone_categories')
+        elif category_of[row.milestone] != row.category:
+            errors.append(
+                f'{label}.category: "{row.category}" differs from milestone_categories {row.milestone} '
+                f'("{category_of[row.milestone]}")'
+            )
+
+
+def check_entry_list(entry_ids: list[str], location: str, known_entry_ids: set[str], errors: list[str]) -> None:
+    for index, entry_id in enumerate(entry_ids):
+        if entry_id not in known_entry_ids:
+            errors.append(f'{location}[{index}]: no evidence entry with id "{entry_id}" in scorecard.json')
+
+
+def check_scorecard_references(scorecard: ScorecardFile, errors: list[str]) -> None:
+    """Every id scorecard.json names inside itself exists there."""
+    entry_ids: set[str] = set()
+    for entry in scorecard.entries:
+        entry_ids.add(entry.id)
+    link_ids: set[str] = set()
+    for link in scorecard.links:
+        link_ids.add(link.id)
+    risk_ids: set[str] = set()
+    for risk in scorecard.risks:
+        risk_ids.add(risk.id)
+    governance_ids: set[str] = set()
+    for item in scorecard.governance:
+        governance_ids.add(item.id)
+    milestone_rows: set[tuple[str, str]] = set()
+    for row in scorecard.milestone_assessments:
+        milestone_rows.add((row.family, row.milestone))
+
+    for index, row in enumerate(scorecard.milestone_assessments):
+        label = f"{SCORECARD_LABEL}.milestone_assessments[{index}] ({row.family} {row.milestone})"
+        check_entry_list(row.evidence_entries, f"{label}.evidence_entries", entry_ids, errors)
+    for index, link in enumerate(scorecard.links):
+        label = f"{SCORECARD_LABEL}.links[{index}] ({link.id})"
+        check_entry_list(link.supporting, f"{label}.supporting", entry_ids, errors)
+        check_entry_list(link.contrary, f"{label}.contrary", entry_ids, errors)
+        check_entry_list(link.qualifying, f"{label}.qualifying", entry_ids, errors)
+    for index, risk in enumerate(scorecard.risks):
+        check_entry_list(risk.entries, f"{SCORECARD_LABEL}.risks[{index}] ({risk.id}).entries", entry_ids, errors)
+    for index, item in enumerate(scorecard.governance):
+        check_entry_list(item.entries, f"{SCORECARD_LABEL}.governance[{index}] ({item.id}).entries", entry_ids, errors)
+
+    for index, entry in enumerate(scorecard.entries):
+        label = f"{SCORECARD_LABEL}.entries[{index}] ({entry.id})"
+        # Column E also holds words that aren't ids ("AM", "Intelligence Curse comparator").
+        # Only the tokens shaped like an id are checked; the rest stay plain text.
+        for code_index, code in enumerate(entry.codes):
+            location = f"{label}.codes[{code_index}]"
+            milestone_match = FAMILY_MILESTONE_PATTERN.fullmatch(code)
+            if LINK_ID_PATTERN.fullmatch(code) and code not in link_ids:
+                errors.append(f'{location}: no causal link with id "{code}" in scorecard.json')
+            elif RISK_ID_PATTERN.fullmatch(code) and code not in risk_ids:
+                errors.append(f'{location}: no risk with id "{code}" in scorecard.json')
+            elif GOVERNANCE_ID_PATTERN.fullmatch(code) and code not in governance_ids:
+                errors.append(f'{location}: no governance checklist item with id "{code}" in scorecard.json')
+            elif milestone_match is not None:
+                family = FAMILY_BY_PREFIX[milestone_match.group("prefix")]
+                if (family, milestone_match.group("milestone")) not in milestone_rows:
+                    errors.append(f'{location}: no {family} milestone row "{milestone_match.group("milestone")}" in scorecard.json')
+        for feed_index, feed in enumerate(entry.feeds):
+            if feed.target.startswith("M") and (feed.family, feed.target) not in milestone_rows:
+                errors.append(
+                    f'{label}.feeds[{feed_index}].target: no {feed.family} milestone row "{feed.target}" in scorecard.json'
+                )
+
+
+def check_entry_sources(report: Report, sources: list[Record]) -> None:
+    """Each evidence entry cites a real source in sources.json, under its register id."""
+    if report.scorecard is None:
+        return
+    register_id_of: dict[str, str | None] = {}
+    for record in sources:
+        source_id = raw_id(record)
+        if source_id is None:
+            continue
+        register_id = record.raw.get("register_id") if isinstance(record.raw, dict) else None
+        register_id_of[source_id] = register_id if isinstance(register_id, str) else None
+    sample_source_ids = sample_ids(sources)
+
+    for index, entry in enumerate(report.scorecard.entries):
+        location = f"{SCORECARD_LABEL}.entries[{index}] ({entry.id})"
+        if entry.source_id not in register_id_of:
+            report.errors.append(f'{location}.source_id: no source with id "{entry.source_id}" in sources.json')
+            continue
+        if entry.source_id in sample_source_ids:
+            report.errors.append(f'{location}.source_id: "{entry.source_id}" is a sample source. {SAMPLE_SOURCE_HINT}')
+        if register_id_of[entry.source_id] != entry.register_id:
+            report.errors.append(
+                f'{location}.register_id: "{entry.register_id}", but source "{entry.source_id}" has register id '
+                f"{quoted_or_null(register_id_of[entry.source_id])} in sources.json"
+            )
+
+    if report.scorecard.cross_family_scope is not None:
+        for index, source_id in enumerate(report.scorecard.cross_family_scope.source_ids):
+            if source_id not in register_id_of:
+                report.errors.append(
+                    f'{SCORECARD_LABEL}.cross_family_scope.source_ids[{index}]: no source with id "{source_id}" '
+                    "in sources.json"
+                )
+
+
+def check_entry_references(report: Report) -> None:
+    """Milestones and technology pages name evidence entries that exist in scorecard.json."""
+    if report.scorecard is None:
+        return
+    entry_ids: set[str] = set()
+    for entry in report.scorecard.entries:
+        entry_ids.add(entry.id)
+    for record in report.milestones:
+        if isinstance(record.model, Milestone):
+            check_entry_list(record.model.evidence_entries, f"{record.label}.evidence_entries", entry_ids, report.errors)
+    for record in report.technologies:
+        if not isinstance(record.model, TechnologyPage):
+            continue
+        for path, entry_id in page_entry_ids(record.model):
+            if entry_id not in entry_ids:
+                report.errors.append(
+                    f'{join_path(record.label, path)}: no evidence entry with id "{entry_id}" in scorecard.json'
+                )
+
+
 # One day of slack, so a date written in a time zone ahead of the checker's isn't refused.
 FUTURE_DATE_SLACK = timedelta(days=1)
 
@@ -534,13 +798,23 @@ def check_tracker_dates(report: Report, today: date) -> None:
 # Warnings
 
 
+def skips_ai_review(model: BaseModel) -> bool:
+    """Samples, and technology pages with unreviewed AI sections, may hold AI claims nobody has checked."""
+    if isinstance(model, TechnologyPage):
+        return model.unreviewed_ai_sections
+    if isinstance(model, (Milestone, Source)):
+        return model.sample
+    return False
+
+
 def count_unreviewed_sample_claims(records: list[Record]) -> int:
-    """AI claims with no reviewer in sample records. The models let samples
-    skip review, so this is the only place they get counted."""
+    """AI claims with no reviewer in records that may skip review (see
+    skips_ai_review). The models let them through, so this is the only place
+    they get counted."""
     count = 0
     for record in records:
         model = record.model
-        if model is None or not getattr(model, "sample", False):
+        if model is None or not skips_ai_review(model):
             continue
         for _path, claim in find_claims(model):
             if claim.provenance == Provenance.AI and is_blank(claim.reviewed_by):
@@ -557,13 +831,13 @@ def check_unreviewed_sample_claims(report: Report) -> None:
         return
     if count == 1:
         report.warnings.append(
-            "Warning: 1 AI-suggested claim in a sample record has no reviewer. The site shows it as unchecked, "
-            "and it must be reviewed before the sample flag comes off."
+            "Warning: 1 AI-suggested claim in a sample record or a page with unreviewed AI sections has no "
+            "reviewer. The site shows it as unchecked, and it must be reviewed before the flag comes off."
         )
     else:
         report.warnings.append(
-            f"Warning: {count} AI-suggested claims in sample records have no reviewer. The site shows them as "
-            "unchecked, and they must be reviewed before the sample flag comes off."
+            f"Warning: {count} AI-suggested claims in sample records or pages with unreviewed AI sections have no "
+            "reviewer. The site shows them as unchecked, and they must be reviewed before the flag comes off."
         )
 
 
@@ -775,11 +1049,26 @@ def load_posts(posts_dir: Path, report: Report) -> None:
 
 
 EM_DASH_FIX = "Use a period, comma, colon or parentheses instead"
+EN_DASH_FIX = "Use a hyphen for a range, or a comma, colon or parentheses instead"
 
 
 def has_em_dash(text: str) -> bool:
     """True for the character itself or its JSON escape."""
     return EM_DASH in text or "\\u2014" in text.lower()
+
+
+def has_en_dash(text: str) -> bool:
+    """True for the character itself, its JSON escape or its HTML entity."""
+    return EN_DASH in text or "\\u2013" in text.lower() or "&ndash;" in text.lower()
+
+
+def en_dash_line_numbers(text: str) -> list[int]:
+    """The line numbers (from 1) of the lines with an en dash."""
+    numbers: list[int] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if has_en_dash(line):
+            numbers.append(line_number)
+    return numbers
 
 
 def em_dash_line_numbers(text: str) -> list[int]:
@@ -811,11 +1100,14 @@ def em_dash_paths(value: object, path: str = "") -> list[str]:
 
 
 def check_em_dashes(content_dir: Path, errors: list[str]) -> None:
-    """Site copy never uses em dashes. Catches the character and its JSON escape."""
+    """Site copy never uses em dashes or en dashes. Catches the characters and their escapes."""
     files = sorted(list(content_dir.rglob("*.json")) + list(content_dir.rglob("*.md")))
     for path in files:
-        for line_number in em_dash_line_numbers(path.read_text(encoding="utf-8")):
+        text = path.read_text(encoding="utf-8")
+        for line_number in em_dash_line_numbers(text):
             errors.append(f"{path} line {line_number}: has an em dash. {EM_DASH_FIX}")
+        for line_number in en_dash_line_numbers(text):
+            errors.append(f"{path} line {line_number}: has an en dash. {EN_DASH_FIX}")
 
 
 # ---------------------------------------------------------------------------
@@ -839,6 +1131,7 @@ def validate_content(content_dir: Path, today: date | None = None) -> Report:
     report.milestones = milestones if milestones is not None else []
     report.sources = sources if sources is not None else []
     report.technologies = technologies if technologies is not None else []
+    report.scorecard = load_scorecard(content_dir / "scorecard.json", report.errors)
     load_posts(content_dir / "posts", report)
 
     check_unique_ids(report.milestones, report.errors)
@@ -856,6 +1149,16 @@ def validate_content(content_dir: Path, today: date | None = None) -> Report:
                 known_source_ids.add(source_id)
         check_source_references(report, known_source_ids)
         check_sample_links(report)
+
+    # If scorecard.json couldn't be read, its problems are already reported,
+    # and every entry id would look missing.
+    if report.scorecard is not None:
+        check_scorecard_ids(report.scorecard, report.errors)
+        check_scorecard_milestone_rows(report.scorecard, report.errors)
+        check_scorecard_references(report.scorecard, report.errors)
+        if sources is not None:
+            check_entry_sources(report, report.sources)
+        check_entry_references(report)
 
     check_dependencies(report.milestones, report.errors)
     if technologies is not None:
@@ -898,6 +1201,7 @@ def main(argv: list[str]) -> int:
         plural(len(report.sources), "source", "sources"),
         plural(len(report.technologies), "technology", "technologies"),
         plural(len(report.posts), "post", "posts"),
+        plural(len(report.scorecard.entries) if report.scorecard is not None else 0, "evidence entry", "evidence entries"),
     ]
     print("OK: " + ", ".join(counts))
     return 0

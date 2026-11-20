@@ -24,6 +24,11 @@ either one:
     posts/*.md         content/posts/ plus the published posts from
                        GET /api/public/posts. When both have a post with the
                        same slug, the database's version wins, with a warning.
+    scorecard.json     content/scorecard.json as it is: the workbook's shared
+                       tables, written by python -m sf_shared.import_workbook.
+                       It names workbook milestone rows ("BCI-M1"), never
+                       timeline milestone ids, so nothing in it depends on
+                       what admin has published.
 
 The folder is then checked with the same validator as content/ (validate.py).
 Any problem exits with status 1, so the deploy stops and GitHub Pages keeps
@@ -230,6 +235,21 @@ def export_technologies(content_dir: Path, out_dir: Path, milestones_path: Path,
     write_json(out_dir / "technologies.json", pages)
 
 
+def export_scorecard(content_dir: Path, out_dir: Path, say: Say) -> None:
+    """Copy scorecard.json byte for byte. The validator checks it in the new folder."""
+    path = content_dir / "scorecard.json"
+    if not path.exists():
+        raise ExportError(f"{path} is missing. Run python -m sf_shared.import_workbook first.")
+    shutil.copyfile(path, out_dir / "scorecard.json")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        data = None  # the validator reports it, with the line number
+    entries = data.get("entries") if isinstance(data, dict) else None
+    count = len(entries) if isinstance(entries, list) else 0
+    say(f"Scorecard: {count} evidence entries, from content/scorecard.json.")
+
+
 def yaml_text(value: object) -> str:
     """A frontmatter value as a double-quoted string. A JSON string is valid YAML,
     and quoting keeps a date like 2026-10-26 a string for gray-matter."""
@@ -297,6 +317,7 @@ def export_site(content_dir: Path, out_dir: Path, fetch: Fetch | None = None, sa
     export_milestones(content_dir, out_dir, fetch, say)
     # After the milestones, so it knows which ones are published.
     export_technologies(content_dir, out_dir, out_dir / "milestones.json", say)
+    export_scorecard(content_dir, out_dir, say)
     export_posts(content_dir, out_dir, fetch, say)
 
     report = validate_content(out_dir)

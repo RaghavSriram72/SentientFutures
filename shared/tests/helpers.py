@@ -49,7 +49,61 @@ def technology_page(tech_id: str) -> dict:
             }
         ],
         "artificial_minds_questions": [],
-        "sample": True,
+        "unreviewed_ai_sections": True,
+    }
+
+
+def evidence_entry(entry_id: str, source: dict, **overrides) -> dict:
+    """A valid evidence entry (scorecard.json) citing the given source."""
+    entry = {
+        "id": entry_id,
+        "source_id": source["id"],
+        "register_id": source["register_id"],
+        "locator": "Fixture locator",
+        "claim": "Fixture claim.",
+        "codes": [],
+        "family": "wbe",
+        "feeds": [],
+        "feeds_text": "Not used in a headline rating",
+        "source_type_independence": "Preprint; Independent",
+        "outcome": "AI Alignment",
+        "alignment_problem": "N/A",
+        "scenarios": [],
+        "stage": "N/A",
+        "directness": "direct",
+        "role": "supports",
+        "basis": "argued",
+    }
+    entry.update(overrides)
+    return entry
+
+
+def first_register_source(sources: list) -> dict:
+    """The first real source with a register id, for fixture entries to cite."""
+    for source in sources:
+        if not source.get("sample") and source.get("register_id"):
+            return source
+    raise KeyError("no real source with a register id")
+
+
+def minimal_scorecard(milestones: list, sources: list) -> dict:
+    """A scorecard.json that validates with these milestones and sources: empty
+    tables, plus a fixture entry for each entry id a milestone names (the real
+    WBE milestones cite register entries once the workbook is imported)."""
+    entries = []
+    cited: list[str] = []
+    for milestone in milestones:
+        for entry_id in milestone.get("evidence_entries", []):
+            if entry_id not in cited:
+                cited.append(entry_id)
+    if len(cited) > 0:
+        source = first_register_source(sources)
+        for entry_id in cited:
+            entries.append(evidence_entry(entry_id, source))
+    return {
+        "generated": "Fixture written by shared/tests/conftest.py.",
+        "workbook": {"title": "Fixture workbook", "version": "0.4", "source_sha256": None},
+        "entries": entries,
     }
 
 

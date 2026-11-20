@@ -1,0 +1,5 @@
+/* Less space under the compact header than other pages have, so the first
+   entries fit on a laptop's first screen, as on the sources page */
+.body {
+  padding-block: clamp(24px, 3vw, 32px) 0;
+}

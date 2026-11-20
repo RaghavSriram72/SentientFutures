@@ -11,6 +11,7 @@ You don't need to know how to program to edit these files, but you do need to be
 | `milestones.json` | The timeline. One entry per milestone, with its forecasts inside it. |
 | `sources.json` | Every paper, report, post, talk, podcast or book we cite. Most of them come from the team's Notion database. |
 | `technologies.json` | The three technology pages: WBE, BCI and neuromorphic AI. |
+| `scorecard.json` | The team's scorecard workbook (v0.4): the evidence register, causal links, risks, governance checklist, milestone assessments, Codebook and more. Written by the workbook import. Never edit it by hand. |
 | `posts/` | Blog posts, one Markdown file each. |
 | `README.md` | This guide. |
 
@@ -18,7 +19,8 @@ You don't need to know how to program to edit these files, but you do need to be
 
 | What | Where it's edited | What the file here is for |
 |---|---|---|
-| Technology pages | `technologies.json`, in git | The real thing. The pages stay in git on purpose: they're long, reviewed line by line, and a pull request is the right place to discuss a change to a verdict. |
+| Technology pages | `technologies.json`, in git. The parts that come from the workbook (the ratings and the workbook sections) are written by the workbook import, so edit them in the workbook and import again. | The real thing. The pages stay in git on purpose: they're long, reviewed line by line, and a pull request is the right place to discuss a change to a verdict. |
+| The workbook | The team's spreadsheet ("Neuroengineering scorecard", by Vilija), then `python -m sf_shared.import_workbook` | `scorecard.json` is the import's output. See "The workbook import" below. |
 | Sources | `sources.json`, in git, for the ones imported from Notion. Papers found by the pipeline or added with "Add a source" in admin are reviewed and approved in admin. | The real thing for the Notion sources. Approved papers are added to them at each publish. |
 | Milestones | In admin (`/admin/milestones/`), once they've been imported into the database | Before the import, the real thing. After it, the starting data and the offline copy that CI and local builds use. |
 | Blog posts | In admin (`/admin/posts/`), once they've been imported | The same as milestones. Files named `sample-*.md` are examples for this guide and are never imported. |
@@ -37,11 +39,11 @@ Publishing builds a data folder (`.site-data/`) from this folder plus the approv
 Entries with `"sample": true` are placeholders. There are two kinds:
 
 - Worked examples: the BCI and neuromorphic milestones, and the seven sources whose ids start with `sample-`. These are made up and their sources are fictional. Most of their text starts with "Sample." (source summaries start with "Placeholder summary."). The public site never shows them: the timeline, the technology pages and the source database all leave them out. They stay in the files as examples of the format, and the sample sources stay only because the sample milestones cite them. A real milestone or page can't cite a sample source or depend on a sample milestone: the validator and the milestone editor both refuse it, since the link would lead nowhere on the public site.
-- AI-drafted outlines: the BCI and neuromorphic technology pages. An AI wrote them and nobody on the team has reviewed them yet. These are shown, because an empty page would say less. Each one opens with an "AI draft" banner, and every line keeps the dashed AI outline.
+Technology pages don't use `sample`. The BCI and neuromorphic pages have `"unreviewed_ai_sections": true` instead: their intro and outline sections (`claims_to_solve`, `mechanism`, `strongest_case`, `strongest_objections`, `artificial_minds_questions`) were drafted by an AI and nobody on the team has reviewed them yet. Those lines keep the dashed AI outline. Their ratings and workbook sections are the team's, from the workbook.
 
-The WBE page and the eight WBE milestones are real team content. They come from the team's populated WBE scorecard, so they have `"sample": false` and every sentence is marked `team` (a few milestone lines are `unclear` where we haven't looked yet). The sources with ids `s01` to `s30` are real too. They come from the team's Notion database (see "Importing sources from Notion" below), and their summaries are the team's own.
+The WBE page and the eight WBE milestones are real team content. The WBE page has `"unreviewed_ai_sections": false`, and every sentence is marked `team` (a few milestone lines are `unclear` where we haven't looked yet). The sources with ids `s01` to `s30` are real too. They come from the team's Notion database (see "Importing sources from Notion" below), and their summaries are the team's own.
 
-Only a sample can show AI text that nobody has checked. The validator prints a warning with a count of those lines, and each one needs a `reviewed_by` before the sample flag comes off. To add something new, copy the entry closest to it and replace every value. Real entries leave `sample` out or set it to `false`. We'll delete or review the samples once there's enough real content.
+Only a sample, or a page with `unreviewed_ai_sections`, can show AI text that nobody has checked. The validator prints a warning with a count of those lines, and each one needs a `reviewed_by` before the flag comes off. To add something new, copy the entry closest to it and replace every value. Real entries leave `sample` out or set it to `false`. We'll delete or review the samples once there's enough real content.
 
 ## Five JSON rules that prevent most errors
 
@@ -118,7 +120,10 @@ The reasons for `unclear` are:
 | `conflicting_evidence` | Credible sources point in different directions. |
 | `underspecified_proposal` | The proposal isn't specific enough to assess. |
 | `search_incomplete` | We haven't finished looking. |
-| `other` | None of these fit. Explain in `unclear_note`. Only claims can use `other`. Source credibility, scorecard rows and assessments have no note field, so they need one of the four reasons above. |
+| `indirect_evidence_only` | Only indirect evidence bears on it (one of the workbook's Codebook reasons). |
+| `outcome_not_operationalized` | The outcome isn't defined well enough to test (a Codebook reason). |
+| `information_inaccessible` | The information exists but we can't get at it (a Codebook reason). |
+| `other` | None of these fit. Explain in `unclear_note`. Only claims can use `other`. Source credibility, scorecard rows and assessments have no note field, so they need one of the other reasons. |
 
 ### Use `source` only when you can paste the exact words
 
@@ -161,7 +166,7 @@ Sources in the Notion database come in through the import above. Add a source by
 | Field | What to put |
 |---|---|
 | `id` | A short, permanent name. Imported sources use their register id in lowercase, like `"s02"`. For anything else, use first author, year and a keyword, like `"sandberg-2008-roadmap"`. Lowercase letters, numbers and hyphens only. Never change it once it's public. |
-| `register_id` | The team's register id, like `"S02"`: a capital S and at least two digits. No two sources can share one. The technology pages' evidence registers find sources by this id. Leave it out, or use `null`, for a source that isn't in the register. |
+| `register_id` | The team's register id, like `"S02"`: a capital S and at least two digits. No two sources can share one. The workbook's evidence entries find sources by this id. Leave it out, or use `null`, for a source that isn't in the register. |
 | `title` | The full title. |
 | `authors` | A list, even for one author: `["Anders Sandberg", "Nick Bostrom"]`. An organization is fine as an author. Use `[]` if the authors aren't known. |
 | `year` | The year it was published, as a number. |
@@ -182,6 +187,8 @@ Sources in the Notion database come in through the import above. Add a source by
 | `ai_suggested_fields` | A list of the field names an AI filled in, like `["evidence_type"]`, so the site can label them. Use `[]` if a person filled in everything. Allowed: `source_type`, `kind`, `technology`, `problem`, `evidence_type`, `directness`, `independence`, `relevance`, `credibility` and `credibility_unclear_reason`. Don't list `summary`: if an AI wrote it, set the summary's own `provenance` to `ai`. |
 | `added_by` | Who added the source to the Notion database, or `null`. The import credits people by the name the site uses, so Notion's "Aila" comes in as "Vilija". |
 | `reviewed_by`, `reviewed_on` | Who checked this entry, and when (`"2026-10-27"`). Required whenever `ai_suggested_fields` isn't empty. |
+| `quality` | Register sources only, written by the workbook import: the "3a Source Quality" cells word for word, as `source_type`, `empirical_theoretical`, `original_secondary`, `peer_review` and `affiliation`. Leave it out for other sources. |
+| `screening_pending` | `true` while the workbook marks the source "screening pending" (written by the import). Leave it out otherwise. |
 
 The five rubric fields (`evidence_type`, `directness`, `independence`, `relevance` and `credibility`) can each be `null`, which means not rated yet. Leave a rating `null` until someone has read the source and decided. If an AI suggests a rating, list the field in `ai_suggested_fields` and have a person check it.
 
@@ -209,16 +216,16 @@ Once the milestones are imported into the database, add and edit them in admin i
 | `technology` | `wbe`, `bci`, `neuromorphic` or `hybrid`. |
 | `stage` | `possible` (someone has shown it can be done), `widely_available` (cheap, reliable and accessible enough to matter) or `actually_helping` (measurably helping with alignment or human agency). |
 | `category` | `technical_capability`, `high_level_fidelity`, `reliability_robustness`, `scalable_production`, `economic_viability`, `equitable_access`, `safety_welfare_assurance`, `legal_regulatory` or `institutional_legitimacy`. The site groups categories into three types (Technical, Deployment, Welfare and governance). The grouping lives in `shared/sf_shared/enums.py` (`MILESTONE_TYPES`), and a milestone's type is never stored. |
-| `status` | `not_demonstrated`, `prototype` (shown once, in limited conditions), `replicated` (shown more than once, by more than one group), `mature` (routine) or `not_claimed` (none of our current sources claims the proposal will do this, as in the scorecard's "if claimed" rows). |
+| `status` | `not_demonstrated`, `prototype` (shown once, in limited conditions), `replicated` (shown more than once, by more than one group), `mature` (routine), `not_claimed` (none of our current sources claims the proposal will do this, as in the scorecard's "if claimed" rows) or `unclear` (the workbook's "Unclear"). |
 | `status_basis` | A claim saying why it has that status. |
 | `achieved_in` | The year it happened, or `null` if it hasn't. |
 | `achieved_in_basis` | `null`, unless `achieved_in` is set. Then it must be a `source` claim with a quote showing it happened. |
 | `confidence` | `high`, `medium` or `low`: how sure we are. Required when `estimate` is set. You can also set it without an estimate (the WBE milestones carry the scorecard's Low); otherwise use `null`. |
 | `summary` | A claim: what this milestone is and why it matters. |
 | `success_criterion` | A claim: how we'd know it has happened. Be concrete ("40 words per minute, no implant, in a peer-reviewed study"). |
-| `main_bottleneck` | A claim: what's holding it back. |
+| `main_bottleneck` | A claim: what's holding it back, or `null` when nobody has said (the workbook leaves some empty). |
 | `depends_on` | A list of milestone ids that have to happen first, or `[]` if there are none. |
-| `source_ids` | A list of every source linked to this milestone, including the ones its forecasts and claims cite. The panel lists these. |
+| `source_ids` | A list of every source linked to this milestone, including the ones its forecasts and claims cite. The panel lists these. On the WBE milestones the workbook import writes it (see "The workbook import"), so a hand edit there is replaced by the next import. |
 | `estimate` | Our own range, or `null` if the team hasn't agreed on one. See "The team estimate" below. |
 | `forecasts` | A list of forecasts from sources (see "Adding a forecast"), or `[]` if there are none yet. |
 | `disagreement_override` | Usually `null`. See "Disagreement" below. |
@@ -226,8 +233,9 @@ Once the milestones are imported into the database, add and edit them in admin i
 | `would_move_earlier` | A list of claims: evidence that would make this happen sooner. It needs at least one. If we don't know, use one `unclear` claim. |
 | `would_move_later` | The same, for evidence that would push it later. |
 | `artificial_minds_questions` | A list of claims about the consciousness, moral status, identity or welfare questions this raises. `[]` is fine. |
+| `assessment_confidence`, `applies_to`, `criterion_met`, `evidence_entries`, `timing`, `note` | Optional, from the workbook's milestone tab (1a), written by the import on the WBE milestones: the tab's "Confidence" in the status (separate from `confidence`, which goes with the team range), "Applies to", "Criterion met?", the entry ids its evidence cell cites, "Timing (dated sources only)" and "Note". Leave them out on other milestones. |
 
-Two notes on the WBE milestones. The team's scorecard doesn't assign stages yet, so for now reliability, technical capability, and safety and welfare assurance are `possible`, and the other five are `widely_available`. Change them when the team decides. Their evidence comes from the scorecard's register (S02 and S13, which are `s02` and `s13` in `sources.json`). Each WBE milestone lists those ids in `source_ids` and again in `status_basis.source_ids`, so the panel links the sources under the status.
+Two notes on the WBE milestones. The team's scorecard doesn't assign stages yet, so for now reliability, technical capability, and safety and welfare assurance are `possible`, and the other five are `widely_available`. Change them when the team decides. Their sources come from their row in the workbook's tab 1a, through the import: `source_ids` lists every source that row cites (the exact rule is under "The workbook import"), and `status_basis.source_ids` lists the ones under the status (the sources of the entries in `evidence_entries`, plus any S-id written in the "Evidence (entries and basis)" cell). A row that cites no source gives `[]` (WBE M4, M7 and M9 in v0.4, so `wbe-safety-welfare`, `wbe-legal` and `wbe-access`).
 
 ### The team estimate
 
@@ -338,69 +346,25 @@ The `headline` needs exactly one word or phrase in asterisks, which the site sho
 
 ### Outline sections
 
-The BCI and neuromorphic pages are still outlines. They use five lists of claims: `claims_to_solve`, `mechanism`, `strongest_case`, `strongest_objections` and `artificial_minds_questions`. A page with a populated scorecard can leave these as `[]`, as the WBE page does.
+The site writes these five lists of claims itself: `claims_to_solve`, `mechanism`, `strongest_case`, `strongest_objections` and `artificial_minds_questions`. On the BCI and neuromorphic pages an AI drafted them (see `unreviewed_ai_sections` above). The WBE page leaves them as `[]`. `alternatives` and `tension` are the team's own text too.
 
-### Populated scorecard sections
+### Workbook sections
 
-These follow the sections of the team's scorecard (v0.1). The WBE page fills in all of them.
+These come from the team's scorecard workbook (v0.4) and are written by the workbook import, word for word. Don't edit them here: change the workbook and import again. Codes in the text (E037, S13, WBE-O-L1, R01) stay as written, and the site links them.
 
-| Field | Scorecard section | What goes in it |
+| Field | Workbook tab | What it holds |
 |---|---|---|
-| `scope` | 1. Scope | Five claims (`intervention`, `deployment_scenario`, `affected_groups`, `time_horizon` and `comparator`), plus `problem`: `alignment`, `intelligence_curse` or `both`. |
-| `theory_of_change` | 2. Theory of change | The causal chain, one claim per step, in order. |
-| `alternatives` | 2. Theory of change | The most credible alternatives and counterarguments, one claim each. |
-| `evidence_register` | 3. Evidence register | One row per claim or causal step (see below). |
-| `alignment_assessment` | 4. Alignment assessment | An assessment (see below). |
-| `artificial_minds_assessment` | 4.1 Artificial minds | Four claims: `consciousness`, `moral_status`, `identity` and `welfare`. |
-| `intelligence_curse_assessment` | 5. Intelligence Curse assessment | An assessment (see below). |
-| `welfare_governance` | 6. Welfare and governance | Claims for `exposed`, `harms`, `severity`, `detectability`, `control` and `rationale`, plus a `confidence`. |
-| `evidence_gap` | 8. Synopsis | The primary evidence gap, as one claim. |
+| `scope` | 1 Scope | Claims for `intervention` (the family definition), `deployment_scenario`, `affected_groups`, `time_horizon`, `comparator` and `problems_claimed`; `problem` (`alignment`, `intelligence_curse` or `both`, from the arrow at the end of the problems cell); then from "Source IDs / basis" both `source_ids` (ranges expanded, for links and counts) and `source_ids_text` (the cell word for word, which the page shows). |
+| `alignment_assessment` | 4 Alignment Judgment | The family row: `problem_addressed`, `mechanism`, `rating`, `confidence`, `reason` ("Main gap, or reason for rating") and `decisive_question`, plus `scenarios`, one per scenario row: `scenario`, `problem`, `mechanism`, `supporting` and `contrary_or_qualifying` (entry ids) and `gap`. |
+| `intelligence_curse_assessment` | 5 Intelligence Curse Judgment and 6 Agency and Ownership | `mechanism`, four `questions` (each question is the tab's column header), `rating`, `confidence` and `reason`; `decisive_question` is null (the tab has none). `agency` holds the tab 6 rows (`group`, `effect`, `mechanism`, `ownership_questions`, `entries`) and `ownership_gate` the "Ownership gate" row. |
+| `artificial_minds_by_stage` | 4.1 Artificial Minds | One entry per row of the tab for the family, empty rows too: `stage` ("S3", or null for "All stages"), `stage_label` (the Stage cell word for word), `stage_number`, then `consciousness`, `moral_status`, `identity`, `welfare` and `protections` (each the cell, or null), `source_ids` and `entries`. |
+| `welfare_governance` | 9 Welfare and Governance Judgment | Claims for `exposed` ("Who is exposed"), `harms` ("Main harms (risk IDs)") and `rationale`. Severity, likelihood and confidence for each domain are on the scorecard's risk rows. |
 
-An evidence register row looks like this:
-
-```json
-{
-  "claim": "Regulatory and moral bottlenecks could delay WBE.",
-  "supporting_ids": ["S02"],
-  "contrary_ids": [],
-  "evidence_type": "Argument",
-  "directness": "adjacent",
-  "limitation": "A workshop-level claim, with no policy analysis or empirical test behind it.",
-  "independence": "Unclear",
-  "provenance": "team"
-}
-```
-
-`supporting_ids` and `contrary_ids` hold the register ids, and an empty list means we found none in our current sources. `evidence_type` and `independence` are written the way the register words them ("Argument / review", "Mixed", "Not applicable"). `directness` is `direct`, `adjacent` or `remote`, and `provenance` is `team` or `ai`.
-
-The register ids (S02, S13, S15) are the team's own numbering. In `supporting_ids` and `contrary_ids`, write them that way, and the site links each one to the source with that `register_id`. A claim's `source_ids` takes the source's `id` instead, so a claim whose text mentions S02 lists `"s02"`, and the site shows a link to the source under the claim.
-
-A register row can also say which scorecard ratings it bears on, with `scorecard_ids`. See "Rating cards" below.
-
-The alignment and Intelligence Curse assessments have the same shape:
-
-```json
-"alignment_assessment": {
-  "mechanism": { "text": "The problem it addresses, or the mechanism claimed.", "provenance": "team" },
-  "questions": [
-    {
-      "question": "Could a more capable AI undermine or get around the benefit?",
-      "answer": { "text": "Unclear. None of our current sources tests this.", "provenance": "team" }
-    }
-  ],
-  "rating": "unclear",
-  "confidence": "low",
-  "unclear_reason": "underspecified_proposal",
-  "reason": { "text": "Why it got this rating.", "provenance": "team" },
-  "decisive_question": { "text": "The open question that would settle it.", "provenance": "team" }
-}
-```
-
-`questions` holds the scorecard's column questions, each with its answer. `rating` uses the case ratings below, and an `unclear` rating needs an `unclear_reason` other than `other`.
+The assessments' `rating`, `confidence` and `unclear_reason` repeat those of the case row with the same `problem`, and the validator checks that they match.
 
 ### The scorecard summary
 
-`scorecard` is the rating synopsis from section 8 of the team's scorecard. Every page has the same six rows, in this order:
+`scorecard` holds the six headline judgments. Every page has the same six rows, in this order:
 
 | `id` | `dimension` | `scale` | `problem` |
 |---|---|---|---|
@@ -417,17 +381,17 @@ An id can't be `artificial-minds` or a milestone category written with hyphens, 
 
 Human welfare risk is about harm to people: mental privacy, autonomy and manipulation, workplace surveillance and neuromanipulation, and dependency and deskilling. Harm to the artificial minds themselves has its own row.
 
-A `case` row is rated `strong`, `moderate`, `weak`, `unclear` or `not_claimed`, and a `risk` row `high`, `medium`, `low` or `unclear`. Every row also has a `confidence` and a `basis` claim. The rules:
+The import writes each row's `rating`, `confidence`, `unclear_reason`, `severity`, `likelihood`, `applicable` and `basis`. The rules:
 
-- An `unclear` rating needs `unclear_reason`, and it can't be `other`, because a row has nowhere to write the note. Pick the closest reason and explain the rest in the basis.
-- A `low` risk needs a `source` basis. We never call a risk low just because nobody has studied it.
+- A `case` row has a `rating` (`strong`, `moderate`, `weak`, `unclear` or `not_claimed`), a `confidence` and a `basis` claim (the workbook's reason for the rating).
+- A `risk` row has no rating: `"rating": null`. The workbook keeps a risk's severity, likelihood and confidence apart and never combines them. It has `severity` (`very_high`, `high`, `medium`, `low` or `unclear`), `likelihood` (`high`, `medium`, `low` or `not_assessable`) and `confidence`. Before the first import both may be null. When the workbook says the risk doesn't apply ("Not applicable", as for BCI and artificial minds), `applicable` is `false` and severity and likelihood stay null. A risk row's `basis` is optional and usually null.
+- `unclear_reason` is optional (the workbook gives none), and it can't be `other`, because a row has nowhere to write the note. A risk row never has one.
 - `not_claimed` means the proposal doesn't claim that outcome, which is different from `weak` or `unclear`. Don't also list that outcome under `claims_to_solve`.
-- `potential_severity` (`high`, `medium` or `low`) is for risk rows only. Use it when the rating is still `unclear` but the team has judged how bad the harm could be. The WBE scorecard's "Unclear, with potentially high severity" is written as `"rating": "unclear"` with `"potential_severity": "high"`. Leave it out when nobody has made that judgment, as on the BCI and neuromorphic pages.
-- The `alignment_assessment` and `intelligence_curse_assessment` repeat the rating of the case row with the same `problem`. Their `rating`, `confidence` and `unclear_reason` must match that row, so change both together.
+- `potential_severity` and the rule that a Low risk needs a sourced basis are gone, along with the single risk rating.
 
 ### Rating cards
 
-Each scorecard row is shown on its page as a rating card. A row can carry a `tracker` with what the card adds to the rating. Every field is optional. When the evidence, what would change the assessment or the milestones are missing, the card lists them in a "Not added yet" line. "Last updated" is shown only once `last_updated` is set, and an empty history reads "No changes recorded yet."
+Each scorecard row is shown on its page as a rating card. The evidence on a card comes from the workbook's register (`scorecard.json` entries whose "Ratings it feeds" names the rating). A row can also carry a `tracker` with what the card adds to the rating. Every field is optional. When the evidence, what would change the assessment or the milestones are missing, the card lists them in a "Not added yet" line. "Last updated" is shown only once `last_updated` is set, and an empty history reads "No changes recorded yet."
 
 | Field | What to put |
 |---|---|
@@ -437,13 +401,11 @@ Each scorecard row is shown on its page as a rating card. A row can carry a `tra
 | `milestone_ids` | The ids of the milestones this rating informs, in the order the card should list them. Only milestones of this page's technology, and never a sample. Leave it out until the team has decided. |
 | `placeholder` | `true` while the tracker is an example the team hasn't checked. Leave it out otherwise. |
 
-To link evidence to a rating, add `scorecard_ids` to an evidence register row: a list of row ids from the same page, like `["alignment-case"]`. The card lists every register row that links to it, with its supporting and contrary sources, directness and main limitation. One register row can link to more than one rating. Leave `scorecard_ids` out when a row isn't linked.
-
 Milestone links are checked against `milestones.json`. Before you link a milestone that was made in admin, run `flask --app sf_api content export-milestones --out ../content` (in `backend/`) and commit the result, so the file has it. When the site is published, a link to a milestone that isn't published is left out, and the publish log names it.
 
-`placeholder` is different from `sample`. A sample is a made-up record that the public site leaves out, or a page it marks as an AI draft. A placeholder tracker is shown: the card puts the tracker's fields, and the register rows linked to it, in one box labelled "Placeholder". The rating, confidence and basis stay outside the box. The validator prints a warning on every run while the flag is on. Right now the only placeholder is the WBE Alignment case row.
+`placeholder` is different from `sample`. A sample is a made-up record that the public site leaves out. A placeholder tracker is shown: the card puts the tracker's fields in one box labelled "Placeholder". The rating, confidence and basis stay outside the box. The validator prints a warning on every run while the flag is on. Right now the only placeholder is the WBE Alignment case row.
 
-To make a placeholder real, confirm or edit its fields and its register links, delete `"placeholder": true`, and from then on record changes in `history`. A placeholder can't have a history.
+To make a placeholder real, confirm or edit its fields, delete `"placeholder": true`, and from then on record changes in `history`. A placeholder can't have a history, and neither can a risk row, which has no rating to change.
 
 #### Recording a change
 
@@ -474,10 +436,61 @@ The rules:
 - Entries go oldest first, and new ones go at the end.
 - Each entry starts where the one before it ended: its `rating_before` is the previous entry's `rating_after`, and the same for confidence.
 - The newest entry ends at the row's current `rating` and `confidence`.
-- The ratings use the row's scale, like `rating` does.
+- The ratings are case ratings, like `rating`.
 - `last_updated` can't be before the newest entry, and no date can be more than a day in the future.
 - An entry where neither value changed is fine. It records a review that left the rating as it was, and the card shows "Rating unchanged" and "Confidence unchanged".
 - The `note` says what changed and why. Its `source_ids` names the source or sources that caused the change, and each one must be in `content/sources.json`. The note can't be `unclear`, and an `ai` note needs `reviewed_by` like any other AI claim.
+
+## The workbook import
+
+The team's research lives in a spreadsheet, "Neuroengineering scorecard" (written by Vilija). The import copies it into this folder, word for word. Every new version of the workbook reaches the site this way. The spreadsheet itself is never committed (`.gitignore` leaves it out).
+
+With the virtual environment active (see "Checking your work"), do a dry run first. It prints what would change, as a diff, and writes nothing:
+
+```
+python -m sf_shared.import_workbook "path/to/Neuroengineering scorecard v0.4.xlsx" --version 0.4 --dry-run
+```
+
+If the changes look right, run it again without `--dry-run`. `--version` is the workbook's version (no cell states it); without it, the import reads it from a file name like "... v0.4.xlsx" and stops if it can't. Running the import twice gives the same files.
+
+The import writes these parts and nothing else:
+
+- `scorecard.json`: the whole file.
+- `technologies.json`: on each page, the scorecard rows' `rating`, `confidence`, `unclear_reason`, `severity`, `likelihood`, `applicable` and `basis`, and the workbook sections (`scope`, `alignment_assessment`, `intelligence_curse_assessment`, `artificial_minds_by_stage`, `welfare_governance`). The site's own text (`name`, `headline`, `intro`, the outline sections, `alternatives`, `tension`) is never touched.
+- `sources.json`: register sources the site doesn't have yet (S17 in v0.4), and on each register source its `quality` block (the "3a Source Quality" cells, word for word), `screening_pending`, and any missing link. Titles, authors and summaries stay as they are unless you pass `--refresh-source-text`.
+- `milestones.json`: on the WBE timeline milestones, `status`, `status_basis`, `success_criterion`, `main_bottleneck`, `source_ids`, `assessment_confidence`, `applies_to`, `criterion_met`, `evidence_entries`, `timing` and `note` (tab 1a). `source_ids` is set mechanically to the sources the milestone's 1a row cites: first the source of every entry in `evidence_entries` (the register's "Source ID" column), then every S-id written in the row's "Success criterion", "Evidence (entries and basis)", "Main bottleneck", "Timing (dated sources only)" and "Note" cells, in that order. A range like "S20-S22" counts as every id in it. Each source appears once, where it is first seen, and an id the "3 Sources" tab doesn't list stops the import. Any other source ids the milestone had are dropped. The sample milestones (BCI and neuromorphic) are never touched.
+
+Text goes in word for word. The only edits are tidying spaces and a short list of exact fixes (`GLITCH_FIXES` in `shared/sf_shared/import_workbook.py`), and the import prints every one. It also prints the cells it didn't use and any disagreements between tabs, for Vilija to look at. It never settles a disagreement itself.
+
+Most of the fixes repair glitches in the sheet, like a mangled dash or a lost opening quote. The last block, "Site wording" (added 2026-11-20), rewrites the cells that point into the workbook (a tab name like "see 1a Milestones", "per sheet summary", codes no tab defines such as D05 or "IC") or have a typo, and makes US spellings British to match the rest of Vilija's text. That way a reader who never sees the workbook can follow every page. Each fix names its cell by tab, row id and column header. The row id is the entry, link, risk, checklist, source or milestone row id, the family name, a framework id ("RF6"), for "4.1 Artificial Minds" and "4 Alignment Judgment" the family name and the row's label ("WBE: 4 Copied emulations", "Neuromorphic AI: Neuromorphic hardware"), or for the Codebook the type and the code as the sheet writes them ("Rating: Unclear"). A fix applies only while the cell still says exactly its "before" text. Once Vilija changes a cell, the import lists that fix as no longer needed and keeps her new text, so check the new text and remove or update the fix. To change the site's wording of a fixed cell, change the fix's "after" text and import again. Never edit those cells in the JSON: the next import puts the fixed text back.
+
+Before writing, it checks a copy of this folder with the validator. If the check fails, nothing is written.
+
+If the milestones are live in the database (see "Where each thing is edited"), the timeline reads them from there, so re-import them after a workbook import: `flask --app sf_api content import-milestones ../content/milestones.json --replace` (in `backend/`). Otherwise the timeline won't show the workbook's updates.
+
+### What's in scorecard.json
+
+| Key | Workbook tab | What it holds |
+|---|---|---|
+| `generated` | | A note that the file is written by the import. |
+| `workbook` | Overview | `title` (the tab's first cell), `version`, and `source_sha256`, a fingerprint of the imported file. |
+| `overview` | Overview | `purpose`, `principles` and `update_protocol`, word for word. The import still stores `update_protocol`, but the methodology page no longer prints it: the steps in its section 08 ("new-sources") are site text adapted from it, since the workbook's steps name tabs and columns readers never see. When the workbook's protocol changes, update those steps in `frontend/app/methodology/` by hand. |
+| `codebook` | Codebook | Every row in sheet order: `type`, `code`, `family` (the sheet's word, like "WBE" or "All") and `definition`. |
+| `frameworks` | 9 Reference Frameworks | `id` ("RF1"), `reference`, `url`, `contributes` and `applied`. |
+| `milestone_categories` | 1a Milestones | The nine category header rows: `id` ("M1"), `category`, `label` and `question`. |
+| `milestone_assessments` | 1a Milestones | Every family row: `family`, `milestone` ("M1"), `category`, `applies_to`, `success_criterion`, `status`, `criterion_met`, `evidence` (word for word), `evidence_entries` (the entry ids in it, leaving out any marked "not admissible"), `bottleneck`, `timing`, `confidence` and `note`. BCI M1 and NM M1 have two rows each. |
+| `entries` | 0 Evidence Register | One per entry: `id` ("E001"), `source_id` ("s01"), `register_id` ("S01"), `locator`, `claim`, `codes` (column E split on ";"), `family` (or `cross_family`), `feeds` (each rating it feeds: `family`, `target` such as `alignment` or `M6`, `direction` and an optional `note`), `feeds_text` (column G word for word), `source_type_independence`, `outcome`, `alignment_problem`, `scenarios`, `stage`, `directness`, `role` and `basis`. |
+| `links` | 2 Theory of Change | One per causal link: `id` ("WBE-O-L1"), `family`, `scenario_code`, `scenario`, `step`, `outcome`, `claim`, `status`, `supporting`, `contrary` and `qualifying` (entry ids), `best_directness`, `assumption` and `objection`. |
+| `risks` | 7 Overall Risks | One per risk: `id` ("R01"), `risk`, `families`, `domain`, `category`, `exposed`, `severity`, `likelihood`, `reversibility`, `detectability`, `remedies`, `control`, `confidence` and `entries`. |
+| `governance` | 8 Governance Checklist | One per item: `id` ("G01"), `family`, `question`, `status`, `entries` and `summary`. |
+| `scope_notes` | 1 Scope | The lines above the tab's header (its title, key question and time horizon bands). |
+| `cross_family_scope` | 1 Scope | The Cross-family row: `intervention`, `deployment_scenario`, `source_ids` and `source_ids_text`, named as on `scope`. |
+
+The validator checks this file like the others. Ids are unique, every entry, link, risk, checklist id and milestone row the files name exists, every entry's source is in `sources.json` under its register id, and a link's family matches the prefix of its id. These are existence checks only: when two tabs list different entries for the same thing, that is for the workbook to settle.
+
+### The one-time move to v0.4
+
+Before the first import, `python -m sf_shared.migrate_v04 --content content/ --removed-text removed-text.json` moved this folder from the v0.1 shapes. On each page it renamed `sample` to `unreviewed_ai_sections`, removed the v0.1 sections the workbook replaces (`theory_of_change`, `evidence_register`, `evidence_gap`, `artificial_minds_assessment`, the v0.1 `scope` and `alignment_assessment`, the v0.1 Intelligence Curse questions and the old welfare fields), and gave the risk rows their new shape. It wrote a placeholder `scorecard.json` with empty tables. It lists every value it removed. It is kept for the record; running it again changes nothing.
 
 ## Checking your work
 
@@ -503,10 +516,10 @@ python -m sf_shared.validate content/
 If everything is fine, you'll see something like:
 
 ```
-OK: 13 milestones, 36 sources, 3 technologies, 2 posts
+OK: 13 milestones, 37 sources, 3 technologies, 1 post, 121 evidence entries
 ```
 
-You might also see a line starting with `Warning:` above it, such as "Warning: 39 AI-suggested claims in sample records have no reviewer." A warning doesn't fail the check. It's a reminder that the samples still hold AI text somebody has to review before they become real entries. The warning about a placeholder tracker is the same kind of reminder (see "Rating cards").
+You might also see a line starting with `Warning:` above it, such as "Warning: 27 AI-suggested claims in sample records or pages with unreviewed AI sections have no reviewer." A warning doesn't fail the check. It's a reminder that the samples and the AI-drafted outline sections still hold AI text somebody has to review. The warning about a placeholder tracker is the same kind of reminder (see "Rating cards").
 
 Otherwise you'll get one line per problem, then a count:
 
@@ -542,14 +555,18 @@ The same check runs on GitHub whenever someone pushes a change, so a broken file
 | `must be null when never is true` | A "never" forecast that also has a year. Set the years to `null`. |
 | `reviewed_by: required when provenance is ai` | Someone has to check an AI suggestion and put their name here before it goes public. |
 | `isn't a field the site can mark as AI-suggested` | An `ai_suggested_fields` entry the site can't label. Use one of the field names the message lists. |
-| `"other" needs a note` | Source credibility, scorecard rows and assessments can't use `other`. Pick the closest of the four other reasons. |
-| `only risk rows (scale "risk") can have a potential severity` | `potential_severity` is on a `case` row. Remove it. |
+| `"other" needs a note` | Source credibility, scorecard rows and assessments can't use `other`. Pick the closest of the other reasons. |
+| `must be null on a risk row` | A risk row has a `rating` (or an `unclear_reason`). Risk rows have `severity` and `likelihood` instead. |
+| `only risk rows (scale "risk") have one` | `severity` or `likelihood` is on a `case` row. Remove it. |
+| `no evidence entry with id "E404" in scorecard.json` | An entry id that the workbook's register doesn't have. Check the id, or import the workbook again. |
+| `no causal link with id`, `no risk with id`, `no governance checklist item with id`, `milestone row` | A code in `scorecard.json` names something the workbook doesn't define. Fix it in the workbook and import again. |
+| `doesn't match the id "WBE-O-L1", which names wbe` | A causal link's `family` or `scenario_code` differs from its id's prefix. |
+| `not a field here` | The field belongs to another kind of record, or was removed in v0.4 (like `sample` on a page, or `potential_severity`). Remove it. |
 | `needs exactly one *italic* word or phrase` | The technology page `headline` has no asterisks, or more than one pair. |
 | `scorecard[3].id: "governance-risk" is already used by scorecard[2]` | Two rows on one page have the same `id` (or the same `dimension`). Each row needs its own. |
 | `Every page needs the same scorecard rows as technologies[0] (wbe)` | A page has a row the first page doesn't, is missing one, or has them in another order. Make the three pages match. |
 | `A row means the same thing on every page` | A row has a different `dimension`, `scale` or `problem` on another page. Change it on all three pages at once. |
 | `is taken by the compare page's` | A row id clashes with one of the compare page's own views. Pick another id. |
-| `no scorecard row with id "alignment" on this page` | A register row's `scorecard_ids` entry doesn't match a row id on that page. Use the id the message suggests. |
 | `doesn't match the scorecard row "alignment-case"` | An assessment's rating, confidence or unclear reason differs from its scorecard row. Change both together. |
 | `Each change starts where the one before it ended` | A history entry's `rating_before` or `confidence_before` doesn't match the entry above it. Fix the values, or add the missing change. |
 | `The newest change has to end at the current rating` | The row's `rating` (or `confidence`) changed without a history entry. Add one at the end of `history`. |
@@ -563,10 +580,10 @@ The same check runs on GitHub whenever someone pushes a change, so a broken file
 | `unclear_reason: required when provenance is unclear` | Say why it's unclear, using one of the reasons above. |
 | `confidence: required when there is an estimate` | Set `confidence` to `high`, `medium` or `low`. |
 | `must be lowercase letters, numbers and single hyphens` | An id or slug with capitals, spaces or underscores. `bci-medical-approval` is fine, `BCI Medical_Approval` isn't. |
-| `has an em dash` | See the style rules below. |
+| `has an em dash`, `has an en dash` | See the style rules below. |
 
 ## Style rules for all text
 
-- No em dashes or en dashes (the long and medium-length dashes). Use a period, comma, colon or parentheses instead. The validator checks every file for em dashes.
+- No em dashes or en dashes (the long and medium-length dashes). Use a period, comma, colon or parentheses instead, and a hyphen for a range. The validator checks every file for both.
 - Write the way you'd explain it to a smart friend who isn't a specialist: plain and concrete.
 - Real entries don't start with "Sample." That prefix marks the worked examples.

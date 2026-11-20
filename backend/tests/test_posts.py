@@ -4,6 +4,7 @@ import pytest
 from api_helpers import POST_TEXT, SAMPLE_POST_TEXT, SITE_SOURCES, make_config, write_content
 
 EM_DASH = chr(0x2014)
+EN_DASH = chr(0x2013)
 
 
 @pytest.fixture
@@ -87,6 +88,15 @@ def test_em_dashes_are_refused_with_the_line(client, headers):
     details = error(response)["details"]
     assert details[0].startswith("title: has an em dash")
     assert details[1].startswith("body: has an em dash (line 2)")
+
+
+def test_en_dashes_are_refused_with_the_line(client, headers):
+    response = create(client, headers, summary=f"2030 {EN_DASH} 2040", body=f"Fine.\nStill fine.\n2030{EN_DASH}2040")
+    assert response.status_code == 422
+    details = error(response)["details"]
+    assert details[0].startswith("summary: has an en dash")
+    assert details[1].startswith("body: has an en dash (line 3)")
+    assert len(details) == 2
 
 
 def test_saving_needs_the_version_and_bumps_it(client, headers):

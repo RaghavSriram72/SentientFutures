@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { ExternalLink } from "@/components/common/ExternalLink";
 import { DraftMark, SampleChip } from "@/components/common/Marks";
 import { formatDate } from "@/components/common/format";
@@ -5,11 +7,12 @@ import { ClaimText } from "@/components/provenance/ClaimText";
 import { ProvenanceGlyph } from "@/components/provenance/ProvenanceTag";
 import { enumLabel, isDraftEnum, type EnumName } from "@/lib/enums";
 import type { SourceRef } from "@/lib/sources";
-import type { Source } from "@/lib/types";
+import type { Source, SourceQuality } from "@/lib/types";
 
 import { AuthorList } from "./AuthorList";
 import { ClaimDirectionChip } from "./ClaimDirectionChip";
 import styles from "./CatalogCard.module.css";
+import { isScreeningPending, shownDirections, shownSourceType } from "./sourceFacts";
 
 type FieldKey =
   | "kind"
@@ -45,6 +48,15 @@ const RUBRIC_FIELDS: CatalogField[] = [
   { key: "credibility", label: "Credibility", enumName: "Credibility" },
 ];
 
+// The workbook's "3a Source Quality" tab, each cell under the tab's own header.
+const QUALITY_FIELDS: { key: keyof SourceQuality; label: string }[] = [
+  { key: "source_type", label: "Source type" },
+  { key: "empirical_theoretical", label: "Empirical / theoretical" },
+  { key: "original_secondary", label: "Original / secondary" },
+  { key: "peer_review", label: "Peer-review status" },
+  { key: "affiliation", label: "Affiliation / independence" },
+];
+
 // What an empty tag means. The Notion import leaves technology empty for
 // general background (like the Intelligence Curse essay) and problem empty
 // when the team tagged it Neither.
@@ -75,9 +87,10 @@ function countRated(source: Source): number {
   return count;
 }
 
-// "Preprint · 2025 · arXiv 0000.00000" (shown in caps by CSS)
+// "Preprint · 2025 · arXiv 0000.00000" (shown in caps by CSS). The type is
+// the workbook's 3a "Source type" where it has one.
 function catalogLine(source: Source): string {
-  const parts = [enumLabel("SourceType", source.source_type), String(source.year)];
+  const parts = [shownSourceType(source), String(source.year)];
   if (source.arxiv_id) {
     parts.push(`arXiv ${source.arxiv_id}`);
   } else if (source.doi) {
@@ -182,14 +195,16 @@ export function CatalogCard({
 
 // What a compact row on the sources page opens to: everything on the card
 // except the title and byline, which the row already shows. The link to the
-// source moves to the top, since the row's title isn't a link.
+// source moves to the top, since the row's title isn't a link. entryCount is
+// how many evidence register entries cite the source, or null to leave it out.
 export function SourceDetails({
   source,
   sources,
   sharedAddedBy = null,
   hideUnrated = false,
   hideSummaryFields = false,
-}: { source: Source; sources: Record<string, SourceRef> } & CardOptions) {
+  entryCount = null,
+}: { source: Source; sources: Record<string, SourceRef>; entryCount?: number | null } & CardOptions) {
   const isAiSourceType = source.ai_suggested_fields.includes("source_type");
   const otherUrls = source.other_urls ?? [];
   const identifier = source.arxiv_id ? `arXiv ${source.arxiv_id}` : source.doi ? `DOI ${source.doi}` : null;
@@ -226,6 +241,7 @@ export function SourceDetails({
             Source type: {aiNote(source.reviewed_by)}
           </span>
         )}
+        {entryCount !== null && <EntryCountLine sourceId={source.id} count={entryCount} />}
       </div>
       <CardBody
         source={source}
@@ -235,6 +251,15 @@ export function SourceDetails({
         hideSummaryFields={hideSummaryFields}
       />
     </div>
+  );
+}
+
+// "Evidence entries: 12", linking to the register filtered to this source.
+// With none there's nothing to open, so no link.
+function EntryCountLine({ sourceId, count }: { sourceId: string; count: number }) {
+  const text = `Evidence entries: ${count}`;
+  return (
+    <p className={styles.entryCount}>{count > 0 ? <Link href={`/evidence/?source=${sourceId}`}>{text}</Link> : text}</p>
   );
 }
 
@@ -264,11 +289,30 @@ function CardBody({
   hideUnrated,
   hideSummaryFields,
 }: { source: Source; sources: Record<string, SourceRef> } & Required<CardOptions>) {
-  const directions = source.claim_directions ?? [];
+  const directions = shownDirections(source);
   const isAiDirections = source.ai_suggested_fields.includes("claim_directions");
-  const showDirections = !hideSummaryFields || isAiDirections;
+  // While screening is pending the problem and claim directions are
+  // provisional, so neither is shown (see sourceFacts).
+  const screeningPending = isScreeningPending(source);
+  const showDirections = (!hideSummaryFields || isAiDirections) && !screeningPending;
   const showAddedBy = Boolean(source.added_by) && source.added_by !== sharedAddedBy;
   const showFooter = showAddedBy || Boolean(source.reviewed_by);
+
+  const tagFields: CatalogField[] = [];
+  for (const field of TAG_FIELDS) {
+    // Kind is left out until someone classifies the source.
+    if (field.key === "kind" && fieldValues(source, "kind").length === 0) {
+      continue;
+    }
+    if (field.key === "technology" && hideSummaryFields && !source.ai_suggested_fields.includes("technology")) {
+      continue;
+    }
+    if (field.key === "problem" && screeningPending) {
+      continue;
+    }
+    tagFields.push(field);
+  }
+  const showTags = tagFields.length > 0 || showDirections;
 
   return (
     <>
@@ -276,16 +320,9 @@ function CardBody({
         <ClaimText claim={source.summary} sources={sources} variant="compact" />
       </div>
 
-      <dl className={hideSummaryFields ? `${styles.fields} ${styles.fieldsCompact}` : styles.fields}>
-        {TAG_FIELDS.map((field) => {
-          // Kind is left out until someone classifies the source.
-          if (field.key === "kind" && fieldValues(source, "kind").length === 0) {
-            return null;
-          }
-          if (field.key === "technology" && hideSummaryFields && !source.ai_suggested_fields.includes("technology")) {
-            return null;
-          }
-          return (
+      {showTags && (
+        <dl className={hideSummaryFields ? `${styles.fields} ${styles.fieldsCompact}` : styles.fields}>
+          {tagFields.map((field) => (
             <CatalogFieldCell
               key={field.key}
               field={field}
@@ -293,29 +330,31 @@ function CardBody({
               emptyText={EMPTY_TAG_TEXT[field.key] ?? "Not stated"}
               emptyAsChip={EMPTY_TAG_TEXT[field.key] !== undefined}
             />
-          );
-        })}
-        {showDirections && (
-          <div className={`${styles.field} ${styles.fieldWide}`}>
-            <dt className={styles.fieldLabel}>
-              Claim direction
-              {isDraftEnum("ClaimDirection") && <DraftMark />}
-            </dt>
-            <dd className={styles.fieldValue}>
-              {directions.length === 0 && <span className={styles.none}>Not tagged</span>}
-              {directions.map((direction) => (
-                <ClaimDirectionChip key={direction} direction={direction} />
-              ))}
-              {isAiDirections && (
-                <span className={styles.aiNote}>
-                  <ProvenanceGlyph kind="ai" />
-                  {aiNote(source.reviewed_by)}
-                </span>
-              )}
-            </dd>
-          </div>
-        )}
-      </dl>
+          ))}
+          {showDirections && (
+            <div className={`${styles.field} ${styles.fieldWide}`}>
+              <dt className={styles.fieldLabel}>
+                Claim direction
+                {isDraftEnum("ClaimDirection") && <DraftMark />}
+              </dt>
+              <dd className={styles.fieldValue}>
+                {directions.length === 0 && <span className={styles.none}>Not tagged</span>}
+                {directions.map((direction) => (
+                  <ClaimDirectionChip key={direction} direction={direction} />
+                ))}
+                {isAiDirections && (
+                  <span className={styles.aiNote}>
+                    <ProvenanceGlyph kind="ai" />
+                    {aiNote(source.reviewed_by)}
+                  </span>
+                )}
+              </dd>
+            </div>
+          )}
+        </dl>
+      )}
+
+      <QualityBlock quality={source.quality ?? null} />
 
       <RubricBlock source={source} hideUnrated={hideUnrated} />
 
@@ -331,6 +370,28 @@ function CardBody({
         </footer>
       )}
     </>
+  );
+}
+
+// The source's row of the workbook's 3a tab, each cell word for word. Left
+// out when the workbook has no row for it.
+function QualityBlock({ quality }: { quality: SourceQuality | null }) {
+  if (quality === null) {
+    return null;
+  }
+  const cells = QUALITY_FIELDS.filter((field) => Boolean(quality[field.key]));
+  if (cells.length === 0) {
+    return null;
+  }
+  return (
+    <dl className={`${styles.fields} ${styles.qualityFields}`}>
+      {cells.map((field) => (
+        <div key={field.key} className={styles.field}>
+          <dt className={styles.fieldLabel}>{field.label}</dt>
+          <dd className={styles.qualityValue}>{quality[field.key]}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

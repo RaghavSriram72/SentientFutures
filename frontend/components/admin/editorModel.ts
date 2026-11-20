@@ -35,15 +35,17 @@ export function isIsoDate(text: string): boolean {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === text;
 }
 
-// The API refuses long (em) dashes in anything published, the site's house
-// rule. Built from its code point, so this file passes the same check.
+// The API refuses long dashes in anything published, the site's house rule:
+// the em dash (U+2014) and the en dash (U+2013). Built from their code
+// points, so this file passes the same check.
 export const LONG_DASH = String.fromCharCode(0x2014);
+export const EN_DASH = String.fromCharCode(0x2013);
 
 export function hasLongDash(text: string): boolean {
-  return text.includes(LONG_DASH);
+  return text.includes(LONG_DASH) || text.includes(EN_DASH);
 }
 
-export const LONG_DASH_FIX = "Use a comma, colon or full stop instead.";
+export const LONG_DASH_FIX = "Use a hyphen for a range, or a comma, colon or full stop instead.";
 
 // Who saved first, when a save is refused because the record changed since
 // the editor opened it (409 version_conflict).

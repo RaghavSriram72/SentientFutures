@@ -31,11 +31,14 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/contact/", label: "Contact", menuOnly: true },
 ];
 
-// The footer's one line of links.
+// The footer's one line of links. The evidence register is only here: the
+// header has no room for it, and rating cards, technology pages and source
+// rows link to it.
 export const SECONDARY_NAV: NavItem[] = [
   { href: "/about/", label: "About" },
   { href: "/methodology/", label: "Methodology" },
   { href: "/compare/", label: "Compare" },
+  { href: "/evidence/", label: "Evidence register" },
   { href: "/contact/", label: "Contact" },
 ];
 

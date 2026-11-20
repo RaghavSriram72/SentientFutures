@@ -6,7 +6,7 @@ save checks the same rules the validator applies to content/posts/:
 
     the frontmatter matches PostFrontmatter (models.py)
     the body has some text
-    no em dashes anywhere
+    no em dashes or en dashes anywhere
 
 then writes it with version + 1, but only if nobody saved it since the editor
 opened it (otherwise 409), and inserts a full copy into post_revisions, which
@@ -28,7 +28,7 @@ from sf_api.errors import ApiError, validation_problems
 from sf_shared.db import now
 from sf_shared.editor_models import PostRevision, PostStatus, RevisionAction, StoredPost
 from sf_shared.models import PostFrontmatter
-from sf_shared.validate import EM_DASH_FIX, em_dash_line_numbers, parse_frontmatter
+from sf_shared.validate import EM_DASH_FIX, EN_DASH_FIX, em_dash_line_numbers, en_dash_line_numbers, parse_frontmatter
 
 TEXT_FIELDS = ("title", "slug", "date", "author", "summary", "body")
 # Set by the server. Ignored when a client sends a post back as it got it.
@@ -92,15 +92,17 @@ def post_problems(slug: str, body: PostBody) -> list[str]:
 
     values = dict(frontmatter)
     values["body"] = body.body
+    dashes = (("an em dash", em_dash_line_numbers, EM_DASH_FIX), ("an en dash", en_dash_line_numbers, EN_DASH_FIX))
     for name in TEXT_FIELDS:
-        line_numbers = em_dash_line_numbers(values[name])
-        if len(line_numbers) == 0:
-            continue
-        if name == "body":
-            lines = ", ".join(str(number) for number in line_numbers)
-            problems.append(f"body: has an em dash (line {lines}). {EM_DASH_FIX}")
-        else:
-            problems.append(f"{name}: has an em dash. {EM_DASH_FIX}")
+        for dash, find_lines, fix in dashes:
+            line_numbers = find_lines(values[name])
+            if len(line_numbers) == 0:
+                continue
+            if name == "body":
+                lines = ", ".join(str(number) for number in line_numbers)
+                problems.append(f"body: has {dash} (line {lines}). {fix}")
+            else:
+                problems.append(f"{name}: has {dash}. {fix}")
     return problems
 
 

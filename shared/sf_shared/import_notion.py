@@ -194,12 +194,18 @@ def venue_for(url: str) -> str | None:
     return None
 
 
-def row_to_source(row: dict[str, str], warnings: list[str]) -> dict | None:
+def is_screening_pending(resource_type: str) -> bool:
+    return "screening pending" in clean_text(resource_type).lower()
+
+
+def row_to_source(row: dict[str, str], warnings: list[str], admit_screening_pending: bool = False) -> dict | None:
+    """One row as a source record. Screening-pending rows are skipped unless
+    admit_screening_pending is true (the workbook import adds them, marked)."""
     register_id = clean_text(row["Source ID"])
     label = register_id or row.get("Resource Title", "?")
 
     resource_type = clean_text(row["Resource Type"])
-    if "screening pending" in resource_type.lower():
+    if is_screening_pending(resource_type) and not admit_screening_pending:
         warnings.append(f"{label}: skipped, marked screening pending in Notion")
         return None
 

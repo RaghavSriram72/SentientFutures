@@ -58,6 +58,8 @@ class MilestoneStatus(StrEnum):
     # The scorecard's "if claimed" rows: nobody in our sources says the
     # proposal will deliver this, so "not demonstrated" would overstate it.
     NOT_CLAIMED = "not_claimed"
+    # The workbook's tab 1a uses "Unclear" for rows it can't call either way.
+    UNCLEAR = "unclear"
 
 
 class Confidence(StrEnum):
@@ -86,6 +88,10 @@ class UnclearReason(StrEnum):
     CONFLICTING_EVIDENCE = "conflicting_evidence"
     UNDERSPECIFIED_PROPOSAL = "underspecified_proposal"
     SEARCH_INCOMPLETE = "search_incomplete"
+    # The three the workbook's Codebook adds (v0.4).
+    INDIRECT_EVIDENCE_ONLY = "indirect_evidence_only"
+    OUTCOME_NOT_OPERATIONALIZED = "outcome_not_operationalized"
+    INFORMATION_INACCESSIBLE = "information_inaccessible"
     OTHER = "other"
 
 
@@ -161,6 +167,93 @@ class Provenance(StrEnum):
     UNCLEAR = "unclear"
 
 
+# ---------- The workbook's scales (scorecard v0.4) ----------
+# Labels are the workbook's own values word for word, except GovernanceStatus
+# not_addressed: the sheet's "Not addressed in database" points at the
+# workbook's database, so the site labels it "Not addressed by any source"
+# (import_workbook.GOVERNANCE_STATUS still reads the sheet's word). A
+# description comes from the workbook's Codebook where it defines the value,
+# otherwise it is empty and the site shows the label alone. These follow the
+# workbook's version (stored in content/scorecard.json), not RUBRIC_VERSION,
+# which pipeline and review records carry.
+
+
+class EvidenceDirectness(StrEnum):
+    """How close an evidence entry is to the family. Not the source rubric's 3-value Directness."""
+
+    DIRECT = "direct"
+    CLOSE_PREREQUISITE = "close_prerequisite"
+    RELATED_NEUROAI = "related_neuroai"
+    CONCEPTUAL = "conceptual"
+
+
+class EvidenceRole(StrEnum):
+    SUPPORTS = "supports"
+    CONTRARY = "contrary"
+    QUALIFIES = "qualifies"
+    PREREQUISITE_ONLY = "prerequisite_only"
+
+
+class EvidenceBasis(StrEnum):
+    DEMONSTRATED = "demonstrated"
+    PROJECTED = "projected"
+    ARGUED = "argued"
+    ASSUMED = "assumed"
+
+
+class EvidenceStatus(StrEnum):
+    """The status of one causal link (tab 2)."""
+
+    SUPPORTING = "supporting"
+    CONTRARY = "contrary"
+    CONFLICTING = "conflicting"
+    NO_RELEVANT_EVIDENCE = "no_relevant_evidence"
+    SEARCH_INCOMPLETE = "search_incomplete"
+
+
+class Severity(StrEnum):
+    VERY_HIGH = "very_high"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    UNCLEAR = "unclear"
+
+
+class Likelihood(StrEnum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    NOT_ASSESSABLE = "not_assessable"
+
+
+class RiskLevel(StrEnum):
+    """A risk's reversibility or detectability (tab 7)."""
+
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    UNCLEAR = "unclear"
+
+
+class RiskDomain(StrEnum):
+    HUMAN_WELFARE = "human_welfare"
+    ARTIFICIAL_MIND_WELFARE = "artificial_mind_welfare"
+    GOVERNANCE = "governance"
+
+
+class GovernanceStatus(StrEnum):
+    NOT_ADDRESSED = "not_addressed"
+    PROPOSAL_FOUND = "proposal_found"
+    EVIDENCE_FOUND = "evidence_found"
+
+
+class AgencyEffect(StrEnum):
+    STRENGTHENS = "strengthens"
+    WEAKENS = "weakens"
+    MIXED = "mixed"
+    NOT_ADDRESSED = "not_addressed"
+
+
 # Labels and one-line descriptions for the site. `draft: True` marks categories
 # the team hasn't settled yet; the methodology page shows them as drafts.
 ENUM_INFO = {
@@ -198,7 +291,7 @@ ENUM_INFO = {
             "technical_capability": ("Technical capability", "We can create and operate it."),
             "high_level_fidelity": (
                 "High-level fidelity",
-                "Preserves the relevant cognitive, behavioral, memory, personality, preference and decision-making "
+                "Preserves the relevant cognitive, behavioural, memory, personality, preference and decision-making "
                 "properties of the original person.",
             ),
             "reliability_robustness": ("Reliability and robustness", "Behaves consistently across time and conditions."),
@@ -221,6 +314,7 @@ ENUM_INFO = {
             "replicated": ("Replicated", "Shown more than once, by more than one group."),
             "mature": ("Mature", "Routine and dependable."),
             "not_claimed": ("Not claimed", "None of our current sources claims the proposal will do this."),
+            "unclear": ("Unclear", ""),
         },
     },
     "Confidence": {
@@ -228,11 +322,11 @@ ENUM_INFO = {
         "values": {
             "high": (
                 "High",
-                "Several relevant, reasonably solid sources support the judgment, and we've considered the main "
+                "Several relevant, reasonably solid sources support the judgement, and we've considered the main "
                 "evidence against it.",
             ),
             "medium": ("Medium", "Some relevant support, but with real limits."),
-            "low": ("Low", "The judgment rests mainly on indirect evidence, early results or contested assumptions."),
+            "low": ("Low", "The judgement rests mainly on indirect evidence, early results or contested assumptions."),
         },
     },
     # Wording follows the rating rules in the team's scorecard v0.1 (section 7).
@@ -282,8 +376,11 @@ ENUM_INFO = {
         "values": {
             "no_relevant_evidence": ("No relevant evidence found", "We looked and found nothing relevant."),
             "conflicting_evidence": ("Conflicting evidence", "Credible sources point in different directions."),
-            "underspecified_proposal": ("Underspecified proposal", "The proposal isn't specific enough to assess."),
+            "underspecified_proposal": ("Proposal underspecified", "The proposal isn't specific enough to assess."),
             "search_incomplete": ("Search incomplete", "We haven't finished looking."),
+            "indirect_evidence_only": ("Indirect evidence only", ""),
+            "outcome_not_operationalized": ("Outcome not operationalised", ""),
+            "information_inaccessible": ("Information inaccessible", ""),
             "other": ("Other", "See the note."),
         },
     },
@@ -319,7 +416,7 @@ ENUM_INFO = {
             "peer_reviewed": ("Peer reviewed", "Published after peer review."),
             "preprint": ("Preprint", "Public but not yet peer reviewed."),
             "blog": ("Blog", "A blog post or newsletter."),
-            "report": ("Report", "A report from an organization."),
+            "report": ("Report", "A report from an organisation."),
             "forum_post": ("Forum post", "A post on a forum like LessWrong or the Alignment Forum."),
             "talk": ("Talk", "A recorded talk or workshop presentation."),
             "podcast": ("Podcast", "A podcast episode or interview."),
@@ -347,7 +444,7 @@ ENUM_INFO = {
     "SourceKind": {
         "draft": False,
         "values": {
-            "argument": ("Argument", "Proposes or criticizes neuroengineering as a response to alignment or the Intelligence Curse."),
+            "argument": ("Argument", "Proposes or criticises neuroengineering as a response to alignment or the Intelligence Curse."),
             "milestone_evidence": ("Milestone evidence", "Technical progress that bears on a milestone."),
         },
     },
@@ -390,6 +487,103 @@ ENUM_INFO = {
             "unclear": ("Unclear", "We don't know, and the tag gives the reason."),
         },
     },
+    # The workbook's scales. Descriptions are the Codebook's words where it has them.
+    "EvidenceDirectness": {
+        "draft": False,
+        "values": {
+            "direct": ("Direct (family itself)", "Source studies the technology family itself"),
+            "close_prerequisite": ("Close technical prerequisite", "Source studies a component the family requires"),
+            "related_neuroai": ("Related NeuroAI system", "Source studies an adjacent neuro-inspired system"),
+            "conceptual": ("Conceptually relevant only", "No empirical or technical bearing; argument by analogy"),
+        },
+    },
+    "EvidenceRole": {
+        "draft": False,
+        "values": {
+            "supports": ("Supports", ""),
+            "contrary": ("Contrary", ""),
+            "qualifies": ("Qualifies", ""),
+            "prerequisite_only": ("Prerequisite only", ""),
+        },
+    },
+    "EvidenceBasis": {
+        "draft": False,
+        "values": {
+            "demonstrated": ("Demonstrated", ""),
+            "projected": ("Projected", ""),
+            "argued": ("Argued", ""),
+            "assumed": ("Assumed", ""),
+        },
+    },
+    "EvidenceStatus": {
+        "draft": False,
+        "values": {
+            "supporting": (
+                "Supporting evidence found",
+                "≥1 Supports entry; no unaddressed contrary entry of comparable quality",
+            ),
+            "contrary": ("Contrary evidence found", "≥1 Contrary entry; no supporting entry of comparable quality"),
+            "conflicting": ("Conflicting evidence", "Supporting and contrary entries of comparable quality"),
+            "no_relevant_evidence": (
+                "No relevant evidence found",
+                "Documented search completed; nothing relevant. Never counted as contrary.",
+            ),
+            "search_incomplete": ("Search incomplete", "Search not yet completed"),
+        },
+    },
+    "Severity": {
+        "draft": False,
+        "values": {
+            "very_high": ("Very high", ""),
+            "high": ("High", ""),
+            "medium": ("Medium", ""),
+            "low": ("Low", ""),
+            "unclear": ("Unclear", ""),
+        },
+    },
+    "Likelihood": {
+        "draft": False,
+        "values": {
+            "high": ("High", ""),
+            "medium": ("Medium", ""),
+            "low": ("Low", ""),
+            "not_assessable": ("Not assessable", ""),
+        },
+    },
+    "RiskLevel": {
+        "draft": False,
+        "values": {
+            "high": ("High", ""),
+            "medium": ("Medium", ""),
+            "low": ("Low", ""),
+            "unclear": ("Unclear", ""),
+        },
+    },
+    "RiskDomain": {
+        "draft": False,
+        "values": {
+            "human_welfare": ("Human welfare", ""),
+            "artificial_mind_welfare": ("Artificial-mind welfare", ""),
+            "governance": ("Governance", ""),
+        },
+    },
+    "GovernanceStatus": {
+        "draft": False,
+        "values": {
+            "not_addressed": ("Not addressed by any source", ""),
+            "proposal_found": ("Proposal found", ""),
+            "evidence_found": ("Evidence found", ""),
+        },
+    },
+    "AgencyEffect": {
+        "draft": False,
+        "values": {
+            "strengthens": ("Strengthens", ""),
+            "weakens": ("Weakens", ""),
+            "mixed": ("Mixed", ""),
+            "not_addressed": ("Not addressed", ""),
+        },
+    },
 }
 
 ALL_ENUMS = {
@@ -412,6 +606,16 @@ ALL_ENUMS = {
     "Credibility": Credibility,
     "TimeHorizon": TimeHorizon,
     "Provenance": Provenance,
+    "EvidenceDirectness": EvidenceDirectness,
+    "EvidenceRole": EvidenceRole,
+    "EvidenceBasis": EvidenceBasis,
+    "EvidenceStatus": EvidenceStatus,
+    "Severity": Severity,
+    "Likelihood": Likelihood,
+    "RiskLevel": RiskLevel,
+    "RiskDomain": RiskDomain,
+    "GovernanceStatus": GovernanceStatus,
+    "AgencyEffect": AgencyEffect,
 }
 
 

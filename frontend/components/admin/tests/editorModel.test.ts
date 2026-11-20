@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { logLinesInLocalTime } from "../adminFormat";
-import { isIsoDate, isSlug, LONG_DASH, slugify, todayIso, withoutPrefix } from "../editorModel";
+import { EN_DASH, hasLongDash, isIsoDate, isSlug, LONG_DASH, slugify, todayIso, withoutPrefix } from "../editorModel";
 import { blankClaim, blankMilestone, milestoneProblems, pathLabel, toMilestone, tidyClaim } from "../milestoneModel";
 
 describe("slugs and dates", () => {
@@ -22,6 +22,14 @@ describe("slugs and dates", () => {
   test("withoutPrefix drops the request body's own name", () => {
     assert.equal(withoutPrefix("milestone.forecasts.0.quote", "milestone"), "forecasts.0.quote");
     assert.equal(withoutPrefix("published", "milestone"), "published");
+  });
+});
+
+describe("hasLongDash", () => {
+  test("finds em and en dashes but not hyphens", () => {
+    assert.equal(hasLongDash(`a ${LONG_DASH} b`), true);
+    assert.equal(hasLongDash(`2030${EN_DASH}2040`), true);
+    assert.equal(hasLongDash("2030-2040, a - b"), false);
   });
 });
 
@@ -70,6 +78,12 @@ describe("milestoneProblems", () => {
   test("long dashes are caught where they are", () => {
     const draft = blankMilestone();
     draft.name = `Before ${LONG_DASH} after`;
+    assert.match(milestoneProblems(draft).name, /long dash/);
+  });
+
+  test("en dashes are caught too", () => {
+    const draft = blankMilestone();
+    draft.name = `From 2030 ${EN_DASH} 2040`;
     assert.match(milestoneProblems(draft).name, /long dash/);
   });
 });

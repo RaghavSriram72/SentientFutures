@@ -269,6 +269,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Presentation",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Unknown"
+    },
     "sample": false
   },
   {
@@ -307,6 +314,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Presentation",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Affiliated (WBE workshop keynote; Foresight host)"
+    },
     "sample": false
   },
   {
@@ -338,13 +352,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Describes a framework that couples reinforcement-driven neuroplasticity with adaptive algorithmic optimization. It moves BCI training from passive calibration to active human-machine joint learning, which makes neural interfaces for communication and rehabilitation practical and scalable.",
+      "text": "Describes a framework that couples reinforcement-driven neuroplasticity with adaptive algorithmic optimisation. It moves BCI training from passive calibration to active human-machine joint learning, which makes neural interfaces for communication and rehabilitation practical and scalable.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Blog / forum post",
+      "empirical_theoretical": "Empirical",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -382,13 +403,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "AI-enhanced BCI systems might raise new or more severe ethical issues than traditional BCI systems. These include making users' intentions and behaviors more predictable and easier to manipulate, and a greater likelihood of technological abuse.",
+      "text": "AI-enhanced BCI systems might raise new or more severe ethical issues than traditional BCI systems. These include making users' intentions and behaviours more predictable and easier to manipulate, and a greater likelihood of technological abuse.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Peer-reviewed (unconfirmed)",
+      "affiliation": "Unknown"
+    },
     "sample": false
   },
   {
@@ -429,6 +457,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Preprint",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -468,6 +503,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Preprint",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Affiliated (Clipco Ltd)"
+    },
     "sample": false
   },
   {
@@ -506,13 +548,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Emerging neuromorphic computing architectures introduce new attack surfaces, particularly because of their asynchronous, event-driven processing and stochastic device behavior. This survey covers side-channel and fault-injection attacks on neuromorphic systems, hardware Trojans, adversarial and backdoor attacks, privacy attacks, and countermeasures. It also discusses security primitives that neuromorphic and emerging-memory devices make possible, including physical unclonable functions (PUFs), true random number generators (TRNGs), and secure in-memory or near-sensor computation.",
+      "text": "Emerging neuromorphic computing architectures introduce new attack surfaces, particularly because of their asynchronous, event-driven processing and stochastic device behaviour. This survey covers side-channel and fault-injection attacks on neuromorphic systems, hardware Trojans, adversarial and backdoor attacks, privacy attacks, and countermeasures. It also discusses security primitives that neuromorphic and emerging-memory devices make possible, including physical unclonable functions (PUFs), true random number generators (TRNGs), and secure in-memory or near-sensor computation.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Preprint",
+      "empirical_theoretical": "Mixed",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -524,7 +573,9 @@
     ],
     "year": 2026,
     "url": "https://theexistentialhope.substack.com/p/we-could-teach-ai-empathy-using-brain",
-    "other_urls": [],
+    "other_urls": [
+      "https://www.zanderlabs.com/blog/neuralink-passive-bcis-and-the-future-of-neuroadaptive-technology"
+    ],
     "doi": null,
     "arxiv_id": null,
     "venue": null,
@@ -551,6 +602,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Podcast",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Affiliated (co-founder, Zander Labs, commercial pBCI)"
+    },
     "sample": false
   },
   {
@@ -589,6 +647,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Presentation",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Unknown"
+    },
     "sample": false
   },
   {
@@ -627,6 +692,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Presentation",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Unknown"
+    },
     "sample": false
   },
   {
@@ -671,6 +743,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Unclear",
+      "affiliation": "Unknown"
+    },
     "sample": false
   },
   {
@@ -687,7 +766,9 @@
     ],
     "year": 2025,
     "url": "https://onlinelibrary.wiley.com/doi/full/10.1002/brx2.70035",
-    "other_urls": [],
+    "other_urls": [
+      "https://journals.physiology.org/doi/epdf/10.1152/physrev.00027.2016"
+    ],
     "doi": "10.1002/brx2.70035",
     "arxiv_id": null,
     "venue": null,
@@ -707,13 +788,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Long-term exposure to BCIs may induce changes in neuroplasticity. Long-term use of BCIs induces changes in synaptic plasticity (such as long-term enhancement or inhibition), which may in turn change local and global connectivity patterns in the cerebral cortex. Algorithmic fairness is also a critical issue: AI models may pick up data biases in training (including biases inherited by DeepSeek models) and may carry that unfairness into BCI applications.",
+      "text": "Long-term BCI use may change synaptic plasticity (such as long-term enhancement or inhibition), which may in turn change local and global connectivity patterns in the cerebral cortex. Algorithmic fairness is also a critical issue: AI models may pick up data biases in training (including biases inherited by DeepSeek models) and may carry that unfairness into BCI applications.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Peer-reviewed (unconfirmed)",
+      "affiliation": "Unknown"
+    },
     "sample": false
   },
   {
@@ -770,6 +858,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Preprint",
+      "empirical_theoretical": "Mixed",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Affiliated (several authors in NeuroAI/WBE research)"
+    },
     "sample": false
   },
   {
@@ -800,13 +895,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Researching BCIs would be net positive in expectation, but there are similarly tractable approaches to AI alignment with much higher expected value. BCIs offer only a constant speedup in interaction between AI systems and humans, with no clear qualitative change in the way humans interact with AI systems, and they speed up alignment work no more than capabilities work.",
+      "text": "Researching BCIs would be net positive in expectation, but there are similarly tractable approaches to AI alignment with much higher expected value. BCIs offer only a constant speed-up in interaction between AI systems and humans, with no clear qualitative change in the way humans interact with AI systems, and they speed up alignment work no more than capabilities work.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Blog / forum post",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -843,6 +945,13 @@
     "added_by": "Raghav",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Blog / forum post",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -883,6 +992,62 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Report",
+      "empirical_theoretical": "Mixed",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Affiliated (Foresight Institute, funds and promotes WBE)"
+    },
+    "sample": false
+  },
+  {
+    "id": "s17",
+    "register_id": "S17",
+    "title": "Can we accurately bridge neurobiology to brain-inspired AGI to effectively emulate the human brain?",
+    "authors": [
+      "Diana Deca",
+      "Caswell Barry",
+      "Samit Chakrabarty"
+    ],
+    "year": 2023,
+    "url": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/3A4FE64950643D7C5D528A040D1EBFE2/S2753852423000061a.pdf/can_we_accurately_bridge_neurobiology_to_braininspired_agi_to_effectively_emulate_the_human_brain.pdf",
+    "other_urls": [],
+    "doi": null,
+    "arxiv_id": null,
+    "venue": null,
+    "source_type": "peer_reviewed",
+    "kind": null,
+    "technology": [
+      "wbe",
+      "neuromorphic"
+    ],
+    "problem": "alignment",
+    "claim_directions": [
+      "ai_misalignment"
+    ],
+    "evidence_type": null,
+    "directness": null,
+    "independence": null,
+    "relevance": null,
+    "credibility": null,
+    "credibility_unclear_reason": null,
+    "summary": {
+      "text": "Examines the integration of neurobiology and brain-inspired AGI. A feasibility limitation does not by itself demonstrate misalignment.",
+      "provenance": "team"
+    },
+    "ai_suggested_fields": [],
+    "added_by": "Vilija",
+    "reviewed_by": null,
+    "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Peer-reviewed",
+      "affiliation": "Affiliated (neurobotx)"
+    },
+    "screening_pending": true,
     "sample": false
   },
   {
@@ -914,13 +1079,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Proposes using brain recordings to improve imitative amplification, approval signals for debate or amplification, and human value learning. The idea is to supplement language and behavior with neural data, which could reveal human reasoning and reactions in more detail.",
+      "text": "Proposes using brain recordings to improve imitative amplification, approval signals for debate or amplification, and human value learning. The idea is to supplement language and behaviour with neural data, which could reveal human reasoning and reactions in more detail.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Blog / forum post",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -953,13 +1125,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Analyzes a hypothetical scenario in which an employer monitors workers with EEG, and identifies a greater power imbalance between employer and employee, threats to mental privacy, and neuro-discrimination. Workers are disempowered because employers use neural information for monitoring and employment decisions while workers have limited freedom to refuse. Its link to the Intelligence Curse is through weakened worker agency and institutional power.",
+      "text": "Analyses a hypothetical scenario in which an employer monitors workers with EEG, and identifies a greater power imbalance between employer and employee, threats to mental privacy, and neurodiscrimination. Workers are disempowered because employers use neural information for monitoring and employment decisions while workers have limited freedom to refuse. Its link to the Intelligence Curse is through weakened worker agency and institutional power.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -991,13 +1170,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Models a hypothetical economy dominated by copied human emulations. Cheap replication could intensify labor competition and change how wages and returns are distributed. It connects to the Intelligence Curse through its analysis of displacement and bargaining power.",
+      "text": "Models a hypothetical economy dominated by copied human emulations. Cheap replication could intensify labour competition and change how wages and returns are distributed. It connects to the Intelligence Curse through its analysis of displacement and bargaining power.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Book / chapter",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Peer-reviewed (OUP book; review process not verified)",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -1027,13 +1213,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Discusses the values and strategic behavior of whole brain emulations. The economic scenario it describes raises questions about competition between biological humans and copied emulations.",
+      "text": "Discusses the values and strategic behaviour of whole brain emulations. The economic scenario it describes raises questions about competition between biological humans and copied emulations.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Report",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Affiliated (Center on Long-Term Risk)"
+    },
     "sample": false
   },
   {
@@ -1066,13 +1259,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Analyzes conflicts over resources and influence between humans and possible digital minds. It raises distributional and political questions relevant to human agency.",
+      "text": "Analyses conflicts over resources and influence between humans and possible digital minds. It raises distributional and political questions relevant to human agency.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Book / chapter",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Peer-reviewed (edited volume)",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -1105,13 +1305,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Summarizes strategic, ethical, and economic issues around WBE. We use it to find arguments about human-derived intelligence and displacement.",
+      "text": "Summarises strategic, ethical, and economic issues around WBE. We use it to find arguments about human-derived intelligence and displacement.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Wiki / reference page",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -1144,13 +1351,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Examines intrinsic human signals as feedback for interactive reinforcement learning. Such signals may help agents learn the behavior their human users intend.",
+      "text": "Examines intrinsic human signals as feedback for interactive reinforcement learning. Such signals may help agents learn the behaviour their human users intend.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Mixed",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -1181,13 +1395,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Investigates error-related potentials, measured with EEG, as feedback for robotic reinforcement learning. It bears on one narrow mechanism, neural feedback guiding an agent's behavior, but does not establish safety under advanced capabilities or distribution shift.",
+      "text": "Investigates error-related potentials, measured with EEG, as feedback for robotic reinforcement learning. It bears on one narrow mechanism, neural feedback guiding an agent's behaviour, but does not establish safety under advanced capabilities or distribution shift.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Empirical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Peer-reviewed (conference)",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -1229,6 +1450,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Mixed",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -1270,6 +1498,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Preprint",
+      "empirical_theoretical": "Empirical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Not peer-reviewed (AAAI-26 tag in repo, unconfirmed)",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -1310,6 +1545,13 @@
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
@@ -1341,19 +1583,26 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Discusses neurotechnology governance and the potential for coercive monitoring by powerful institutions. Such uses could weaken privacy, freedom, and individual agency. It connects to the Intelligence Curse through institutional disempowerment, but it doesn't prove the curse's labor-substitution mechanism.",
+      "text": "Discusses neurotechnology governance and the potential for coercive monitoring by powerful institutions. Such uses could weaken privacy, freedom, and individual agency. It connects to the Intelligence Curse through institutional disempowerment, but it doesn't prove the curse's labour-substitution mechanism.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Policy paper",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Summarises other work",
+      "peer_review": "Not peer-reviewed",
+      "affiliation": "Independent"
+    },
     "sample": false
   },
   {
     "id": "s30",
     "register_id": "S30",
-    "title": "Anthropomorphic reasoning about neuro-morphic AGI safety",
+    "title": "Anthropomorphic reasoning about neuromorphic AGI safety",
     "authors": [
       "David J. Jilk",
       "Seth J. Herd",
@@ -1382,13 +1631,20 @@
     "credibility": null,
     "credibility_unclear_reason": null,
     "summary": {
-      "text": "Argues that safety analysis of neuromorphic AGI can draw on comparisons with human cognition when the systems reproduce essential human computational mechanisms. It proposes prosocial motivational drives, bounded competing drives, and a carefully designed social developmental environment as ways to promote human-friendly behavior and motivational stability.",
+      "text": "Argues that safety analysis of neuromorphic AGI can draw on comparisons with human cognition when the systems reproduce essential human computational mechanisms. It proposes prosocial motivational drives, bounded competing drives, and a carefully designed social developmental environment as ways to promote human-friendly behaviour and motivational stability.",
       "provenance": "team"
     },
     "ai_suggested_fields": [],
     "added_by": "Vilija",
     "reviewed_by": null,
     "reviewed_on": null,
+    "quality": {
+      "source_type": "Peer-reviewed article",
+      "empirical_theoretical": "Theoretical",
+      "original_secondary": "Original evidence",
+      "peer_review": "Peer-reviewed",
+      "affiliation": "Affiliated (authors disclose neuromorphic research firm)"
+    },
     "sample": false
   }
 ]

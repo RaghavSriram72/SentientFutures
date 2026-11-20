@@ -803,7 +803,7 @@ export function toMilestone(raw: unknown): Milestone {
     confidence: (stringOrNull(record.confidence) as Milestone["confidence"]) ?? null,
     summary: claimOrBlank(record.summary),
     success_criterion: claimOrBlank(record.success_criterion),
-    main_bottleneck: claimOrBlank(record.main_bottleneck),
+    main_bottleneck: claimOrNull(record.main_bottleneck),
     depends_on: arrayOrEmpty<string>(record.depends_on),
     source_ids: arrayOrEmpty<string>(record.source_ids),
     estimate:
@@ -823,6 +823,13 @@ export function toMilestone(raw: unknown): Milestone {
     would_move_earlier: claimList(record.would_move_earlier),
     would_move_later: claimList(record.would_move_later),
     artificial_minds_questions: claimList(record.artificial_minds_questions),
+    // The workbook's fields (tab 1a), all optional.
+    assessment_confidence: (stringOrNull(record.assessment_confidence) as Milestone["confidence"]) ?? null,
+    applies_to: stringOrNull(record.applies_to),
+    criterion_met: stringOrNull(record.criterion_met),
+    evidence_entries: arrayOrEmpty<string>(record.evidence_entries),
+    timing: stringOrNull(record.timing),
+    note: stringOrNull(record.note),
   };
   if (record.sample === true) {
     milestone.sample = true;

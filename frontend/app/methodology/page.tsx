@@ -12,10 +12,15 @@ import { Stamp } from "@/components/common/Stamp";
 import { TypeMark } from "@/components/common/TypeMark";
 import { ProvenanceLegend, StageLegend, TypeLegend } from "@/components/provenance/Legends";
 import { ProvenanceTag } from "@/components/provenance/ProvenanceTag";
-import { allEnumNames, isDraftEnum, milestoneTypes, RUBRIC_VERSION, type EnumName } from "@/lib/enums";
+import { buildCodeIndex } from "@/lib/codes";
+import { getScorecard, getSources, getTechnologies } from "@/lib/data";
+import { allEnumNames, enumValues, milestoneTypes, RUBRIC_VERSION, type EnumName } from "@/lib/enums";
 import { DISAGREEMENT_GAP_YEARS, DISAGREEMENT_RULE_TEXT, DISAGREEMENT_RULE_VERSION } from "@/lib/estimates";
-import type { Provenance } from "@/lib/types";
+import { realSources, toSourceRef } from "@/lib/sources";
+import type { CodebookRow, Provenance, TechnologyPage } from "@/lib/types";
 
+import { CodebookFolds, OverviewItems } from "./Codebook";
+import { codebookDescriptions, codebookRuns, runIdForType, type CodebookRun } from "./codebookModel";
 import { MethodologyToc } from "./MethodologyToc";
 import { RuleSpecimens } from "./RuleSpecimens";
 import styles from "./page.module.css";
@@ -31,7 +36,7 @@ export const metadata: Metadata = {
 // gives each section its number in both places.
 const SECTIONS = [
   { id: "reading", label: "How to read this site", em: "read" },
-  { id: "marks", label: "The four marks", em: "marks" },
+  { id: "marks", label: "The marks", em: "marks" },
   { id: "stages", label: "The three stages", em: "stages" },
   { id: "timeline", label: "The timeline", em: "timeline" },
   { id: "pipeline", label: "How sources reach the site", em: "reach" },
@@ -39,6 +44,9 @@ const SECTIONS = [
   { id: "ratings", label: "The scorecard's rating scales", em: "rating" },
   { id: "new-sources", label: "How new sources move through the scorecard", em: "move" },
   { id: "scorecard-timeline", label: "How the scorecard feeds the timeline", em: "feeds" },
+  // Vilija's codes, terms and rules. The id stays "codebook" so every
+  // existing #codebook link still lands here.
+  { id: "codebook", label: "Definitions", em: "Definitions" },
   { id: "categories", label: "Other categories", em: "categories" },
   { id: "versions", label: "Versions", em: "Versions" },
 ] as const;
@@ -63,15 +71,40 @@ function emphasize(label: string, word: string): ReactNode {
 // These three are the published credibility guidelines, so they get their own section.
 const CREDIBILITY_GROUP: EnumName[] = ["Credibility", "Independence", "EvidenceType"];
 
-// The scales the technology scorecards use, from the team's scorecard v0.1 rating rules.
-const RATING_GROUP: EnumName[] = ["CaseRating", "RiskRating", "Confidence", "UnclearReason"];
+// The scales the technology scorecards use. Since workbook v0.4 the three
+// case rows take a CaseRating and the three risk rows a Severity and a
+// Likelihood. UnclearReason stays here because the unclear mark's
+// explainer in section 02 points to it.
+const RATING_GROUP: EnumName[] = ["CaseRating", "Severity", "Likelihood", "Confidence", "UnclearReason"];
 
-// Shown in full in their own sections, so the category list skips them.
-const SHOWN_ELSEWHERE: EnumName[] = ["Provenance", "Stage"];
+// Not listed in "Other categories". Provenance and Stage have sections of
+// their own. The workbook's scales come from the Definitions section (id
+// "codebook"; directness and evidence status are defined there word for word)
+// or are plain labels on the technology and evidence pages with no definition
+// to show; Severity and Likelihood are also in the rating scales above.
+const SHOWN_ELSEWHERE: EnumName[] = [
+  "Provenance",
+  "Stage",
+  "EvidenceDirectness",
+  "EvidenceRole",
+  "EvidenceBasis",
+  "EvidenceStatus",
+  "Severity",
+  "Likelihood",
+  "RiskLevel",
+  "RiskDomain",
+  "GovernanceStatus",
+  "AgencyEffect",
+];
+
+// Still in enums.json for older records, but no rating has used it since the
+// risk rows switched to severity and likelihood (workbook v0.4), so the page
+// doesn't list it.
+const RETIRED: EnumName[] = ["RiskRating"];
 
 // Hand-written titles and notes. Any category added to enums.py later still
 // shows up below, with a title made from its name.
-const ENUM_COPY: Partial<Record<EnumName, { title?: string; note?: string }>> = {
+const ENUM_COPY: Partial<Record<EnumName, { title?: string; note?: ReactNode }>> = {
   Credibility: {
     note: "How far we trust a source's claims, judged on its methods and on whether the claims match the evidence. We rate it separately from where the work appeared, since a peer-reviewed paper can be weak and a blog post can be strong.",
   },
@@ -91,11 +124,11 @@ const ENUM_COPY: Partial<Record<EnumName, { title?: string; note?: string }>> = 
     title: "Positive-case rating",
     note: "How strong the case is that a technology helps. We rate the alignment case and the Intelligence Curse case separately.",
   },
-  RiskRating: {
-    title: "Risk rating",
-    note: "Used for human welfare risk, artificial-mind welfare and rights risk, and governance risk. Each is judged in the scenario the proposal describes, weighing potential severity, who's exposed, reversibility and the safeguards available. A row that's still Unclear can also carry a “potentially high severity” warning. The warning isn't a rating, and the row stays Unclear.",
+  Severity: {
+    note: "How bad each risk would be: human welfare risk, artificial-mind welfare and rights risk, and governance risk. A risk's severity, likelihood and confidence are kept separate and never combined into one rating.",
   },
-  UnclearReason: { title: "Reason for Unclear", note: "Every Unclear rating names one of these." },
+  Likelihood: { note: "How likely each risk is." },
+  UnclearReason: { title: "Reason for Unclear", note: "What an Unclear mark gives as its reason." },
   Directness: { title: "Directness to scenario" },
   SourceType: { title: "Source type" },
   ClaimDirection: {
@@ -107,7 +140,14 @@ const ENUM_COPY: Partial<Record<EnumName, { title?: string; note?: string }>> = 
     note: "Arguments about these proposals are rare, and reports of technical progress are plentiful. We keep the two apart so the arguments don't get buried.",
   },
   Relevance: { note: "Placeholder values until the team agrees on them." },
-  TimeHorizon: { title: "Time horizon" },
+  TimeHorizon: {
+    title: "Time horizon",
+    note: (
+      <>
+        Provisional bands for these are in the <a href="#codebook">Definitions</a> section.
+      </>
+    ),
+  },
 };
 
 function enumTitle(name: EnumName): string {
@@ -124,17 +164,68 @@ function milestoneCategoryGroups(): EnumGroup[] {
   return groups;
 }
 
-// The four marks in the order the legend uses, for the first bullet.
-const MARK_ORDER: Provenance[] = ["source", "team", "ai", "unclear"];
+// The meanings of a rating scale's values from the Codebook rows of one type,
+// with a line under the scale that links to those rows in the Definitions
+// section. Values the Codebook doesn't define keep the site's wording. With
+// no matching rows, nothing changes and there is no line. Each meaning starts
+// with a capital letter, since it begins a line of its own: the Confidence
+// cell's parts ("High: multiple robust sources, ...") show as "Multiple
+// robust sources, ...", the same as in the technology pages' grading key.
+// Display only: the data keeps the cell as written.
+function fromCodebook(
+  name: EnumName,
+  codebookType: string,
+  rows: CodebookRow[],
+  runs: CodebookRun[],
+): { descriptions?: Record<string, string>; footer?: ReactNode } {
+  const descriptions: Record<string, string> = {};
+  for (const [value, text] of Object.entries(codebookDescriptions(rows, codebookType, enumValues(name)))) {
+    descriptions[value] = text.charAt(0).toUpperCase() + text.slice(1);
+  }
+  const runId = runIdForType(runs, codebookType);
+  if (Object.keys(descriptions).length === 0 || runId === null) {
+    return {};
+  }
+  return {
+    descriptions,
+    footer: (
+      <>
+        Defined in full under <a href={`#${runId}`}>Definitions</a>.
+      </>
+    ),
+  };
+}
+
+// "brain-computer interfaces" -> "brain-computer interface", for a name used
+// before a noun ("the brain-computer interface pages"), as the home page does.
+// A name that doesn't end in a plural s ("neuromorphic AI") stays as it is.
+function beforeNoun(name: string): string {
+  return name.endsWith("s") && !name.endsWith("ss") ? name.slice(0, -1) : name;
+}
+
+// "brain-computer interface and neuromorphic AI": the pages that still have
+// sections an AI drafted and nobody has reviewed, named to go before "pages".
+function unreviewedPageNames(technologies: TechnologyPage[]): string {
+  const names: string[] = [];
+  for (const tech of technologies) {
+    if (tech.unreviewed_ai_sections) {
+      names.push(beforeNoun(tech.name.charAt(0).toLowerCase() + tech.name.slice(1)));
+    }
+  }
+  if (names.length <= 1) {
+    return names.join("");
+  }
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+// The marks in the order the legend uses, for the first bullet. The team's
+// own claims carry no mark, so they aren't listed.
+const MARK_ORDER: Provenance[] = ["source", "ai", "unclear"];
 
 const PROVENANCE_EXPLAINERS: { kind: Provenance; text: string }[] = [
   {
     kind: "source",
     text: "The quote is 300 characters at most and links to the source, so you can check it yourself.",
-  },
-  {
-    kind: "team",
-    text: "If you read the evidence differently from us, tell us.",
   },
   {
     kind: "ai",
@@ -228,10 +319,29 @@ function More({ id, summary, children }: { id?: string; summary: ReactNode; chil
 export default function MethodologyPage() {
   const otherEnums: EnumName[] = [];
   for (const name of allEnumNames()) {
-    if (!CREDIBILITY_GROUP.includes(name) && !RATING_GROUP.includes(name) && !SHOWN_ELSEWHERE.includes(name)) {
+    if (
+      !CREDIBILITY_GROUP.includes(name) &&
+      !RATING_GROUP.includes(name) &&
+      !SHOWN_ELSEWHERE.includes(name) &&
+      !RETIRED.includes(name)
+    ) {
       otherEnums.push(name);
     }
   }
+
+  const scorecard = getScorecard();
+  const workbook = scorecard.workbook;
+  const codebook = scorecard.codebook ?? [];
+  const runs = codebookRuns(codebook);
+  // Where the workbook's codes link, built from the published sources only.
+  const codeIndex = buildCodeIndex(scorecard, realSources(getSources()).map(toSourceRef));
+  // The case rating and confidence scales take their meanings from the
+  // Codebook's "Rating" and "Confidence" rows where it gives them.
+  const ratingCopy: Partial<Record<EnumName, ReturnType<typeof fromCodebook>>> = {
+    CaseRating: fromCodebook("CaseRating", "Rating", codebook, runs),
+    Confidence: fromCodebook("Confidence", "Confidence", codebook, runs),
+  };
+  const unreviewed = unreviewedPageNames(getTechnologies());
 
   return (
     <>
@@ -244,7 +354,10 @@ export default function MethodologyPage() {
         }
         lede="What each mark, ribbon and rating on the site means, and how we decide on it. This page is also our rubric and our credibility guidelines."
       >
-        <span className="chip">Rubric v{RUBRIC_VERSION}</span>
+        <span className={styles.chips}>
+          {workbook.version && <span className="chip">Scorecard v{workbook.version}</span>}
+          <span className="chip">Pipeline rubric v{RUBRIC_VERSION}</span>
+        </span>
       </PageHeader>
 
       <OpenDetailsOnHash />
@@ -256,7 +369,7 @@ export default function MethodologyPage() {
             <MethodSection id="reading">
               <ol className={styles.readingList}>
                 <li>
-                  <p>Every research claim carries one of four marks, each with its own glyph and line style.</p>
+                  <p>Some claims carry one of these marks, each with its own glyph and line style.</p>
                   <p className={styles.inlineKey}>
                     {MARK_ORDER.map((kind) => (
                       <ProvenanceTag key={kind} kind={kind} plain />
@@ -265,7 +378,7 @@ export default function MethodologyPage() {
                 </li>
                 <li>
                   <p>
-                    Every milestone sits in one of three stages. On the timeline, color shows the stage and nothing
+                    Every milestone sits in one of three stages. On the timeline, colour shows the stage and nothing
                     else.
                   </p>
                   <div className={styles.inlineKey}>
@@ -296,9 +409,8 @@ export default function MethodologyPage() {
                 </li>
                 <li>
                   <p>
-                    Unclear means we can&rsquo;t make a responsible call yet. It always gives a reason, such as no
-                    relevant evidence, conflicting evidence, a proposal too vague to assess, or a search we
-                    haven&rsquo;t finished.
+                    Unclear means we can&rsquo;t make a responsible call yet. Every Unclear rating on a scorecard
+                    comes with the reason for it.
                   </p>
                 </li>
               </ol>
@@ -306,7 +418,7 @@ export default function MethodologyPage() {
 
             <MethodSection
               id="marks"
-              intro="Claims in milestones, forecasts, source summaries and scorecards all carry a mark."
+              intro="Claims in milestones, forecasts, source summaries and scorecards can carry one of these marks."
             >
               <div className={styles.legendWrap}>
                 <ProvenanceLegend />
@@ -322,11 +434,12 @@ export default function MethodologyPage() {
                     </div>
                   ))}
                 </dl>
+                {/* Built from the pages' unreviewed_ai_sections flag, so it stays
+                    true as the team reviews them. */}
                 <p className={`${styles.callout} ${styles.calloutAi}`}>
-                  Nothing AI-written goes on the site until a person has checked it, with one exception while the site
-                  is a draft: the brain-computer interface and neuromorphic AI pages are AI drafts the team
-                  hasn&rsquo;t reviewed. They say so, and so does every excerpt from them elsewhere on the site, like
-                  the cards on the home page.
+                  {unreviewed
+                    ? `Nothing AI-written goes on the site until a person has checked it, with one exception while the site is a draft: some sections of the ${unreviewed} pages are AI drafts the team hasn’t reviewed yet. Each of those sections has the AI-suggested mark.`
+                    : "Nothing AI-written goes on the site until a person has checked it."}
                 </p>
               </More>
             </MethodSection>
@@ -404,11 +517,26 @@ export default function MethodologyPage() {
 
             <MethodSection
               id="ratings"
-              intro={`Each technology page's scorecard gives six ratings: the alignment case, the Intelligence Curse case, human welfare risk, artificial-mind welfare and rights risk, governance risk and safeguard adequacy. Each one says how confident we are and what it rests on.${isDraftEnum("RiskRating") ? " The risk scale is a draft until the team sets its cutoffs." : ""}`}
+              intro={
+                <>
+                  Each technology page&rsquo;s scorecard rates the alignment case, the Intelligence Curse case and
+                  safeguard adequacy on the first scale below. Human welfare risk, artificial-mind welfare and rights
+                  risk, and governance risk each get a severity and a likelihood instead. The full rules are under{" "}
+                  <a href="#codebook">Definitions</a>.
+                </>
+              }
             >
               <div className={styles.enumList}>
                 {RATING_GROUP.map((name) => (
-                  <EnumDefinitions key={name} name={name} title={enumTitle(name)} note={ENUM_COPY[name]?.note} collapsible />
+                  <EnumDefinitions
+                    key={name}
+                    name={name}
+                    title={enumTitle(name)}
+                    note={ENUM_COPY[name]?.note}
+                    descriptions={ratingCopy[name]?.descriptions}
+                    footer={ratingCopy[name]?.footer}
+                    collapsible
+                  />
                 ))}
               </div>
               <div className={styles.placeholder}>
@@ -417,18 +545,60 @@ export default function MethodologyPage() {
               </div>
             </MethodSection>
 
-            <MethodSection id="new-sources">
-              {/* Placeholder: Vilija and the mentor are writing this section. Replace the note with their text. */}
+            {/* Site text adapted from the workbook's update protocol, so a
+                reader who never sees the workbook can follow it. The import
+                still stores overview.update_protocol, but the page no longer
+                prints it. */}
+            <MethodSection id="new-sources" intro="What we do each time a new source comes in.">
+              <ol className={styles.readingList}>
+                <li>
+                  <p>
+                    Add the source to the <Link href="/sources/">source database</Link> and rate its quality.
+                  </p>
+                </li>
+                <li>
+                  <p>
+                    Record each relevant claim from it as one entry in the{" "}
+                    <Link href="/evidence/">evidence register</Link>, with its scenarios, stage, directness, role and
+                    basis.
+                  </p>
+                </li>
+                <li>
+                  <p>
+                    Link each entry to the causal links, milestones, risks or governance checklist items it bears on.
+                  </p>
+                </li>
+                <li>
+                  <p>
+                    Recheck the evidence status of each linked item with the status rule (see{" "}
+                    <a href="#codebook">Definitions</a>), and check whether the source answers the strongest objection
+                    to a causal link or raises a new one.
+                  </p>
+                </li>
+                <li>
+                  <p>
+                    Decide whether the evidence so far changes a rating or our confidence in it, using the rating rules
+                    (see <a href="#codebook">Definitions</a>). If it does, update the rating, the reason given for it,
+                    and the ratings each entry informs.
+                  </p>
+                </li>
+              </ol>
+            </MethodSection>
+
+            <MethodSection id="scorecard-timeline">
+              {/* Placeholder: the workbook has no text on this yet. Replace the note with the team's text. */}
               <div className={styles.placeholder}>
                 <p>The team hasn&rsquo;t written this section yet.</p>
               </div>
             </MethodSection>
 
-            <MethodSection id="scorecard-timeline">
-              {/* Placeholder: Vilija and the mentor are writing this section. Replace the note with their text. */}
-              <div className={styles.placeholder}>
-                <p>The team hasn&rsquo;t written this section yet.</p>
-              </div>
+            <MethodSection id="codebook" intro="The codes, terms and rules the scorecards use, as Vilija defined them.">
+              <OverviewItems
+                overview={scorecard.overview ?? null}
+                scopeNotes={scorecard.scope_notes ?? []}
+                index={codeIndex}
+              />
+              <CodebookFolds runs={runs} frameworks={scorecard.frameworks ?? []} index={codeIndex} />
             </MethodSection>
 
             <MethodSection
@@ -453,15 +623,29 @@ export default function MethodologyPage() {
 
             <MethodSection id="versions">
               <div className={styles.version}>
+                {workbook.version && (
+                  <>
+                    <p className={styles.versionNumber}>
+                      <span className="eyebrow">Scorecard</span>
+                      <span className={styles.versionValue}>v{workbook.version}</span>
+                    </p>
+                    <p className={styles.versionText}>
+                      The scorecards on the technology pages and the <a href="#codebook">definitions</a> above follow
+                      this version of our scoring rules. The definitions and rules change only with a new version.
+                    </p>
+                  </>
+                )}
+                {/* RUBRIC_VERSION is stamped on pipeline and review records,
+                    so it stays separate from the workbook's version. */}
                 <p className={styles.versionNumber}>
-                  <span className="eyebrow">Current rubric</span>
+                  <span className="eyebrow">Pipeline rubric</span>
                   <span className={styles.versionValue}>v{RUBRIC_VERSION}</span>
                 </p>
                 <p className={styles.versionText}>
-                  When a category changes, the rubric version goes up. Each AI assessment and each review records the
-                  version it was made under, so an old rating can always be read against the rules at the time.
-                  Categories marked <DraftBadge /> are still being decided, which is what &ldquo;draft&rdquo; in the
-                  version number means.
+                  The categories the weekly pipeline and the team&rsquo;s source reviews use. Each AI assessment and
+                  each review records the rubric version it was made under, so an old one can always be read against
+                  the rules at the time. Categories marked <DraftBadge /> are still being decided, which is what
+                  &ldquo;draft&rdquo; in the version number means.
                 </p>
                 <p className={styles.versionNumber}>
                   <span className="eyebrow">Disagreement rule</span>

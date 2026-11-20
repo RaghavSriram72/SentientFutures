@@ -14,6 +14,7 @@ from api_helpers import (
 from sf_api import create_app
 
 EM_DASH = chr(0x2014)
+EN_DASH = chr(0x2013)
 
 
 SAMPLE_SOURCE = {
@@ -291,6 +292,24 @@ def test_an_em_dash_is_refused(client, headers):
     response = save(client, headers, "wbe-first", {"summary": summary})
     assert response.status_code == 422
     assert error(response)["details"][0].startswith("milestone.summary.text: has an em dash")
+
+
+def test_an_en_dash_is_refused(client, headers):
+    summary = {"text": f"Between 2030 {EN_DASH} 2040.", "provenance": "team"}
+    response = save(client, headers, "wbe-first", {"summary": summary, "timing": f"2030{EN_DASH}2040"})
+    assert response.status_code == 422
+    details = error(response)["details"]
+    assert any(line.startswith("milestone.summary.text: has an en dash") for line in details)
+    assert any(line.startswith("milestone.timing: has an en dash") for line in details)
+    assert not any("em dash" in line for line in details)
+
+
+def test_a_published_milestone_with_an_en_dash_is_skipped(client, db, headers):
+    assert save(client, headers, "wbe-first", {}, published=True).status_code == 200
+    db["milestones"].update_one({"_id": "wbe-first"}, {"$set": {"note": f"A {EN_DASH} B"}})
+    body = client.get("/api/public/milestones").get_json()
+    skipped = {item["id"]: item["problems"] for item in body["skipped"]}
+    assert skipped["wbe-first"][0].startswith("note: has an en dash")
 
 
 def test_a_published_milestone_cant_depend_on_a_draft(client, headers):

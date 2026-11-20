@@ -59,6 +59,10 @@ def build_public_source(candidate: dict, review: dict) -> Source:
         "added_by": added_by,
         "reviewed_by": reviewer_name,
         "reviewed_on": as_utc(review["created_at"]).date().isoformat(),
+        # The workbook's source quality block and screening flag only come
+        # from the workbook import, never from a review.
+        "quality": None,
+        "screening_pending": False,
     }
     for field in RUBRIC_FIELDS:
         data[field] = final.get(field)

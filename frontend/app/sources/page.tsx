@@ -6,9 +6,10 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { ALL_MARKS, MarksHelp } from "@/components/provenance/MarksHelp";
 import { DirectionGlyph } from "@/components/sources/ClaimDirectionChip";
 import { SourceDatabase } from "@/components/sources/SourceDatabase";
-import { getSources } from "@/lib/data";
+import { getScorecard, getSources } from "@/lib/data";
 import { realSources, sortByRegisterId } from "@/lib/sources";
 import type { Provenance, Source } from "@/lib/types";
+import { entryCountsBySource } from "@/lib/workbook";
 
 import styles from "./page.module.css";
 
@@ -89,7 +90,8 @@ function headerSentence(sources: Source[]): ReactNode {
 
 // The marks the list actually shows, in the legend's order, so "How to read
 // the marks" doesn't explain marks that appear nowhere on the page. A summary
-// carries its own mark, and any field the AI suggested carries the AI mark.
+// carries its own mark (a team summary carries none), and any field the AI
+// suggested carries the AI mark. Empty when the list shows no mark at all.
 function marksInList(sources: Source[]): Provenance[] {
   const shown = new Set<Provenance>();
   for (const source of sources) {
@@ -115,6 +117,12 @@ export default function SourcesPage() {
   const sources = sortByRegisterId(realSources(getSources()));
   const sharedAddedBy = mostCommonAdder(sources);
   const noneRated = countUnrated(sources) === sources.length;
+  // How many evidence register entries cite each source, for the
+  // "Evidence entries" line that links to /evidence/?source=<id>.
+  const entryCounts = entryCountsBySource(getScorecard());
+  // With no marks in the list there is nothing to explain, so the disclosure
+  // is left out rather than opening on an empty list.
+  const markKinds = marksInList(sources);
 
   return (
     <>
@@ -136,7 +144,8 @@ export default function SourcesPage() {
           sources={sources}
           sharedAddedBy={sharedAddedBy}
           hideUnrated={noneRated}
-          marks={<MarksHelp kinds={marksInList(sources)} />}
+          entryCounts={entryCounts}
+          marks={markKinds.length > 0 ? <MarksHelp kinds={markKinds} /> : undefined}
           directionKey={
             <p className={styles.helpNote}>
               <DirectionGlyph tone="for" label="A plus sign" /> means the source argues the approach could help, and{" "}

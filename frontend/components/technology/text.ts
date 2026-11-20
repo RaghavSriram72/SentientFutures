@@ -1,6 +1,9 @@
-// Small text helpers shared by the technology page components.
-import { enumDescription } from "@/lib/enums";
-import type { ScorecardRow, UnclearReason } from "@/lib/types";
+// Small text helpers shared by the technology page components, and the
+// lines the hero box builds from the scorecard rows. Pure: no React, so
+// tests/techText.test.ts can load it. Every line states what the rows say
+// (confidence, severity, likelihood) and adds no judgment.
+import { enumLabel } from "@/lib/enums";
+import type { ScorecardRow } from "@/lib/types";
 
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
 
@@ -25,74 +28,70 @@ export function joinList(parts: string[]): string {
   return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
-// What an Unclear rating still needs, by its reason. Only reasons that name a
-// gap the team has found are here. "Search incomplete" means we haven't
-// finished looking, so those ratings keep the older wording.
-const STILL_NEEDS: Partial<Record<UnclearReason, { one: string; many: string }>> = {
-  underspecified_proposal: {
-    one: "needs a more specific proposal before it can be judged",
-    many: "need a more specific proposal before they can be judged",
-  },
-  no_relevant_evidence: {
-    one: "needs evidence we haven't found yet",
-    many: "need evidence we haven't found yet",
-  },
-};
-
-// What the ratings are missing, most common reason first: "four need a more
-// specific proposal before they can be judged, and two need evidence we
-// haven't found yet", or "all six need ..." when they share one reason.
-// null unless every rating is Unclear for a reason in STILL_NEEDS.
-export function stillNeedsClauses(rows: ScorecardRow[]): string | null {
-  const counts = new Map<UnclearReason, number>();
-  for (const row of rows) {
-    if (row.rating !== "unclear" || !row.unclear_reason || !STILL_NEEDS[row.unclear_reason]) {
-      return null;
-    }
-    counts.set(row.unclear_reason, (counts.get(row.unclear_reason) ?? 0) + 1);
-  }
-  if (counts.size === 0) {
-    return null;
-  }
-  const mostCommonFirst = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  const clauses: string[] = [];
-  for (const [reason, count] of mostCommonFirst) {
-    const wording = STILL_NEEDS[reason];
-    if (!wording) {
-      return null;
-    }
-    const howMany = count === rows.length ? `all ${countWord(count)}` : countWord(count);
-    clauses.push(`${howMany} ${count === 1 ? wording.one : wording.many}`);
-  }
-  return clauses.join(", and ");
+// "1 link", "7 links": a count with its noun, digits always.
+export function countNoun(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
 }
 
-// The reason given most often for an Unclear rating, as a sentence, or "" when
-// nothing is Unclear or the reason is "Other" (which only makes sense with its note).
-export function unclearReasonSentence(rows: ScorecardRow[]): string {
-  const counts = new Map<UnclearReason, number>();
-  let unclearTotal = 0;
-  for (const row of rows) {
-    if (row.rating === "unclear" && row.unclear_reason) {
-      unclearTotal += 1;
-      counts.set(row.unclear_reason, (counts.get(row.unclear_reason) ?? 0) + 1);
+// ---------- The hero box ("Where we land") ----------
+
+// A risk row the workbook marks "Not applicable" (BCI, artificial minds).
+export function isNotApplicable(row: ScorecardRow): boolean {
+  return row.scale === "risk" && row.applicable === false;
+}
+
+// The rows the shared confidence line speaks for: every row except one the
+// workbook marks "Not applicable", whose confidence the hero doesn't show.
+function confidenceRows(rows: ScorecardRow[]): ScorecardRow[] {
+  return rows.filter((row) => !isNotApplicable(row));
+}
+
+// One line for a confidence every row shares, so the rows don't each repeat
+// it. The patterns:
+//   "Low confidence in all six."           (every row counted)
+//   "Low confidence in both."
+//   "Low confidence in all five that apply." (a Not applicable row left out)
+// null when the rows differ (each row then says its own) or fewer than two count.
+export function sharedConfidence(rows: ScorecardRow[]): string | null {
+  const counted = confidenceRows(rows);
+  if (counted.length < 2) {
+    return null;
+  }
+  const first = counted[0].confidence;
+  for (const row of counted) {
+    if (row.confidence !== first) {
+      return null;
     }
   }
-  let topReason: UnclearReason | null = null;
-  let topCount = 0;
-  for (const [reason, count] of counts) {
-    if (count > topCount) {
-      topReason = reason;
-      topCount = count;
+  const scope = counted.length === 2 ? "both" : `all ${countWord(counted.length)}`;
+  const apply = counted.length < rows.length ? " that apply" : "";
+  return `${enumLabel("Confidence", first)} confidence in ${scope}${apply}.`;
+}
+
+// The small line under a hero row.
+//   Case row: nothing when the confidence is shared, else "Low confidence".
+//   Risk row: "Severity high · Likelihood not assessable", plus
+//     " · Low confidence" when the confidence isn't shared. "Severity" and
+//     "Likelihood" are the workbook's own headers; the values are its labels.
+//   Not applicable risk row: "Not applicable", the workbook's own value.
+// It comes as its separate parts, so a page can keep each part on one line
+// when the whole line wraps (sections/MetaParts.tsx joins them with " · ").
+// No parts means no line.
+export function rowMetaParts(row: ScorecardRow, confidenceShared: boolean): string[] {
+  if (isNotApplicable(row)) {
+    return ["Not applicable"];
+  }
+  const parts: string[] = [];
+  if (row.scale === "risk") {
+    if (row.severity) {
+      parts.push(`Severity ${enumLabel("Severity", row.severity).toLowerCase()}`);
+    }
+    if (row.likelihood) {
+      parts.push(`Likelihood ${enumLabel("Likelihood", row.likelihood).toLowerCase()}`);
     }
   }
-  if (topReason === null || topReason === "other") {
-    return "";
+  if (!confidenceShared) {
+    parts.push(`${enumLabel("Confidence", row.confidence)} confidence`);
   }
-  // "The proposal isn't specific enough to assess." -> "the proposal isn't specific enough to assess"
-  const why = lowerFirst(enumDescription("UnclearReason", topReason)).replace(/\.$/, "");
-  if (topCount === unclearTotal) {
-    return `In each case the reason is that ${why}.`;
-  }
-  return `For ${countWord(topCount)} of them, the reason is that ${why}.`;
+  return parts;
 }

@@ -605,6 +605,35 @@ function MilestoneForm({ initial, others, records, catalog, flash, onReload }: M
                   hint={enumDescription("MilestoneStatus", draft.status)}
                   onChange={(value) => update({ status: value as MilestoneStatus })}
                 />
+                {/* The workbook's confidence in the status (tab 1a), not the team range's confidence. */}
+                <ChoiceField
+                  path="assessment_confidence"
+                  label="Confidence"
+                  value={draft.assessment_confidence ?? ""}
+                  options={enumValues("Confidence")}
+                  emptyLabel="Not set"
+                  errors={errors}
+                  disabled={saving}
+                  onChange={(value) => update({ assessment_confidence: value === "" ? null : (value as Confidence) })}
+                />
+              </div>
+              <div className={styles.grid2}>
+                <TextField
+                  path="applies_to"
+                  label="Applies to"
+                  value={draft.applies_to ?? ""}
+                  errors={errors}
+                  disabled={saving}
+                  onChange={(value) => update({ applies_to: value })}
+                />
+                <TextField
+                  path="criterion_met"
+                  label="Criterion met?"
+                  value={draft.criterion_met ?? ""}
+                  errors={errors}
+                  disabled={saving}
+                  onChange={(value) => update({ criterion_met: value })}
+                />
               </div>
               <ClaimEditor
                 {...claimProps("status_basis")}
@@ -688,6 +717,35 @@ function MilestoneForm({ initial, others, records, catalog, flash, onReload }: M
                 claim={draft.main_bottleneck}
                 onChange={(claim) => update({ main_bottleneck: claim })}
               />
+              <div className={styles.grid2}>
+                <TextField
+                  path="timing"
+                  label="Timing (dated sources only)"
+                  value={draft.timing ?? ""}
+                  errors={errors}
+                  disabled={saving}
+                  onChange={(value) => update({ timing: value })}
+                />
+                <TextField
+                  path="note"
+                  label="Note"
+                  value={draft.note ?? ""}
+                  errors={errors}
+                  disabled={saving}
+                  onChange={(value) => update({ note: value })}
+                />
+                {/* Filled by the workbook import from the evidence cell; shown here, not edited. */}
+                <TextField
+                  path="evidence_entries"
+                  label="Evidence entries"
+                  value={(draft.evidence_entries ?? []).join(", ")}
+                  errors={errors}
+                  disabled={saving}
+                  readOnly
+                  mono
+                  onChange={() => undefined}
+                />
+              </div>
               <ClaimListEditor
                 {...claimProps("would_move_earlier")}
                 label="What would bring it earlier"
@@ -984,6 +1042,8 @@ interface ChoiceFieldProps {
   label: string;
   value: string;
   options: ChoiceOption[];
+  // For an optional choice: a first option with value "" meaning none.
+  emptyLabel?: string;
   // Lists the options under these headings (native optgroups). Any option
   // no group lists comes after them (optionsInNoGroup).
   groups?: ChoiceGroup[];
@@ -995,7 +1055,7 @@ interface ChoiceFieldProps {
   hint?: string;
 }
 
-function ChoiceField({ path, label, value, options, groups, errors, disabled, onChange, hint }: ChoiceFieldProps) {
+function ChoiceField({ path, label, value, options, emptyLabel, groups, errors, disabled, onChange, hint }: ChoiceFieldProps) {
   const id = fieldId(path);
   const loose = groups ? optionsInNoGroup(options, groups) : options;
   const messages = messagesAt(errors, path);
@@ -1020,6 +1080,7 @@ function ChoiceField({ path, label, value, options, groups, errors, disabled, on
         aria-invalid={messages.length > 0 ? true : undefined}
         aria-describedby={describedBy.length > 0 ? describedBy.join(" ") : undefined}
       >
+        {emptyLabel !== undefined && <option value="">{emptyLabel}</option>}
         {groups?.map((group) => (
           <optgroup key={group.label} label={group.label}>
             {group.options.map((option) => (
