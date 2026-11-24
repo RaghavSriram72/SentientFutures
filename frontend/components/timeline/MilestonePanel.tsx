@@ -729,7 +729,7 @@ function BasedOn({ item, sources }: { item: TimelineItem; sources: Record<string
       <div className={styles.basedOn}>
         <span className={styles.basedOnLabel}>Based on</span>
         <p className={styles.basedOnText}>
-          {countLabel(view)}: {joinWords(names)}. The team hasn&apos;t set its own range.
+          {countLabel(view)}: {joinWords(names)}. We haven&apos;t set our own range.
         </p>
       </div>
     );

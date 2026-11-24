@@ -120,7 +120,7 @@ function siteIsnt(technologies: TechnologyPage[], milestones: Milestone[]): stri
   // workbook sections are the team's.
   if (drafts.length > 0) {
     lines.push(
-      `Some sections of the ${drafts.join(" and ")} ${drafts.length === 1 ? "page" : "pages"} are still AI drafts that nobody on the team has reviewed. Each carries the AI-suggested mark.`,
+      `Some sections of the ${drafts.join(" and ")} ${drafts.length === 1 ? "page" : "pages"} are still AI drafts we haven't reviewed yet. Each carries the AI-suggested mark.`,
     );
   }
   if (!AI_TRIAGE_IS_ON) {

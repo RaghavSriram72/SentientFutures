@@ -67,6 +67,12 @@ main:has(> .wrap) {
   max-width: 16ch;
 }
 
+/* Roman, like the other inner page titles */
+.title em {
+  font-style: inherit;
+  color: inherit;
+}
+
 .inner .lede {
   max-width: 48ch;
 }

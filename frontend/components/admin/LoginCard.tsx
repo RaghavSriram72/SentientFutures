@@ -102,14 +102,13 @@ export function LoginCard({ resuming = false }: { resuming?: boolean }) {
   }
 
   let body: ReactNode;
+  // A published copy built without the API's address. Visitors only need to
+  // know they can't sign in here; how to set the address is under Deploying
+  // in the root README.md.
   if (health.error?.code === "not_configured") {
     body = (
       <Notice tone="warning" title="Admin isn't connected to the team's server yet.">
-        <p>
-          This copy of the site was built without the address of the team&rsquo;s API, so nobody can sign in here. To
-          fix it, set the <code>API_URL</code> variable in the repo&rsquo;s GitHub settings (Secrets and variables,
-          Actions) and run the deploy again.
-        </p>
+        <p>Team sign-in isn&rsquo;t available on this copy of the site.</p>
       </Notice>
     );
   } else if (health.error) {

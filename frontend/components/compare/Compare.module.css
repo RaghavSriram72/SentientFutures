@@ -108,7 +108,7 @@
   min-height: 2.75rem;
   padding: 0.6rem 2.5rem 0.6rem 1rem;
   border: 1px solid var(--rule-input);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--paper);
   font-size: 1rem;
   line-height: 1.25;
@@ -124,12 +124,12 @@
 }
 
 /* A solid ring, so keyboard focus never looks like hover. Set in full here so
-   the global :focus-visible radius can't square off the pill. */
+   the global :focus-visible radius can't change the field's corners. */
 .select:focus-visible {
   outline: 2px solid var(--grape);
   outline-offset: 2px;
   border-color: var(--grape);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
 }
 
 /* ---------- Panels ---------- */
@@ -308,13 +308,9 @@
   gap: 0.5rem;
 }
 
+/* Underlined like the site's other text links */
 .footLink {
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.footLink:hover {
-  text-decoration: underline;
+  font-weight: 500;
 }
 
 /* ---------- Spec lists ---------- */

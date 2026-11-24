@@ -1180,9 +1180,10 @@
   margin-bottom: 14px;
 }
 
+/* Roman, like the site's other section headings */
 .listHead h2 em {
-  font-style: italic;
-  color: var(--grape);
+  font-style: inherit;
+  color: inherit;
 }
 
 .listFilter {

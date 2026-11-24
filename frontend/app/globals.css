@@ -283,6 +283,14 @@ hr {
   h4 {
     break-after: avoid;
   }
+
+  /* Printers drop the purple fill by default, which left pale text on white */
+  .btn-primary {
+    color: var(--grape);
+    background: none;
+    border-color: currentColor;
+    box-shadow: none;
+  }
 }
 
 

@@ -27,7 +27,7 @@ const SPECIMENS: Specimen[] = [
   {
     key: "team",
     label: "Solid ribbon",
-    text: "The team has set a range and written down why. The solid ribbon takes priority, and any forecasts still show next to it as thin lines.",
+    text: "We've set a range and written down why. The solid ribbon takes priority, and any forecasts still show next to it as thin lines.",
     drawing: <RibbonSwatch />,
   },
   {

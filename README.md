@@ -77,6 +77,8 @@ Then open http://localhost:4173/SentientFutures/. Add `DATA_DIR=../.site-data` t
 3. In the repo, set Settings > Pages > Source to "GitHub Actions".
 4. Once the API is deployed, set the repository variable `API_URL` (Settings > Secrets and variables > Actions > Variables) to its address, so each deploy includes what the team approved and published in admin.
 
+If the admin sign-in page says "Team sign-in isn't available on this copy of the site", the site was built without `API_URL`. Set it as in step 4, then run the deploy again: in the Actions tab, open "Deploy site" and press "Run workflow".
+
 After that, `.github/workflows/deploy-site.yml` validates `content/`, exports the data folder, builds and deploys on every push to `main`, every night, when someone presses "Publish to site" in admin, and when you press "Run workflow" in the Actions tab. The site lives at `https://<user>.github.io/SentientFutures/`.
 
 The API's own deploy is described at the top of `.do/app.yaml`, and the database and Claude setup in `docs/pipeline-architecture.md`.

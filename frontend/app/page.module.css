@@ -224,7 +224,7 @@
 /* On paper the card's title stays on the same page as its list, and each
    stat's label stays with its number. Without this, a page break could
    leave "Where things stand" alone at the foot of a page, or put
-   "Milestones" on one page and its number on the next. */
+   "On the timeline" on one page and its number on the next. */
 @media print {
   .standingTitle {
     break-after: avoid;

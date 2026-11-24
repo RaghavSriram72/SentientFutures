@@ -58,19 +58,14 @@ export default function ContactPage() {
             <h2 className={styles.welcomeHeading}>
               What to <em>send</em> us
             </h2>
-            <ol className={styles.welcomeList}>
-              {WELCOME.map((item, index) => (
+            <ul className={styles.welcomeList}>
+              {WELCOME.map((item) => (
                 <li key={item.title} className={styles.welcomeItem}>
-                  <span className={styles.welcomeNumber} aria-hidden="true">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <div>
-                    <h3 className={styles.welcomeTitle}>{item.title}</h3>
-                    <p className={styles.welcomeText}>{item.text}</p>
-                  </div>
+                  <h3 className={styles.welcomeTitle}>{item.title}</h3>
+                  <p className={styles.welcomeText}>{item.text}</p>
                 </li>
               ))}
-            </ol>
+            </ul>
           </div>
         </div>
       </div>

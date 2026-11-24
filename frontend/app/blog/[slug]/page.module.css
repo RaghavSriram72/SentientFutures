@@ -43,7 +43,8 @@
 }
 
 .endTitle em {
-  color: var(--grape);
+  font-style: inherit;
+  color: inherit;
 }
 
 .endText {

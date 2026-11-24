@@ -10,7 +10,7 @@
 
 /* The section's label over its heading, a plain label in the body face
    rather than monospace capitals */
-.head > :global(.eyebrow) {
+.head:not(.compact) > :global(.eyebrow) {
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   font-weight: 600;

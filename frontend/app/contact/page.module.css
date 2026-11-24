@@ -82,29 +82,17 @@
 }
 
 .welcomeItem {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr);
-  gap: 1rem;
   padding-block: 1.35rem;
   border-bottom: 1px solid var(--rule);
 }
 
 /* Each item is short, so on paper it moves to the next page whole. Split
-   inside its grid, an item's last line printed over the next item's heading
+   across two pages, an item's last line printed over the next item's heading
    (US Letter with no margins, A4 with 12.7mm). */
 @media print {
   .welcomeItem {
     break-inside: avoid;
   }
-}
-
-.welcomeNumber {
-  padding-top: 0.35rem;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--grape);
 }
 
 .welcomeTitle {

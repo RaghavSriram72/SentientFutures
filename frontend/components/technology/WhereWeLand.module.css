@@ -141,8 +141,24 @@
   color: var(--grape);
 }
 
+/* Hovering anywhere on the row underlines its name, so the whole row
+   reads as the link it now is */
 .row:hover .dimension {
   color: var(--ink);
+  text-decoration-line: underline;
+  text-decoration-color: var(--grape);
+  text-underline-offset: 0.2em;
+}
+
+/* The glossary words in a row name ("Alignment", "Intelligence Curse") sit
+   under the row link, so a click jumps to the card. Their dotted underline
+   and help cursor would promise a definition a hover can't open here, so
+   they're dropped. Keyboard focus still shows the definition, and the home
+   and About pages define both terms. */
+.dimension [aria-describedby] {
+  text-decoration: none;
+  border-bottom: 0;
+  cursor: inherit;
 }
 
 /* The global focus ring, drawn on the square so it doesn't crowd the chip */

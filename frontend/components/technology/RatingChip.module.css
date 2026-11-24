@@ -95,6 +95,10 @@
 
 .pipOn {
   background: currentColor;
+  /* Printed even with background graphics off, or "Weak" prints as three
+     empty circles */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 /* ---------- Confidence meter ---------- */
@@ -137,4 +141,6 @@
 
 .barOn {
   background: var(--grape);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }

@@ -2099,7 +2099,7 @@ function Legend({ onClose, onFocusLeave, onShowIntro, layout }: LegendProps) {
     {
       mark: "unknown-zone",
       glyph: <UnknownZoneSwatch />,
-      text: "Timing unknown: no forecast and no team range yet",
+      text: "Timing unknown: no forecast or team range yet",
     },
     {
       mark: "curved-line",

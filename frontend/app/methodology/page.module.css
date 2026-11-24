@@ -117,9 +117,8 @@
   gap: 0.5rem;
   padding: 0.35rem 0.75rem;
   border: 1px solid var(--rule);
-  /* Round ends on one line. A long label that wraps on a phone ("How new
-     sources move through the scorecard") gets soft corners, not a capsule. */
-  border-radius: 1.25rem;
+  /* Squared, like the technology pages' contents chips */
+  border-radius: var(--radius-sm);
   background: var(--paper-2);
   font-size: var(--text-sm);
   color: var(--ink-muted);

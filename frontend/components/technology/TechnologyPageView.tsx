@@ -174,7 +174,10 @@ export function TechnologyPageView({ id }: { id: TechnologyId }) {
 
         <div className={styles.content}>
           <div className={styles.topNotes}>
-            <MarksHelp codes={codeRanges(scorecard, allSources, family)} />
+            <MarksHelp
+              codes={codeRanges(scorecard, allSources, family)}
+              placeholder={technology.scorecard.some((row) => row.tracker?.placeholder === true)}
+            />
           </div>
 
           {technology.tension && (

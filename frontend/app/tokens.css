@@ -14,6 +14,15 @@
   unicode-range: U+2D;
 }
 
+/* Its italic, so a hyphen in an italic heading isn't a slanted roman one */
+@font-face {
+  font-family: "Display Hyphen";
+  font-style: italic;
+  src: local("Baskerville-Italic"), local("Baskerville Italic"), local("TimesNewRomanPS-ItalicMT"),
+    local("Times New Roman Italic"), local("Times-Italic");
+  unicode-range: U+2D;
+}
+
 :root {
   color-scheme: light;
 
