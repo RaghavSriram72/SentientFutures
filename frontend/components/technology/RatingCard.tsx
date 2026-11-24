@@ -26,7 +26,6 @@ import {
   riskDomainFor,
   riskLinkText,
   rowEvidence,
-  scaleLabel,
   type ChangeValue,
   type RowEvidence,
 } from "./ratingCardModel";
@@ -157,7 +156,6 @@ export function RatingCard({
         <Heading id={titleId} className={styles.name}>
           {row.dimension}
         </Heading>
-        <p className={styles.scale}>{scaleLabel(row)}</p>
       </header>
 
       <RatingFacts row={row} className={styles.rail} />
@@ -405,7 +403,7 @@ function Tracker({ row, milestones, sources, quiet }: TrackerProps) {
         <p className={styles.placeholderNote}>
           <SampleChip label="Placeholder" />
           <span className="visually-hidden">. </span>
-          <span>An example the team hasn&rsquo;t checked yet.</span>
+          <span>An example we haven&rsquo;t checked yet.</span>
         </p>
         {fields}
       </div>

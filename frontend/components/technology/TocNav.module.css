@@ -17,7 +17,7 @@
   gap: 0.5em;
   padding: 0.3rem 0.75rem;
   border: 1px solid var(--rule);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--paper-2);
   font-size: var(--text-sm);
   line-height: 1.35;
@@ -40,10 +40,10 @@
   background: var(--grape-tint);
 }
 
+/* The section numbers (01 to 06) are hidden: nothing refers to them, and
+   the names are what readers scan for */
 .number {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  color: var(--grape);
+  display: none;
 }
 
 @media (min-width: 1080px) {

@@ -9,7 +9,7 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Blog",
-  description: "Notes from the team on the research, new evidence and changes to the timeline.",
+  description: "Our notes on the research, new evidence and changes to the timeline.",
 };
 
 export default function BlogIndexPage() {

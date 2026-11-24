@@ -288,7 +288,7 @@
   overflow-wrap: anywhere;
 }
 
-/* "Evidence entries: 12", linking to the evidence register */
+/* "12 evidence entries", linking to the evidence register */
 .entryCount {
   font-size: var(--text-sm);
   color: var(--ink-muted);

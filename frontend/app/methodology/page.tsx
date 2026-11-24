@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { EnumDefinitions, enumTitleFromName, type EnumGroup } from "@/components/common/EnumDefinitions";
-import { DraftBadge } from "@/components/common/Marks";
+import { DraftBadge, SampleChip } from "@/components/common/Marks";
 import { OpenDetailsOnHash } from "@/components/common/OpenDetailsOnHash";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SectionHead } from "@/components/common/SectionHead";
@@ -16,6 +16,7 @@ import { buildCodeIndex } from "@/lib/codes";
 import { getScorecard, getSources, getTechnologies } from "@/lib/data";
 import { allEnumNames, enumValues, milestoneTypes, RUBRIC_VERSION, type EnumName } from "@/lib/enums";
 import { DISAGREEMENT_GAP_YEARS, DISAGREEMENT_RULE_TEXT, DISAGREEMENT_RULE_VERSION } from "@/lib/estimates";
+import { AI_TRIAGE_IS_ON } from "@/lib/site";
 import { realSources, toSourceRef } from "@/lib/sources";
 import type { CodebookRow, Provenance, TechnologyPage } from "@/lib/types";
 
@@ -128,7 +129,7 @@ const ENUM_COPY: Partial<Record<EnumName, { title?: string; note?: ReactNode }>>
     note: "How bad each risk would be: human welfare risk, artificial-mind welfare and rights risk, and governance risk. A risk's severity, likelihood and confidence are kept separate and never combined into one rating.",
   },
   Likelihood: { note: "How likely each risk is." },
-  UnclearReason: { title: "Reason for Unclear", note: "What an Unclear mark gives as its reason." },
+  UnclearReason: { title: "Reason for Unclear", note: "The reasons an Unclear mark or rating can give." },
   Directness: { title: "Directness to scenario" },
   SourceType: { title: "Source type" },
   ClaimDirection: {
@@ -139,7 +140,7 @@ const ENUM_COPY: Partial<Record<EnumName, { title?: string; note?: ReactNode }>>
     title: "Source kind",
     note: "Arguments about these proposals are rare, and reports of technical progress are plentiful. We keep the two apart so the arguments don't get buried.",
   },
-  Relevance: { note: "Placeholder values until the team agrees on them." },
+  Relevance: { note: "Placeholder values until we agree on them." },
   TimeHorizon: {
     title: "Time horizon",
     note: (
@@ -237,11 +238,7 @@ const PROVENANCE_EXPLAINERS: { kind: Provenance; text: string }[] = [
   },
 ];
 
-// Whether the weekly run has AI triage switched on. The site is built without
-// the pipeline's settings, so it can't tell: set this to true once the team
-// confirms the pipeline has its Anthropic API key.
-const AI_TRIAGE_IS_ON = false;
-
+// AI_TRIAGE_IS_ON (lib/site.ts) says whether the weekly run has AI triage on.
 const AI_TRIAGE_STEP = AI_TRIAGE_IS_ON
   ? {
       title: "AI triage",
@@ -259,14 +256,27 @@ const PIPELINE_STEPS = [
     text: "Every Monday a script searches arXiv and Semantic Scholar for new papers on these proposals.",
   },
   AI_TRIAGE_STEP,
-  {
-    title: "A person reviews every paper",
-    text: "Someone on the team approves, edits or rejects each one. The AI can't approve a paper or put anything on the site.",
-  },
-  {
-    title: "The AI's first answer is kept",
-    text: "Its original assessment is stored unchanged next to the reviewer's final version. That record shows us where the AI keeps getting things wrong.",
-  },
+  // With triage on, papers the AI rejects skip review except a spot-check
+  // sample (pipeline/README.md), so the step says what a person sees.
+  AI_TRIAGE_IS_ON
+    ? {
+        title: "A person reviews what the AI keeps",
+        text: "Someone on the team approves, edits or rejects each paper the AI passes on, and checks a small sample of the ones it turns down. The AI can't approve a paper or put anything on the site.",
+      }
+    : {
+        title: "A person reviews every paper",
+        text: "Someone on the team approves, edits or rejects each one. The AI can't approve a paper or put anything on the site.",
+      },
+  // There is no first answer to keep until triage is on.
+  AI_TRIAGE_IS_ON
+    ? {
+        title: "The AI's first answer is kept",
+        text: "Its original assessment is stored unchanged next to the reviewer's final version. That record shows us where the AI keeps getting things wrong.",
+      }
+    : {
+        title: "The AI's first answer will be kept",
+        text: "Once triage is on, we'll store the AI's first answer unchanged next to the reviewer's final version, so we can see where it keeps getting things wrong.",
+      },
   {
     title: "Publishing",
     text: "Approved sources appear on this site the next time the team publishes it.",
@@ -352,7 +362,7 @@ export default function MethodologyPage() {
             How we <em>mark and rate</em> what we publish
           </>
         }
-        lede="What each mark, ribbon and rating on the site means, and how we decide on it. This page is also our rubric and our credibility guidelines."
+        lede="What each mark, ribbon and rating on the site means, how we decide on it, and how we judge sources."
       >
         <span className={styles.chips}>
           {workbook.version && <span className="chip">Scorecard v{workbook.version}</span>}
@@ -369,7 +379,7 @@ export default function MethodologyPage() {
             <MethodSection id="reading">
               <ol className={styles.readingList}>
                 <li>
-                  <p>Some claims carry one of these marks, each with its own glyph and line style.</p>
+                  <p>Some claims carry one of these marks.</p>
                   <p className={styles.inlineKey}>
                     {MARK_ORDER.map((kind) => (
                       <ProvenanceTag key={kind} kind={kind} plain />
@@ -421,7 +431,9 @@ export default function MethodologyPage() {
               intro="Claims in milestones, forecasts, source summaries and scorecards can carry one of these marks."
             >
               <div className={styles.legendWrap}>
-                <ProvenanceLegend />
+                {/* The tag on a rating card's example tracker, so the key
+                    explains it too */}
+                <ProvenanceLegend placeholderTag={<SampleChip label="Placeholder" />} />
               </div>
               <More summary="More on each mark">
                 <dl className={styles.explainers}>
@@ -438,7 +450,7 @@ export default function MethodologyPage() {
                     true as the team reviews them. */}
                 <p className={`${styles.callout} ${styles.calloutAi}`}>
                   {unreviewed
-                    ? `Nothing AI-written goes on the site until a person has checked it, with one exception while the site is a draft: some sections of the ${unreviewed} pages are AI drafts the team hasn’t reviewed yet. Each of those sections has the AI-suggested mark.`
+                    ? `Nothing AI-written goes on the site until a person has checked it, with one exception while the site is a draft: some sections of the ${unreviewed} pages are AI drafts we haven’t reviewed yet. Each of those sections has the AI-suggested mark.`
                     : "Nothing AI-written goes on the site until a person has checked it."}
                 </p>
               </More>
@@ -488,7 +500,10 @@ export default function MethodologyPage() {
               </More>
             </MethodSection>
 
-            <MethodSection id="pipeline">
+            <MethodSection
+              id="pipeline"
+              intro="No new source reaches the site until a person has approved it. We'll give the AI more to do only once it has proved reliable."
+            >
               <ol className={styles.pipeline}>
                 {PIPELINE_STEPS.map((step, index) => (
                   <li key={step.title} className={styles.pipelineStep}>
@@ -541,7 +556,7 @@ export default function MethodologyPage() {
               </div>
               <div className={styles.placeholder}>
                 <p className={styles.placeholderTitle}>How we handle uncertain moral status</p>
-                <p>The team hasn&rsquo;t written this section yet.</p>
+                <p>We haven&rsquo;t written this section yet.</p>
               </div>
             </MethodSection>
 
@@ -588,7 +603,7 @@ export default function MethodologyPage() {
             <MethodSection id="scorecard-timeline">
               {/* Placeholder: the workbook has no text on this yet. Replace the note with the team's text. */}
               <div className={styles.placeholder}>
-                <p>The team hasn&rsquo;t written this section yet.</p>
+                <p>We haven&rsquo;t written this section yet.</p>
               </div>
             </MethodSection>
 
@@ -642,7 +657,7 @@ export default function MethodologyPage() {
                   <span className={styles.versionValue}>v{RUBRIC_VERSION}</span>
                 </p>
                 <p className={styles.versionText}>
-                  The categories the weekly pipeline and the team&rsquo;s source reviews use. Each AI assessment and
+                  The categories the weekly pipeline and our source reviews use. Each AI assessment and
                   each review records the rubric version it was made under, so an old one can always be read against
                   the rules at the time. Categories marked <DraftBadge /> are still being decided, which is what
                   &ldquo;draft&rdquo; in the version number means.

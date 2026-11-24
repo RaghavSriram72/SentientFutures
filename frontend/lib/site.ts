@@ -7,6 +7,12 @@ export const CONTACT_EMAIL = "hello@example.org"; // placeholder until the team 
 // Until launch the site is a draft: noindex everywhere and a banner on every page.
 export const IS_DRAFT = true;
 
+// Whether the weekly run has AI triage switched on. The site is built without
+// the pipeline's settings, so it can't tell: set this to true once the team
+// confirms the pipeline has its Anthropic API key. The methodology's pipeline
+// steps and the about page's "Still in progress" list both read it.
+export const AI_TRIAGE_IS_ON = false;
+
 export interface NavItem {
   href: string;
   label: string;

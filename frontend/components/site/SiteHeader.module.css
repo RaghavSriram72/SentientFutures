@@ -84,7 +84,7 @@
 .navLink {
   display: block;
   padding: 0.45rem 0.75rem;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   font-weight: 500;
   color: var(--ink-muted);
@@ -94,14 +94,22 @@
     background-color var(--dur-fast) var(--ease-out);
 }
 
+/* An underline marks hover and the current page, like a pencil line under a
+   heading, rather than a filled pill */
 .navLink:hover {
   color: var(--ink);
-  background: var(--grape-tint);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 0.45em;
 }
 
 .navLink[aria-current="page"] {
   color: var(--grape);
-  background: var(--grape-tint-2);
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--grape);
+  text-underline-offset: 0.45em;
 }
 
 /* Compare, Methodology and Contact: in the phone menu only */

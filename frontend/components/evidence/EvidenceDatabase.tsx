@@ -49,7 +49,7 @@ const FILTER_LABELS: Record<EvidenceFilterName, string> = {
   family: "Family",
   feeds: "Ratings it informs",
   role: "Evidence role",
-  source: "Source ID",
+  source: "Source",
 };
 
 // How much of the first result has to be on screen, in px, for Enter in the

@@ -178,9 +178,7 @@ export function FloorMarks({ layout, nowYear, compact = false }: FloorMarksProps
         <Standing x={unknownZone.start + 40} y={labelY} className={styles.zoneSignPost}>
           <span className={styles.zoneSign}>
             <span className={styles.zoneLabel}>Timing unknown</span>
-            <span className={styles.zoneNote}>
-              {compact ? "No forecast or team range yet." : "No forecast and no team range yet, so these have no place on the dates."}
-            </span>
+            <span className={styles.zoneNote}>No forecast or team range yet.</span>
           </span>
         </Standing>
       )}

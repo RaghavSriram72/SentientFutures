@@ -64,7 +64,7 @@
     min-height: 2.75rem;
     padding: 0.6rem 1.05rem 0.6rem 1rem;
     border: 1px solid var(--rule-input);
-    border-radius: 999px;
+    border-radius: var(--radius-sm);
     background: var(--paper);
     font-family: var(--font-mono);
     font-size: 0.75rem;
@@ -84,7 +84,7 @@
     outline: 2px solid var(--grape);
     outline-offset: 2px;
     border-color: var(--grape);
-    border-radius: 999px;
+    border-radius: var(--radius-sm);
   }
 
   /* The same drawn chevron as the selects, turned up when open */
@@ -143,7 +143,7 @@
     min-height: 2.25rem;
     padding: 0.4rem 0.75rem 0.4rem 0.85rem;
     border: 1px solid var(--rule-strong);
-    border-radius: 999px;
+    border-radius: var(--radius-sm);
     background: var(--grape-tint);
     font-size: var(--text-sm);
     line-height: 1.35;
@@ -213,7 +213,7 @@
   min-height: 2.75rem;
   padding: 0.6rem 1rem;
   border: 1px solid var(--rule-input);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--paper);
   font-size: 1rem;
   line-height: 1.25;
@@ -239,7 +239,7 @@
   outline: 2px solid var(--grape);
   outline-offset: 2px;
   border-color: var(--grape);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
 }
 
 .searchWrap {
@@ -388,7 +388,7 @@
   min-height: 1.875rem;
   padding: 0.3rem 0.8rem;
   border: 1px solid var(--rule);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: transparent;
   font-family: var(--font-mono);
   font-size: 0.6875rem;

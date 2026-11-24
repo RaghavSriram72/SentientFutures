@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { SampleChip } from "@/components/common/Marks";
 import { enumDescription } from "@/lib/enums";
 import type { Provenance } from "@/lib/types";
 
@@ -25,17 +26,21 @@ export interface MarksCodeRanges {
 // shows (the sources page passes only the marks its list uses). With
 // codes, more lines say what the workbook's E-ids, S-ids and stage codes
 // are, with a link to the methodology's Definitions section ("What the codes
-// mean").
+// mean"). With placeholder, a line after the marks explains the Placeholder
+// tag a rating card's example tracker starts with (RatingCard's Tracker), for
+// a page that shows one. It is a tag, not a mark, so ALL_MARKS leaves it out.
 // It is a plain <details>, so it opens without JavaScript and works in server
 // components.
 export function MarksHelp({
   label = "How to read the marks",
   kinds = ALL_MARKS,
   codes,
+  placeholder = false,
 }: {
   label?: string;
   kinds?: Provenance[];
   codes?: MarksCodeRanges;
+  placeholder?: boolean;
 }) {
   return (
     <details className={styles.help}>
@@ -53,6 +58,14 @@ export function MarksHelp({
               <span className={styles.text}>{enumDescription("Provenance", kind)}</span>
             </li>
           ))}
+          {placeholder && (
+            <li className={styles.item}>
+              <span className={styles.tag}>
+                <SampleChip label="Placeholder" />
+              </span>
+              <span className={styles.text}>An example we haven&rsquo;t checked yet.</span>
+            </li>
+          )}
           {codes?.entries && (
             <li className={styles.item}>
               <span className={styles.code}>

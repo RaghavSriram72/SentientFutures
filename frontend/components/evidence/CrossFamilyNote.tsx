@@ -35,7 +35,7 @@ export function CrossFamilyNote({ scope, sources, index }: CrossFamilyNoteProps)
       <p className={styles.scopeTitle}>Cross-family</p>
       <dl className={styles.scopeFields}>
         <div className={styles.scopeField}>
-          <dt className={styles.scopeLabel}>Technology family definition</dt>
+          <dt className={styles.scopeLabel}>Definition</dt>
           <dd className={styles.scopeValue}>
             <CodeText text={scope.intervention} index={index} />
           </dd>

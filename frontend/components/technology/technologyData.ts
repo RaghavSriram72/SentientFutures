@@ -46,7 +46,7 @@ export function nextTechnology(id: TechnologyId): TechnologyPage | null {
 // The description shows up in link previews, away from the page's marks. The
 // ratings and workbook sections are the team's on every page, but a page that
 // still has AI-drafted sections (its intro among them) says so first.
-export const AI_SECTIONS_NOTE = "Some sections are AI drafts the team hasn't reviewed yet.";
+export const AI_SECTIONS_NOTE = "Some sections are AI drafts we haven't reviewed yet.";
 
 export function technologyMetadata(id: TechnologyId): Metadata {
   const technology = requireTechnology(id);

@@ -120,6 +120,11 @@
   font-size: var(--text-sm);
 }
 
+/* A plain underlined link; no trailing arrow */
+.keyMore [aria-hidden="true"] {
+  display: none;
+}
+
 /* On paper the head moves with the first rating card, so a page never ends
    on the head above an empty card. The key is short enough to stay on one
    page, so its scales are read together. */

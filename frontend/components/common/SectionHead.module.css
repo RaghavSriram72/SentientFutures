@@ -8,6 +8,17 @@
   max-width: 22ch;
 }
 
+/* The section's label over its heading, a plain label in the body face
+   rather than monospace capitals */
+.head > :global(.eyebrow) {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--grape);
+}
+
 .intro {
   max-width: 62ch;
   color: var(--ink-muted);

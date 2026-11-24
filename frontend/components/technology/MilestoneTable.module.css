@@ -145,6 +145,11 @@
   font-weight: 500;
 }
 
+/* A plain underlined link; no trailing arrow */
+.timelineLink [aria-hidden="true"] {
+  display: none;
+}
+
 @container (min-width: 820px) {
   .head,
   .summary {

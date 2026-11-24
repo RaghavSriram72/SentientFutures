@@ -77,9 +77,9 @@ function MilestoneRowView({
   const statusDescription = enumDescription("MilestoneStatus", assessment.status);
   const facts: { label: string; text: string | null | undefined }[] = [
     { label: "Success criterion", text: assessment.success_criterion },
-    { label: "Evidence (entries and basis)", text: assessment.evidence },
+    { label: "Evidence", text: assessment.evidence },
     { label: "Main bottleneck", text: assessment.bottleneck },
-    { label: "Timing (dated sources only)", text: assessment.timing },
+    { label: "What sources say about timing", text: assessment.timing },
     { label: "Note", text: assessment.note },
   ];
   return (

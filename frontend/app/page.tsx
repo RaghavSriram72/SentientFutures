@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { EmphasisText } from "@/components/common/Emphasis";
 import { ARTIFICIAL_MINDS_DEFINITION, INTELLIGENCE_CURSE_DEFINITION } from "@/components/common/keyTerms";
 import { StageLegend } from "@/components/provenance/Legends";
 import { ProvenanceGlyph } from "@/components/provenance/ProvenanceTag";
@@ -73,7 +72,7 @@ function isNotApplicable(row: ScorecardRow): boolean {
   return row.scale === "risk" && row.applicable === false;
 }
 
-// "The team has rated all three proposals."
+// "We've rated all three proposals."
 function ratedSentence(technologies: TechnologyPage[]): string | null {
   const rated: TechnologyPage[] = [];
   for (const tech of technologies) {
@@ -85,13 +84,13 @@ function ratedSentence(technologies: TechnologyPage[]): string | null {
     return null;
   }
   if (rated.length === 1) {
-    return `The team has rated ${lowerFirst(rated[0].name)}.`;
+    return `We've rated ${lowerFirst(rated[0].name)}.`;
   }
   const which =
     rated.length === technologies.length
       ? `all ${numberWord(rated.length)} proposals`
       : `${numberWord(rated.length)} of the ${numberWord(technologies.length)} proposals`;
-  return `The team has rated ${which}.`;
+  return `We've rated ${which}.`;
 }
 
 // "Every rating so far has low confidence." when every row on every page
@@ -169,6 +168,11 @@ function WhereThingsStand({
   // flags. A named section is still a region screen readers can jump to.
   return (
     <section className={`paper ${styles.standing}`} aria-labelledby="standing-heading">
+      {/* The same paperclip as the timeline's dossier: this card is the note
+          clipped to the front of the file */}
+      <svg className={styles.clip} viewBox="0 0 25 62" aria-hidden="true">
+        <path d="M9 18 V44 A4 4 0 0 0 17 44 V10 A6.5 6.5 0 0 0 4 10 V50 A8.5 8.5 0 0 0 21 50 V22" />
+      </svg>
       <p id="standing-heading" className={`eyebrow ${styles.standingTitle}`}>
         Where things stand
       </p>
@@ -186,7 +190,7 @@ function WhereThingsStand({
         <div className={styles.stat}>
           <dt>
             <Link href="/timeline/" className={styles.statLink}>
-              Milestones
+              On the timeline
             </Link>
           </dt>
           <dd>{milestones.length}</dd>
@@ -278,9 +282,9 @@ function riskMeta(row: ScorecardRow): string[] {
   return parts;
 }
 
-// Everything on a card is the team's: the ratings, the decisive question from
-// the alignment judgment, and the site's own headline. The AI-drafted outline
-// sections never appear here, so a card has no mark (unmarked is the team's).
+// Everything on a card is the team's: the ratings and the decisive question
+// from the alignment judgment. The AI-drafted outline sections never appear
+// here, so a card has no mark (unmarked is the team's).
 function ProposalCard({ tech, number }: { tech: TechnologyPage; number: number }) {
   const question = tech.alignment_assessment?.decisive_question ?? null;
   const ratings = headlineRatings(tech.scorecard);
@@ -296,9 +300,6 @@ function ProposalCard({ tech, number }: { tech: TechnologyPage; number: number }
         {tech.name}
       </h3>
       <p className={styles.proposalWhat}>{enumDescription("Technology", tech.id)}</p>
-      <p className={styles.proposalClaim}>
-        <EmphasisText text={tech.headline} />
-      </p>
 
       {/* The scorecard's own chips for the two cases; the risk row's
           severity and likelihood in words, as in the page's hero. */}
@@ -411,10 +412,10 @@ export default function HomePage() {
               Could brain tech keep humans in the loop, and what <em>minds</em> might it create?
             </h1>
             <p className={`lede ${styles.heroLede}`}>
-              How strong is the case that whole brain emulation, brain-computer interfaces or neuromorphic AI could
-              help with AI alignment, or keep people&rsquo;s work and political voice from losing value as AI
-              improves? And what new welfare and governance problems would each bring, including for any artificial
-              minds made along the way?
+              We look at how strong the case is that whole brain emulation, brain-computer interfaces or
+              neuromorphic AI could help with AI alignment, or keep people&rsquo;s work and political voice from
+              losing value as AI improves. We also ask what new welfare and governance problems each would bring,
+              including for any artificial minds made along the way.
             </p>
             <div className={styles.heroActions}>
               <Link href="/wbe/" className="btn btn-primary">
@@ -474,13 +475,12 @@ export default function HomePage() {
       <section className={`section ${styles.mindsSection}`} aria-labelledby="minds-heading">
         <div className="container">
           <div className={styles.sectionHead}>
-            <p className="eyebrow">Artificial minds</p>
             <h2 id="minds-heading">
               Questions about the <em>minds</em> themselves
             </h2>
             <p className={styles.sectionIntro}>
-              If one of these technologies creates a mind, it raises questions of its own, apart from whether it helps
-              people. Each technology page has a section on them.
+              A mind made by one of these technologies would raise questions of its own, apart from whether the
+              technology helps people.
             </p>
           </div>
           <ul className={styles.mindsGrid}>
@@ -518,7 +518,6 @@ export default function HomePage() {
         <div className="container">
           <div className={styles.sectionHeadRow}>
             <div className={styles.sectionHead}>
-              <p className="eyebrow">Timeline</p>
               <h2 id="timeline-heading">
                 When the milestones <em>might</em> happen
               </h2>
@@ -538,11 +537,6 @@ export default function HomePage() {
           <div className={styles.teaser}>
             <TrackTeaser milestones={milestones} nowYear={nowYear} />
           </div>
-          <p className={styles.methodLine}>
-            <Link href="/methodology/">
-              How to read the marks, stages and ratings<span aria-hidden="true"> &rarr;</span>
-            </Link>
-          </p>
         </div>
       </section>
     </>

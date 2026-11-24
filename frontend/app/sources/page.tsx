@@ -16,7 +16,7 @@ import styles from "./page.module.css";
 export const metadata: Metadata = {
   title: "Source database",
   description:
-    "The sources the team has collected, each with the team's summary and tags for technology, problem and which way it argues.",
+    "The sources we've collected so far, each with a summary and tags for technology, problem and which way it argues.",
 };
 
 // A source counts as unrated until at least one rubric field has a value.
@@ -67,7 +67,7 @@ function mostCommonAdder(sources: Source[]): string | null {
 function headerSentence(sources: Source[]): ReactNode {
   const total = sources.length;
   const unrated = countUnrated(sources);
-  const count = `${total} ${total === 1 ? "source" : "sources"} the team has collected.`;
+  const count = `${total} ${total === 1 ? "source" : "sources"}.`;
 
   // "None has", "It hasn't" (one source), "3 haven't", or "" when all are rated.
   let unratedSubject = "";
@@ -118,7 +118,7 @@ export default function SourcesPage() {
   const sharedAddedBy = mostCommonAdder(sources);
   const noneRated = countUnrated(sources) === sources.length;
   // How many evidence register entries cite each source, for the
-  // "Evidence entries" line that links to /evidence/?source=<id>.
+  // "4 evidence entries" line that links to /evidence/?source=<id>.
   const entryCounts = entryCountsBySource(getScorecard());
   // With no marks in the list there is nothing to explain, so the disclosure
   // is left out rather than opening on an empty list.
@@ -131,7 +131,7 @@ export default function SourcesPage() {
         eyebrow="Source database"
         title={
           <>
-            What we&rsquo;ve <em>read</em> so far
+            What we&rsquo;ve <em>collected</em> so far
           </>
         }
         lede={headerSentence(sources)}

@@ -8,3 +8,8 @@
   font-weight: 500;
   white-space: nowrap;
 }
+
+/* A plain underlined link; no trailing arrow */
+.link [aria-hidden="true"] {
+  display: none;
+}

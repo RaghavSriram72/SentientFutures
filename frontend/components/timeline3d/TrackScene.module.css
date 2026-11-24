@@ -734,9 +734,11 @@
   color: var(--ink);
 }
 
+/* Set in roman like the other headings; the "Timing unknown" floor label
+   keeps its italic, where it marks an unknown */
 .introTitle em {
-  font-style: italic;
-  color: var(--grape);
+  font-style: inherit;
+  color: inherit;
 }
 
 /* Focus lands here when the intro is shown again; the title needs no ring */

@@ -35,7 +35,6 @@ import {
   riskDomainFor,
   riskLinkText,
   rowEvidence,
-  scaleLabel,
 } from "../ratingCardModel";
 
 const NOT_ASSESSED: Claim = { text: "We haven't looked yet.", provenance: "unclear", unclear_reason: "search_incomplete" };
@@ -187,17 +186,6 @@ describe("cardKind", () => {
     assert.equal(cardKind(row({ id: "intelligence-curse-case", problem: "intelligence_curse" })), "case");
     assert.equal(cardKind(row({ id: "safeguard-adequacy", problem: null })), "safeguard");
     assert.equal(cardKind(riskRow()), "risk");
-  });
-});
-
-describe("scaleLabel", () => {
-  test("names the problem a case row is about", () => {
-    assert.equal(scaleLabel(row()), "Case · Alignment");
-    assert.equal(scaleLabel(row({ problem: "intelligence_curse" })), "Case · Intelligence Curse");
-  });
-
-  test("a row without a problem shows only its scale", () => {
-    assert.equal(scaleLabel(riskRow()), "Risk");
   });
 });
 

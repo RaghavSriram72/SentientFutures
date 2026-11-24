@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import { TypeGlyph } from "@/components/common/TypeMark";
 import { enumDescription, enumLabel, enumValues, milestoneTypes } from "@/lib/enums";
@@ -12,7 +12,13 @@ const PROVENANCE_ORDER: Provenance[] = ["source", "ai", "unclear"];
 
 // The site-wide key for the marked kinds of content. Shown on the timeline,
 // the sources page, technology pages and methodology.
-export function ProvenanceLegend({ compact = false }: { compact?: boolean }) {
+//
+// With placeholderTag, the full key ends with a card for the Placeholder tag
+// a rating card's example tracker starts with (RatingCard's Tracker). It is a
+// tag, not a mark, so it stays out of PROVENANCE_ORDER. The caller passes the
+// tag (<SampleChip label="Placeholder" />), so this file doesn't load its
+// styles on the home page, which imports StageLegend from here.
+export function ProvenanceLegend({ compact = false, placeholderTag }: { compact?: boolean; placeholderTag?: ReactNode }) {
   if (compact) {
     return (
       <div className={styles.legendCompact} aria-label="What the marks mean">
@@ -30,6 +36,12 @@ export function ProvenanceLegend({ compact = false }: { compact?: boolean }) {
           <p className={styles.legendDesc}>{enumDescription("Provenance", kind)}</p>
         </div>
       ))}
+      {placeholderTag && (
+        <div className={`${styles.legendItem} ${styles.legendItem_placeholder}`}>
+          <span className={styles.legendTag}>{placeholderTag}</span>
+          <p className={styles.legendDesc}>An example we haven&rsquo;t checked yet.</p>
+        </div>
+      )}
     </div>
   );
 }

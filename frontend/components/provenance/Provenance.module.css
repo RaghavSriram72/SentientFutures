@@ -220,6 +220,18 @@
   border-left: 3px solid var(--grape);
 }
 
+/* The Placeholder tag's card, dashed in ochre like the placeholder box on a
+   rating card */
+.legendItem_placeholder {
+  border: 1.5px dashed color-mix(in srgb, var(--stage-widely) 60%, transparent);
+  background-color: color-mix(in srgb, var(--stage-widely) 5%, var(--paper));
+}
+
+/* Holds the tag at its own width, as .tag does for the marks */
+.legendTag {
+  display: flex;
+}
+
 .legendDesc {
   font-size: var(--text-sm);
   color: var(--ink-muted);

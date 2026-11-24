@@ -69,6 +69,8 @@
   row-gap: 0.15rem;
   padding-block: 0.55rem;
   border-top: 1px solid var(--rule-soft);
+  /* The row link's ::after is placed against the row */
+  position: relative;
 }
 
 /* A row with nothing under it (the confidence is said once, above) */
@@ -89,6 +91,13 @@
   grid-area: rating;
   align-self: center;
   justify-self: end;
+}
+
+/* The one chip with a tooltip (Not claimed) sits above the row link, so
+   hovering it still explains the rating */
+.ratingTerm {
+  position: relative;
+  z-index: 1;
 }
 
 .meta {
@@ -114,14 +123,26 @@
   border-radius: 6px;
   font-size: var(--text-sm);
   line-height: 1;
-  color: var(--ink-faint);
+  color: var(--ink-muted);
   text-decoration: none;
   transition: color var(--dur-fast) var(--ease-out);
 }
 
-.rowLink:hover,
+/* The whole row is the link's hit area: a click on "Alignment case" or its
+   chip goes to the card, not only a click on the arrow */
+.rowLink::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.row:hover .rowLink,
 .rowLink:focus-visible {
   color: var(--grape);
+}
+
+.row:hover .dimension {
+  color: var(--ink);
 }
 
 /* The global focus ring, drawn on the square so it doesn't crowd the chip */
@@ -133,12 +154,12 @@
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.rowLink:hover .rowArrow {
+.row:hover .rowArrow {
   transform: translateY(2px);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rowLink:hover .rowArrow {
+  .row:hover .rowArrow {
     transform: none;
   }
 }

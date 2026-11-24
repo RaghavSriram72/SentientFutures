@@ -43,10 +43,9 @@
   }
 }
 
-/* The technology number, set large and faint in the top corner beside the
-   headline. It is decorative: phones skip it rather than set it behind the
-   eyebrow, and from 960px the "Where we land" box takes that corner, so
-   it only shows in between, where the headline leaves room for it. */
+/* The technology number, once set large and faint in the hero's corner on
+   tablets. It was pure decoration and ran into the headline at some widths,
+   so it no longer shows anywhere; the eyebrow still says "Technology 01". */
 .numeral {
   display: none;
   position: absolute;
@@ -62,11 +61,6 @@
   user-select: none;
 }
 
-@media (min-width: 720px) and (max-width: 959px) {
-  .numeral {
-    display: block;
-  }
-}
 
 .heroMain {
   display: grid;
@@ -256,7 +250,7 @@
   }
 }
 
-/* "The team hasn't written ... yet." Both kinds share one style: the block
+/* "We haven't written ... yet." Both kinds share one style: the block
    one is a full sentence with a link, set to the text width. */
 .placeholder,
 .placeholderBlock {
@@ -355,67 +349,21 @@ details[open] > .foldSummary:hover {
   border-radius: var(--radius-panel);
 }
 
-/* A big decorative quote mark in the corner. The empty alt text after the
-   slash keeps screen readers from announcing it. */
-.column::before {
-  content: "\201C";
-  content: "\201C" / "";
-  position: absolute;
-  top: 0.06em;
-  right: 0.22em;
-  font-family: var(--font-display);
-  font-size: 6.5rem;
-  line-height: 1;
-  color: var(--grape-tint-2);
-  pointer-events: none;
-}
 
 /* Two classes so this wins over the global .paper background */
 .column.columnAgainst {
   background-color: var(--paper-3);
 }
 
-.columnLabel {
-  display: inline-block;
-  padding: 0.25em 0.75em;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.columnFor .columnLabel {
-  background: var(--grape);
-  color: var(--paper);
-}
-
-.columnAgainst .columnLabel {
-  border-color: var(--ink-muted);
-  color: var(--ink);
-}
-
+/* The card's padding sets the space above the title */
 .columnTitle {
-  margin: 0.75rem 0 1rem;
+  margin: 0 0 1rem;
 }
 
 .columnNote {
   margin: -0.5rem 0 1.25rem;
   font-size: var(--text-sm);
   color: var(--ink-muted);
-}
-
-/* On paper the label stays with the card's title. As an inline-block it sits
-   in a line box, where break-after doesn't apply, so on paper it is a block
-   as wide as its text. This comes after the label's own rules, so it wins. */
-@media print {
-  .columnLabel {
-    display: block;
-    width: fit-content;
-    break-after: avoid;
-  }
 }
 
 .pullList {
@@ -476,9 +424,9 @@ details[open] > .foldSummary:hover {
     box-shadow var(--dur-med) var(--ease-out);
 }
 
+/* No lift on hover: the border darkens and the arrow nudges along */
 .next:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lift);
+  border-color: var(--rule-strong);
 }
 
 .nextName {

@@ -25,23 +25,26 @@
   margin-bottom: 0.5rem;
 }
 
-/* A short grape rule before the label, like a margin mark */
+/* The page's name over its title, set as a plain label in the body face.
+   Monospace capitals are kept for data: codes, field labels, counts. */
 .inner .eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--grape);
-}
-
-.inner .eyebrow::before {
-  content: "";
-  width: 28px;
-  height: 1px;
-  background: currentColor;
 }
 
 .title {
   max-width: 19ch;
+}
+
+/* Inner page titles set in roman; italic is kept for the home headline and
+   the technology names */
+.title em {
+  font-style: inherit;
+  color: inherit;
 }
 
 .narrow .title {

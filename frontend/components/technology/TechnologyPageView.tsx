@@ -89,15 +89,15 @@ const WELFARE_ROW_IDS = ["human-welfare-risk", "governance-risk", "safeguard-ade
 const SAFEGUARD_ROW_ID = "safeguard-adequacy";
 
 const PLACEHOLDER = {
-  how: "The team hasn't written how this would work yet.",
-  case: "The team hasn't written the strongest case yet.",
-  objections: "The team hasn't written the strongest objections yet.",
-  minds: "The team hasn't written about artificial minds for this technology yet.",
-  welfare: "The team hasn't assessed welfare and governance risks in detail yet.",
-  milestones: "The team hasn't mapped any milestones for this technology yet.",
+  how: "We haven't written how this would work yet.",
+  case: "We haven't written the strongest case yet.",
+  objections: "We haven't written the strongest objections yet.",
+  minds: "We haven't written about artificial minds for this technology yet.",
+  welfare: "We haven't assessed welfare and governance risks in detail yet.",
+  milestones: "We haven't mapped any milestones for this technology yet.",
 };
 
-const ALTERNATIVES_NOTE = "From an earlier version of this assessment: the most credible alternatives and counterarguments.";
+const ALTERNATIVES_NOTE = "These are the most credible alternatives and counterarguments from an earlier version of this assessment.";
 
 // The outline fields are optional, so a missing list is an empty one.
 function listOf<T>(items: T[] | undefined): T[] {
@@ -378,7 +378,6 @@ function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
       <div className={`${styles.debate} ${oneSided ? styles.debateStacked : ""}`}>
         <ArgumentColumn
           tone="for"
-          label="For"
           title={
             <>
               The strongest <em>case</em>
@@ -391,7 +390,6 @@ function caseSection({ technology, sources, quiet }: PageContext): SectionSpec {
         />
         <ArgumentColumn
           tone="against"
-          label="Against"
           title={
             <>
               The strongest <em>objections</em>
@@ -679,10 +677,10 @@ function scorecardDetailLinks(technology: TechnologyPage): Record<string, Scorec
 function whyLink(rows: ScorecardRow[], problem: "alignment" | "intelligence_curse"): { href: string; label: string } {
   for (const row of rows) {
     if (row.scale === "case" && row.problem === problem) {
-      return { href: `#${scorecardRowId(row.id)}`, label: `see the ${row.dimension} rating in the scorecard` };
+      return { href: `#${scorecardRowId(row.id)}`, label: `See why on the ${row.dimension} card` };
     }
   }
-  return { href: "#scorecard", label: "see the scorecard" };
+  return { href: "#scorecard", label: "See why in the full scorecard" };
 }
 
 // ---------- Milestone data ----------
@@ -743,7 +741,6 @@ function Placeholder({ text }: { text: string }) {
 
 interface ArgumentColumnProps {
   tone: "for" | "against";
-  label: string;
   title: ReactNode;
   claims: Claim[];
   placeholder: string;
@@ -752,12 +749,12 @@ interface ArgumentColumnProps {
   quiet: Provenance;
 }
 
-// One side of the argument, set as numbered pull quotes on a paper card.
-function ArgumentColumn({ tone, label, title, claims, placeholder, note, sources, quiet }: ArgumentColumnProps) {
-  const toneClass = tone === "for" ? styles.columnFor : styles.columnAgainst;
+// One side of the argument, set as numbered pull quotes on a paper card. The
+// objections card has a darker paper; the title names each side.
+function ArgumentColumn({ tone, title, claims, placeholder, note, sources, quiet }: ArgumentColumnProps) {
+  const toneClass = tone === "against" ? ` ${styles.columnAgainst}` : "";
   return (
-    <div className={`paper ${styles.column} ${toneClass}`}>
-      <p className={styles.columnLabel}>{label}</p>
+    <div className={`paper ${styles.column}${toneClass}`}>
       <h3 className={styles.columnTitle}>{title}</h3>
       {note && <p className={styles.columnNote}>{note}</p>}
       {claims.length === 0 ? (

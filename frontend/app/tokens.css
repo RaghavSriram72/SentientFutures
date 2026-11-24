@@ -4,6 +4,16 @@
   Palette inspired by warm paper stationery: ivory paper, one deep grape accent,
   near-black green ink, and earthy stage colors.
 */
+/* Instrument Serif's hyphen is set wide, so "Brain-computer" read like the
+   spaced dash the site avoids. Only the hyphen (U+2D) comes from a system
+   serif with a tight one; where neither is installed, Instrument Serif's own
+   hyphen is used. */
+@font-face {
+  font-family: "Display Hyphen";
+  src: local("Baskerville"), local("Times New Roman"), local("TimesNewRomanPSMT"), local("Times");
+  unicode-range: U+2D;
+}
+
 :root {
   color-scheme: light;
 
@@ -12,7 +22,9 @@
   --paper-2: #fffef1;
   --paper-3: #f8f3e4;
   --paper-edge: #ece4cf;
-  --wash: linear-gradient(128deg, #f1e6ee 0%, #ffffea 100%);
+  /* Header bands and hero panels: flat warm card stock. It stays a gradient
+     so `background-image: var(--grain), var(--wash)` keeps working. */
+  --wash: linear-gradient(var(--paper-3), var(--paper-3));
   --wash-soft: #f3eef8;
 
   /* Ink */
@@ -64,7 +76,7 @@
   );
 
   /* Type */
-  --font-display: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
+  --font-display: "Display Hyphen", var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
   --font-sans: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
@@ -76,19 +88,21 @@
   --text-2xl: clamp(1.875rem, 1.4rem + 1.8vw, 2.75rem);
   --text-3xl: clamp(2.125rem, 1.3rem + 3.2vw, 4.125rem);
 
-  /* Radii */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-card: 1.25rem;
-  --radius-panel: 1.5rem;
-  --radius-hero: 2rem;
+  /* Radii: small, like trimmed card stock, not app bubbles */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-card: 0.375rem;
+  --radius-panel: 0.5rem;
+  --radius-hero: 0.625rem;
 
-  /* Shadows are grape-tinted, never grey */
-  --shadow-card: 0 14px 28px -18px #533a7180, 0 1px 0 #ffffff inset;
-  --shadow-lift: 0 22px 40px -18px #533a71a6, 0 1px 0 #ffffff inset;
-  --shadow-paper: 0 1px 0 #ffffff inset, 0 2px 0 -1px #533a7114, 0 24px 40px -24px #533a7166;
-  --shadow-button: 0 14px 28px -14px #533a7199, inset 0 1px 0 #ffffff2e;
+  /* Shadows are grape-tinted, never grey. Paper sits flat on the desk: a
+     tight edge and a small offset, like a sheet laid on another, rather
+     than a card floating on a glow. */
+  --shadow-card: 0 1px 0 #ffffff inset, 0 1px 2px #533a711a, 2px 3px 0 -1px #533a7112;
+  --shadow-lift: 0 1px 0 #ffffff inset, 0 2px 4px #533a711f, 4px 6px 0 -2px #533a711a;
+  --shadow-paper: 0 1px 0 #ffffff inset, 0 1px 0 #533a711f, 3px 4px 0 -2px #533a7114;
+  --shadow-button: inset 0 -2px 0 #00000029;
 
   /* Paper grain, as an inline SVG so it needs no asset path */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.32 0 0 0 0 0.23 0 0 0 0 0.44 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");

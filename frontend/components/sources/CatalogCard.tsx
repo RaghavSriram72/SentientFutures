@@ -48,13 +48,13 @@ const RUBRIC_FIELDS: CatalogField[] = [
   { key: "credibility", label: "Credibility", enumName: "Credibility" },
 ];
 
-// The workbook's "3a Source Quality" tab, each cell under the tab's own header.
+// The workbook's "3a Source Quality" tab, each cell under a plain-words label.
 const QUALITY_FIELDS: { key: keyof SourceQuality; label: string }[] = [
   { key: "source_type", label: "Source type" },
-  { key: "empirical_theoretical", label: "Empirical / theoretical" },
-  { key: "original_secondary", label: "Original / secondary" },
+  { key: "empirical_theoretical", label: "Empirical or theoretical" },
+  { key: "original_secondary", label: "Original or secondary" },
   { key: "peer_review", label: "Peer-review status" },
-  { key: "affiliation", label: "Affiliation / independence" },
+  { key: "affiliation", label: "Affiliation" },
 ];
 
 // What an empty tag means. The Notion import leaves technology empty for
@@ -254,10 +254,15 @@ export function SourceDetails({
   );
 }
 
-// "Evidence entries: 12", linking to the register filtered to this source.
+// "12 evidence entries", linking to the register filtered to this source.
 // With none there's nothing to open, so no link.
 function EntryCountLine({ sourceId, count }: { sourceId: string; count: number }) {
-  const text = `Evidence entries: ${count}`;
+  let text = `${count} evidence entries`;
+  if (count === 0) {
+    text = "No evidence entries";
+  } else if (count === 1) {
+    text = "1 evidence entry";
+  }
   return (
     <p className={styles.entryCount}>{count > 0 ? <Link href={`/evidence/?source=${sourceId}`}>{text}</Link> : text}</p>
   );

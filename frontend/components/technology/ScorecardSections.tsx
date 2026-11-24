@@ -133,16 +133,19 @@ function claimValue(claim: Claim, context: WorkbookContext): ReactNode {
   );
 }
 
-// The workbook's "1 Scope" row for the family. "Problem(s) claimed to
+// The workbook's "1 Scope" row for the family. "Problems it claims to
 // address" stays open; the other cells are folded under it in a native
 // <details>, so the section doesn't open on a wall of codes. PrintOpenDetails
 // prints it open. The card itself is id="scope", so a link to #scope lands on
-// its title and first cell. Labels are the tab's column headers word for
-// word, except "Deployment scenarios considered" (the header adds "(codes →
-// Codebook)") and "Sources" (the header is "Source IDs / basis"). The
-// problem named after the arrow at the end of "Problem(s) claimed to address"
-// ("→ Both") is stored apart from the text; it is shown under it, with
-// "Both" spelled out as the two problems (problemText).
+// its title and first cell. Labels are plain-language versions of the tab's
+// column headers: "Problems it claims to address" (header "Problem(s)
+// claimed to address"), "Definition" ("Technology family definition"),
+// "Deployment scenarios considered" (the header adds "(codes → Codebook)"),
+// "Who benefits and who bears the risk" ("Target population and affected
+// groups (who benefits / who bears risk)") and "Sources" ("Source IDs /
+// basis"). The problem named after the arrow at the end of the "Problem(s)
+// claimed to address" cell ("→ Both") is stored apart from the text; it is
+// shown under it, with "Both" spelled out as the two problems (problemText).
 // The problem a scope claims, after its arrow. "Both" alone means nothing to
 // a reader, so it names the two problems with their own labels.
 function problemText(problem: Problem): string {
@@ -159,7 +162,7 @@ export function ScopeSheet({ scope, shortName, context }: { scope: Scope; shortN
   const sourceText = scope.source_ids_text ?? registerIdText(scope.source_ids ?? [], context.registerIds);
   const problems: SheetItem = {
     key: "problems",
-    label: "Problem(s) claimed to address",
+    label: "Problems it claims to address",
     wide: true,
     value: (
       <>
@@ -169,7 +172,7 @@ export function ScopeSheet({ scope, shortName, context }: { scope: Scope; shortN
     ),
   };
   const rest: SheetItem[] = [
-    { key: "definition", label: "Technology family definition", value: claimValue(scope.intervention, context) },
+    { key: "definition", label: "Definition", value: claimValue(scope.intervention, context) },
     {
       key: "scenarios",
       // The header without its "(codes → Codebook)". Each code in the value
@@ -179,7 +182,7 @@ export function ScopeSheet({ scope, shortName, context }: { scope: Scope; shortN
     },
     {
       key: "groups",
-      label: "Target population and affected groups (who benefits / who bears risk)",
+      label: "Who benefits and who bears the risk",
       value: claimValue(scope.affected_groups, context),
     },
     { key: "horizon", label: "Time horizon", value: claimValue(scope.time_horizon, context) },
@@ -219,7 +222,8 @@ export function ScopeSheet({ scope, shortName, context }: { scope: Scope; shortN
 
 // The family's row of "9 Welfare and Governance Judgment": who is exposed, the
 // main harms with their risk ids (each links to its risk below) and the
-// rationale. Labels are the tab's headers word for word.
+// rationale. Labels are the tab's headers, except "Main harms" (the header
+// adds "(risk IDs)"; the ids still show in the value).
 export function WelfareSheet({
   welfare,
   shortName,
@@ -235,7 +239,7 @@ export function WelfareSheet({
       columns={2}
       items={[
         { key: "exposed", label: "Who is exposed", value: claimValue(welfare.exposed, context) },
-        { key: "harms", label: "Main harms (risk IDs)", value: claimValue(welfare.harms, context) },
+        { key: "harms", label: "Main harms", value: claimValue(welfare.harms, context) },
         { key: "rationale", label: "Rationale", value: claimValue(welfare.rationale, context), wide: true },
       ]}
     />
@@ -271,7 +275,7 @@ function Verdict({ rating, confidence, whyHref, whyLabel }: VerdictProps) {
         </div>
       </dl>
       <a href={whyHref} className={styles.whyLink}>
-        Why: {whyLabel}
+        {whyLabel}
       </a>
     </div>
   );

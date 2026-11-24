@@ -32,7 +32,7 @@ export function EvidenceRow({ row, index }: EvidenceRowProps) {
   const directness = enumLabel("EvidenceDirectness", entry.directness);
   const codes = entry.codes ?? [];
   const scenarios = entry.scenarios ?? [];
-  // A source cited by its title (S01, S25): the Source ID link carries it.
+  // A source cited by its title (S01, S25): the Source link carries it.
   const titleInLink = source !== null && citationRepeatsTitle(source);
 
   return (
@@ -54,7 +54,7 @@ export function EvidenceRow({ row, index }: EvidenceRowProps) {
       </summary>
       <div className={styles.body}>
         <dl className={styles.fields}>
-          <Field label="Source ID">
+          <Field label="Source">
             {/* "S13 (Mineault et al. 2024)" over the full title. A source with
                 no authors or venue is cited by a cut-down title, so it gets a
                 plain id link instead, and the full title under it is the only

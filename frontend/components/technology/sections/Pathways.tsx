@@ -67,7 +67,7 @@ function PathwayRow({
         <span className={fold.tags}>
           {statuses.map(({ value, count }) => (
             <span key={value} className="chip">
-              {count} {enumLabel("EvidenceStatus", value)}
+              {enumLabel("EvidenceStatus", value)}: {count}
             </span>
           ))}
         </span>
@@ -85,7 +85,8 @@ function PathwayRow({
 }
 
 // One causal link: its id, its step, its status, the claim, its entries
-// and, inline, the assumption and objection under the sheet's own headers.
+// and, inline, the assumption and objection under plain-words versions of
+// the sheet's headers.
 function LinkItem({
   link,
   showOutcome,
@@ -144,7 +145,7 @@ function LinkItem({
           )}
           {link.objection && (
             <div className={styles.note}>
-              <dt>Strongest objection (and whether answered)</dt>
+              <dt>Strongest objection, and whether it&rsquo;s answered</dt>
               <dd>
                 <CodeText text={link.objection} index={index} family={family} />
               </dd>

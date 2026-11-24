@@ -40,12 +40,12 @@
   border: 1px solid var(--rule);
   border-radius: var(--radius-lg);
   background-color: var(--paper);
-  /* Cards are link targets (the hero arrows, "Why: see the ... rating");
+  /* Cards are link targets (the hero arrows, "See why on the ... card");
      leave room for the sticky site header. */
   scroll-margin-top: calc(var(--header-height) + 2rem);
 }
 
-/* The rail (name, scale, rating and confidence) beside the main column */
+/* The rail (name, rating and confidence) beside the main column */
 @container rating-card (min-width: 40rem) {
   .card {
     grid-template-columns: 13rem minmax(0, 1fr);
@@ -92,15 +92,6 @@
   line-height: 1.2;
   letter-spacing: -0.01em;
   color: var(--ink);
-}
-
-.scale {
-  margin-top: 0.3rem;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
 }
 
 /* ---------- Main column ---------- */
@@ -230,9 +221,14 @@
   color: var(--grape);
 }
 
-.evidenceSummary:hover .evidenceCounts {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+/* Each count is an inline-block, so it takes the underline itself: one set
+   on the parent wouldn't reach it and would land only on the dot. Hover
+   only on a real pointer, so a tap doesn't leave the underline stuck. */
+@media (hover: hover) {
+  .evidenceSummary:hover .evidenceCount {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }
 
 /* Each count wraps as one piece, so "Against or qualifies: 7" stays together */
@@ -241,8 +237,10 @@
 }
 
 /* The dot between two counts, spaced by margins: a space at the edge of an
-   inline-block would collapse. */
+   inline-block would collapse. An inline-block itself, so no underline
+   reaches it. */
 .evidenceDot {
+  display: inline-block;
   margin-inline: 0.45em;
   color: var(--ink-faint);
 }
@@ -351,6 +349,11 @@
 .allEntries {
   font-size: var(--text-sm);
   font-weight: 500;
+}
+
+/* A plain underlined link; no trailing arrow */
+.allEntries [aria-hidden="true"] {
+  display: none;
 }
 
 /* ---------- Milestones it informs ---------- */

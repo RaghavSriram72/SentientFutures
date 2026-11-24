@@ -15,9 +15,6 @@ import styles from "./Scorecard.module.css";
 // The card ids moved to lib/dimensions, which the compare page shares. Kept
 // here too, so older imports still work. It takes the row's id now.
 export { scorecardRowId } from "@/lib/dimensions";
-// The same for the card's scale label. It lives in the pure model now, so
-// the rating cards don't import it from here.
-export { scaleLabel } from "./ratingCardModel";
 // The chip and the meter moved to RatingChip.tsx, so RatingFacts (which the
 // rating cards here render) doesn't import this file. Kept here too, so
 // older imports still work.
@@ -118,7 +115,7 @@ function GradingKey({ codebook, showRiskScales }: { codebook: CodebookRow[]; sho
     <div className={styles.key}>
       <p className={styles.keyTitle}>Grading key</p>
       <div className={styles.keyScale}>
-        <p className={styles.keyLabel}>Case</p>
+        <p className={styles.keyLabel}>Rating</p>
         <div className={styles.keyValues}>
           <dl className={styles.keyMeanings}>
             {meanings.ratings.map(({ value, definition }) => (

@@ -294,7 +294,7 @@ export function MilestonePanel({
   const index = siteLinks ? (codeIndex ?? dossierCodeIndex(milestone, sources)) : null;
   // The workbook's milestone tab (1a) fills these. When it has assessed the
   // milestone, status_basis holds the tab's "Evidence (entries and basis)"
-  // cell, so it is shown under that header.
+  // cell, so it is shown under "Evidence".
   const criterionMet = textOrNull(milestone.criterion_met);
   const appliesTo = textOrNull(milestone.applies_to);
   const timing = textOrNull(milestone.timing);
@@ -408,8 +408,9 @@ export function MilestonePanel({
         <BasedOn item={item} sources={sources} />
         {timing !== null && (
           <div className={styles.basedOn}>
-            {/* The workbook's own header for this column */}
-            <span className={styles.basedOnLabel}>Timing (dated sources only)</span>
+            {/* The workbook's "Timing (dated sources only)" column, under a
+                plain-words label */}
+            <span className={styles.basedOnLabel}>What sources say about timing</span>
             <p className={styles.basedOnText}>
               <WorkbookText text={timing} index={index} />
             </p>
@@ -491,7 +492,7 @@ export function MilestonePanel({
         {showStatusBasis &&
           (fromWorkbook ? (
             <div className={styles.success}>
-              <h4 className={styles.subTitle}>Evidence (entries and basis)</h4>
+              <h4 className={styles.subTitle}>Evidence</h4>
               <WorkbookClaim
                 claim={milestone.status_basis}
                 index={index}

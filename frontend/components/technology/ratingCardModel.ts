@@ -37,15 +37,6 @@ export function cardKind(row: ScorecardRow): CardKind {
   return row.id === SAFEGUARD_ROW_ID ? "safeguard" : "case";
 }
 
-// "Case · Alignment", "Risk". The rating cards and the compare page use it.
-export function scaleLabel(row: ScorecardRow): string {
-  const scale = row.scale === "case" ? "Case" : "Risk";
-  if (row.problem) {
-    return `${scale} · ${enumLabel("Problem", row.problem)}`;
-  }
-  return scale;
-}
-
 // ---------- The Codebook's words for a rating and a confidence ----------
 
 // The Codebook's Rating row for this rating, word for word ("Weak" ->

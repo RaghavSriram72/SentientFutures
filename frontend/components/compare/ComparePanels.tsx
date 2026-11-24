@@ -7,7 +7,6 @@ import { TypeGlyph } from "@/components/common/TypeMark";
 import { ConfidenceMeter, NeutralChip } from "@/components/technology/RatingChip";
 import { RatingFacts } from "@/components/technology/RatingFacts";
 import { WorkbookClaim } from "@/components/technology/sections/WorkbookClaim";
-import { scaleLabel } from "@/components/technology/ratingCardModel";
 import { lowerFirst } from "@/components/technology/text";
 import type { TimelineGroup, TimelineItem } from "@/components/timeline/timelineModel";
 import { milestoneHref, riskHref, type CodeIndex } from "@/lib/codes";
@@ -119,11 +118,9 @@ function ScorecardPanel({
   codeIndex: CodeIndex;
 }) {
   const cells = scorecardCells(technologies, rowId);
-  // Every page's row has the same scale and problem (the validator checks).
-  const eyebrow = `${dimension.group} · ${scaleLabel(cells[0].row)}`;
   return (
     <section className={styles.panel} aria-labelledby={panelTitleId(dimension.key)}>
-      <PanelHead dimension={dimension} eyebrow={eyebrow} rubricLink />
+      <PanelHead dimension={dimension} eyebrow={dimension.group} rubricLink />
       <div className={`${styles.columns} ${styles.scorecardColumns}`}>
         {cells.map(({ technology, row }, index) => (
           <TechnologyColumn key={technology.id} dimensionKey={dimension.key} technology={technology} index={index}>

@@ -54,7 +54,7 @@ export function WhereWeLand({ rows, technologyId, sourceCount, milestoneCount, e
                 <DimensionName dimension={row.dimension} />
               </span>
               {chip && (
-                <span className={styles.rating}>
+                <span className={`${styles.rating} ${index === notClaimedTermIndex ? styles.ratingTerm : ""}`}>
                   {index === notClaimedTermIndex ? (
                     <Term name="not-claimed" align="end">
                       {chip}
@@ -66,7 +66,8 @@ export function WhereWeLand({ rows, technologyId, sourceCount, milestoneCount, e
               )}
               {/* Down to this rating's card in the collapsed full scorecard,
                   which OpenDetailsOnHash opens. A sibling of the Terms, so
-                  nothing interactive is nested. */}
+                  nothing interactive is nested. Its ::after covers the whole
+                  row, so a click on the name or the chip follows it too. */}
               <a href={`#${scorecardRowId(row.id)}`} className={styles.rowLink}>
                 <span className={styles.rowArrow} aria-hidden="true">
                   &darr;

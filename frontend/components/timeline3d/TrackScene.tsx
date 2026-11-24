@@ -864,6 +864,10 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
       setNotice(null);
       setSelectedId(id);
       setShowList(false);
+      // The Key and the filter would otherwise stay on top of the dossier
+      // and hide its title and close button.
+      setShowLegend(false);
+      setShowFilter(false);
       setIntroOpen(false);
       panelOpenRef.current = true;
       introOpenRef.current = false;
@@ -1263,6 +1267,22 @@ export function TrackScene({ milestones, sources, nowYear, includeSamples = fals
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [showMenu]);
+
+  // The same for the Key: a press outside it and its button closes it.
+  useEffect(() => {
+    if (!showLegend) {
+      return;
+    }
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      const key = document.getElementById("track-key");
+      if (key && !key.contains(target) && !keyButtonRef.current?.contains(target)) {
+        setShowLegend(false);
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [showLegend]);
 
   // ---------- Wheel, keys, drag ----------
 

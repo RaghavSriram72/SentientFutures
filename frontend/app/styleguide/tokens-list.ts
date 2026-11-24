@@ -24,7 +24,7 @@ export const COLOR_GROUPS: SwatchGroup[] = [
       { token: "--paper-3", value: "#f8f3e4", label: "Shelf", note: "Bands and table heads" },
       { token: "--paper-edge", value: "#ece4cf", label: "Edge" },
       { token: "--wash-soft", value: "#f3eef8", label: "Lilac" },
-      { token: "--wash", value: "linear-gradient(128deg, #f1e6ee, #ffffea)", label: "Wash", note: "Page headers" },
+      { token: "--wash", value: "#f8f3e4", label: "Wash", note: "Page headers (flat card stock)" },
     ],
   },
   {
@@ -95,10 +95,10 @@ export const TYPE_SCALE: { token: string; value: string; use: string }[] = [
 ];
 
 export const RADII: { token: string; value: string }[] = [
-  { token: "--radius-sm", value: "0.5rem" },
-  { token: "--radius-md", value: "0.75rem" },
-  { token: "--radius-lg", value: "1rem" },
-  { token: "--radius-card", value: "1.25rem" },
-  { token: "--radius-panel", value: "1.5rem" },
-  { token: "--radius-hero", value: "2rem" },
+  { token: "--radius-sm", value: "0.25rem" },
+  { token: "--radius-md", value: "0.375rem" },
+  { token: "--radius-lg", value: "0.5rem" },
+  { token: "--radius-card", value: "0.375rem" },
+  { token: "--radius-panel", value: "0.5rem" },
+  { token: "--radius-hero", value: "0.625rem" },
 ];

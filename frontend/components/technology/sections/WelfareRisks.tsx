@@ -151,7 +151,7 @@ export function Safeguards({ row, groups, counts, index, family }: SafeguardsPro
             </dd>
           </div>
           <div>
-            <dt className={styles.smallLabel}>Safeguards: confidence</dt>
+            <dt className={styles.smallLabel}>Confidence</dt>
             <dd>
               <ConfidenceMeter confidence={row.confidence} />
             </dd>
@@ -166,7 +166,7 @@ export function Safeguards({ row, groups, counts, index, family }: SafeguardsPro
             <span className={styles.checklistCounts}>
               {statusCounts.map(({ value, count }) => (
                 <span key={value} className={`chip ${styles.neutralChip}`}>
-                  {count} {enumLabel("GovernanceStatus", value)}
+                  {enumLabel("GovernanceStatus", value)}: {count}
                 </span>
               ))}
             </span>

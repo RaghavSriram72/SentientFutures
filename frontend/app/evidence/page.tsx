@@ -21,7 +21,7 @@ import styles from "./page.module.css";
 // "Evidence register" is the workbook's own name for the tab.
 export const metadata: Metadata = {
   title: "Evidence register",
-  description: "Each claim the team took from a source, with the codes it is filed under and the ratings it informs.",
+  description: "Each claim we took from a source, with the codes it's filed under and the ratings it informs.",
 };
 
 export default function EvidencePage() {
